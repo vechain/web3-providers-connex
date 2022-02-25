@@ -2,17 +2,39 @@
 
 'use strict';
 
-import { RetBlock, RetLog, RetReceipt, RetTransaction } from './types'
+import { RetBlock, RetReceipt, RetTransaction } from './types'
 import { JsonRpcResponse } from 'web3-core-helpers'
 import { randomBytes } from 'crypto';
+import { Log } from 'web3-core';
+
 const web3Utils = require('web3-utils');
 
 export const toRetBlock = function (b: Connex.Thor.Block): RetBlock {
 	return {
+		// existing fields
 		hash: b.id,
 		parentHash: b.parentID,
 		number: b.number,
+		size: b.size,
+		stateRoot: b.stateRoot,
+		receiptsRoot: b.receiptsRoot,
+		transactionRoot: b.txsRoot,
+		timestamp: b.timestamp,
+		gasLimit: b.gasLimit,
+		gasUsed: b.gasUsed,
+		transactions: b.transactions,
+		miner: b.signer,
 
+		// non-existing fields
+		difficulty: 0,
+		totalDifficulty: 0,
+		uncles: [],
+		sha3Uncles: '',
+		nonce: '',
+		logsBloom: '',
+		extraData: '',
+
+		// original block returned by connex
 		thor: b,
 	};
 }
@@ -30,34 +52,32 @@ export const toRetTransaction = function (tx: Connex.Thor.Transaction): RetTrans
 		hash: tx.id,
 		blockNumber: tx.meta.blockNumber,
 		blockHash: tx.meta.blockID,
-
-		nonce: null,
-		transactionIndex: null,
-
 		from: tx.origin,
 		to: tx.clauses[0].to,
 		input: tx.clauses[0].data,
 		value: tx.clauses[0].value,
 		gas: tx.gas,
 
+		nonce: Number.MAX_VALUE,
+		transactionIndex: null,
+		gasPrice: '',
+
 		thor: tx,
 	};
 }
 
 export function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
-	const retLogs: RetLog[] = receipt.outputs[0].events.map(event => {
+	const logs: Log[] = receipt.outputs[0].events.map(event => {
 		return {
 			blockHash: receipt.meta.blockID,
 			blockNumber: receipt.meta.blockNumber,
 			transactionHash: receipt.meta.txID,
-			transactionIndex: null,
-			logIndex: null,
-
 			address: event.address,
 			topics: event.topics.map((x) => x),
 			data: event.data,
 
-			thor: event,
+			transactionIndex: Number.MAX_VALUE,
+			logIndex: Number.MAX_VALUE,
 		}
 	});
 
@@ -66,14 +86,17 @@ export function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetRecei
 		blockHash: receipt.meta.blockID,
 		blockNumber: receipt.meta.blockNumber,
 		transactionHash: receipt.meta.txID,
+		gasUsed: receipt.gasUsed,
 
-		transactionIndex: null,
-		cumulativeGasUsed: null,
-		from: null,
-		to: null,
+		transactionIndex: Number.MAX_VALUE,
+		cumulativeGasUsed: 0,
+		effectiveGasPrice: 0,
+		logsBloom: '',
+		from: '',
+		to: '',
 
-		contractAddress: receipt.outputs.length ? receipt.outputs[0].contractAddress : null,
-		logs: retLogs,
+		contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : undefined,
+		logs: logs,
 
 		thor: receipt,
 	};
