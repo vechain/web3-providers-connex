@@ -9,10 +9,11 @@ const web3Utils = require('web3-utils');
 
 export const toRetBlock = function (b: Connex.Thor.Block): RetBlock {
 	return {
-		...b, ...{
-			hash: b.id,
-			parentHash: b.parentID,
-		}
+		hash: b.id,
+		parentHash: b.parentID,
+		number: b.number,
+
+		thor: b,
 	};
 }
 
@@ -21,58 +22,61 @@ export const toRpcResponse = function (ret: any, id: number): JsonRpcResponse {
 		id: id,
 		jsonrpc: '2.0',
 		result: ret,
-	}
+	};
 }
 
 export const toRetTransaction = function (tx: Connex.Thor.Transaction): RetTransaction {
 	return {
-		...tx, ...{
-			hash: tx.id,
-			blockNumber: tx.meta.blockNumber,
-			blockHash: tx.meta.blockID,
+		hash: tx.id,
+		blockNumber: tx.meta.blockNumber,
+		blockHash: tx.meta.blockID,
 
-			thorNonce: tx.nonce,
-			nonce: null,
+		nonce: null,
+		transactionIndex: null,
 
-			from: tx.origin,
-			to: tx.clauses[0].to,
-			input: tx.clauses[0].data,
-			value: tx.clauses[0].value,
+		from: tx.origin,
+		to: tx.clauses[0].to,
+		input: tx.clauses[0].data,
+		value: tx.clauses[0].value,
+		gas: tx.gas,
 
-			transactionIndex: null,
-		}
-	}
+		thor: tx,
+	};
 }
 
 export function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
-	const retLog: RetLog[] = receipt.outputs[0].events.map(event => {
+	const retLogs: RetLog[] = receipt.outputs[0].events.map(event => {
 		return {
-			...event, ...{
-				blockHash: receipt.meta.blockID,
-				blockNumber: receipt.meta.blockNumber,
-				transactionHash: receipt.meta.txID,
-				transactionIndex: null,
-				logIndex: null,
-			}
+			blockHash: receipt.meta.blockID,
+			blockNumber: receipt.meta.blockNumber,
+			transactionHash: receipt.meta.txID,
+			transactionIndex: null,
+			logIndex: null,
+
+			address: event.address,
+			topics: event.topics.map((x) => x),
+			data: event.data,
+
+			thor: event,
 		}
 	});
 
 	return {
-		...receipt, ...{
-			status: !receipt.reverted ? 1 : 0,
-			blockHash: receipt.meta.blockID,
-			blockNumber: receipt.meta.blockNumber,
-			transactionHash: receipt.meta.txID,
+		status: !receipt.reverted ? 1 : 0,
+		blockHash: receipt.meta.blockID,
+		blockNumber: receipt.meta.blockNumber,
+		transactionHash: receipt.meta.txID,
 
-			transactionIndex: null,
-			cumulativeGasUsed: null,
-			from: null,
-			to: null,
+		transactionIndex: null,
+		cumulativeGasUsed: null,
+		from: null,
+		to: null,
 
-			contractAddress: receipt.outputs.length ? receipt.outputs[0].contractAddress : null,
-			logs: retLog,
-		}
-	}
+		contractAddress: receipt.outputs.length ? receipt.outputs[0].contractAddress : null,
+		logs: retLogs,
+
+		thor: receipt,
+	};
 }
 
 /**
@@ -86,7 +90,7 @@ export function toBlockNumber(input: string): number | null | undefined {
 	if (web3Utils.isHex(input)) { num = web3Utils.hexToNumber(input); }
 	else if (input === 'earliest') { num = 0; }
 	else if (input === 'pending') { num = null; }
-	
+
 	return num;
 }
 

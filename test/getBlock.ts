@@ -74,8 +74,8 @@ describe('Testing getBlock', () => {
 		}
 		expect(blk.hash).to.eql(hash);
 		expect(blk.number).to.eql(num);
-		expect(blk.hash).to.eql(blk.id);
-		expect(blk.parentHash).to.eql(blk.parentID);
+		expect(blk.hash).to.eql(blk.thor.id);
+		expect(blk.parentHash).to.eql(blk.thor.parentID);
 	})
 
 	it('existing number', async () => {

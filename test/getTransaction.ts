@@ -49,7 +49,6 @@ describe('Testing getTransaction', () => {
 			to: web3.utils.toChecksumAddress('0xC7FD71b05b3060FCE96E4B6cDc6eC353FA6F838e'),
 			data: '0x53a636dd0000000000000000000000000000000000000000000000000000b37194492d2d0000000000000000000000000000000000000000000000233c8fe42703e8000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000003576f560000000000000000000000000000000000000000000000000000000000',
 
-			thorNonce: '0xf2f3e8263ef8a12f',
 			gas: 201675,
 			value: '0',
 		}
@@ -61,13 +60,12 @@ describe('Testing getTransaction', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		expect(tx.id).to.eql(tx.hash);
-		expect(tx.blockNumber).to.eql(tx.meta.blockNumber);
-		expect(tx.blockHash).to.eql(tx.meta.blockID);
-		expect(tx.from).to.eql(web3.utils.toChecksumAddress(tx.origin));
+		expect(tx.hash).to.eql(tx.thor.id);
+		expect(tx.blockNumber).to.eql(tx.thor.meta.blockNumber);
+		expect(tx.blockHash).to.eql(tx.thor.meta.blockID);
+		expect(tx.from).to.eql(web3.utils.toChecksumAddress(tx.thor.origin));
 		expect(tx.nonce).to.be.null;
 
-		expect(tx.thorNonce).to.eql(expected.thorNonce);
 		expect(tx.to).to.eql(expected.to);
 		expect(tx.input).to.eql(expected.data);
 		expect(tx.value).to.eql(expected.value);

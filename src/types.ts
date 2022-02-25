@@ -9,12 +9,15 @@ export interface JsonRpcPayload {
 
 export type Callback = (err: Error | null, result?: any) => void;
 
-export interface RetBlock extends Connex.Thor.Block {
+export interface RetBlock {
 	hash: string;
 	parentHash: string;
+	number: number;
+
+	thor: Connex.Thor.Block;
 }
 
-export interface RetTransaction extends Omit<Connex.Thor.Transaction, 'nonce'> {
+export interface RetTransaction {
 	hash: string;
 	blockHash: string | null;
 	blockNumber: number | null;
@@ -22,14 +25,15 @@ export interface RetTransaction extends Omit<Connex.Thor.Transaction, 'nonce'> {
 	to: string | null;
 	value: string;
 	input: string;
+	gas: number;
 
 	transactionIndex: null;
 	nonce: null;
 
-	thorNonce: string; // to distinguish from [nonce] defined in Eth tx model
+	thor: Connex.Thor.Transaction;
 }
 
-export interface RetReceipt extends Connex.Thor.Transaction.Receipt {
+export interface RetReceipt {
 	status: boolean | number;
 	transactionHash: string;
 	blockHash: string;
@@ -42,14 +46,22 @@ export interface RetReceipt extends Connex.Thor.Transaction.Receipt {
 	transactionIndex: null;
 
 	logs: RetLog[];
+
+	thor: Connex.Thor.Transaction.Receipt;
 }
 
-export interface RetLog extends Connex.VM.Event {
+export interface RetLog {
 	logIndex: null;
 	transactionIndex: null;
 	transactionHash: string;
 	blockHash: string;
 	blockNumber: number;
+	
+	address: string;
+	topics: string[];
+	data: string;
+
+	thor: Connex.VM.Event;
 }
 
 export interface Web3TxObj {

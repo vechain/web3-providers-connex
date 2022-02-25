@@ -53,11 +53,11 @@ describe('Testing getBalance', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		expect(receipt.blockHash).to.eql(receipt.meta.blockID);
-		expect(receipt.blockNumber).to.eql(receipt.meta.blockNumber);
-		expect(receipt.transactionHash).to.eql(receipt.meta.txID);
+		expect(receipt.blockHash).to.eql(receipt.thor.meta.blockID);
+		expect(receipt.blockNumber).to.eql(receipt.thor.meta.blockNumber);
+		expect(receipt.transactionHash).to.eql(receipt.thor.meta.txID);
 		expect(receipt.logs.length).to.eql(0);
-		expect(receipt.status).to.eql(!receipt.reverted);
+		expect(receipt.status).to.eql(!receipt.thor.reverted);
 
 		expect(receipt.transactionIndex).to.be.null;
 		expect(receipt.contractAddress).to.be.null;
@@ -78,15 +78,15 @@ describe('Testing getBalance', () => {
 		}
 
 		receipt.logs.forEach((log, index) => {
-			expect(log.blockHash).to.eql(receipt.meta.blockID);
-			expect(log.blockNumber).to.eql(receipt.meta.blockNumber);
-			expect(log.transactionHash).to.eql(receipt.meta.txID);
+			expect(log.blockHash).to.eql(receipt.thor.meta.blockID);
+			expect(log.blockNumber).to.eql(receipt.thor.meta.blockNumber);
+			expect(log.transactionHash).to.eql(receipt.thor.meta.txID);
 			expect(log.transactionIndex).to.be.null;
 
 			expect(log.address).to.eql(web3.utils.toChecksumAddress(
-				receipt.outputs[0].events[index].address));
-			expect(log.topics).to.eql(receipt.outputs[0].events[index].topics);
-			expect(log.data).to.eql(receipt.outputs[0].events[index].data);
+				receipt.thor.outputs[0].events[index].address));
+			expect(log.topics).to.eql(receipt.thor.outputs[0].events[index].topics);
+			expect(log.data).to.eql(receipt.thor.outputs[0].events[index].data);
 		})
 	})
 })
