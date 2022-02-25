@@ -59,7 +59,6 @@ InputFormatter.eth_sendTransaction = function (payload: JsonRpcPayload) {
 			value: !!o1.value ? o1.value : 0,
 			data: !!o1.data ? o1.data : '0x',
 		}],
-		signer: o1.from,
 		gas: !!o1.gas ? hexToNumber(o1.gas) : undefined,
 
 		from: o1.from,

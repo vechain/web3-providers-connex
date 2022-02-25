@@ -82,13 +82,7 @@ export interface Web3TxObj {
 	gas?: string;
 }
 
-export interface ConnexTxObj {
+export interface ConnexTxObj extends Omit<Web3TxObj, 'gas'> {
 	clauses: [Connex.VM.Clause];
-	signer?: string;
 	gas?: number;
-
-	// Including fields 'from', 'data' to allow 'Method.prototype._confirmTransaction' 
-	// to get correct 'isContractDeployment'
-	from?: string;
-	data?: string;
 }

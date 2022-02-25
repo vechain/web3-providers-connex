@@ -72,7 +72,7 @@ export class ConnexProvider {
 	private _sendTransaction = (rpcPayload: JsonRpcPayload, callback: Callback) => {
 		const txObj: ConnexTxObj = rpcPayload.params[0];
 		let ss = this.connex.vendor.sign('tx', txObj.clauses);
-		if (txObj.signer) { ss = ss.signer(txObj.signer); }
+		if (txObj.from) { ss = ss.signer(txObj.from); }
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
 		ss.request()
 			.then(ret => {
