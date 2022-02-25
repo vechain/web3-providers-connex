@@ -54,7 +54,7 @@ export interface RetReceipt extends Omit<TransactionReceipt,
 	// To account for web3.utils.formatters.outputTransactionReceiptFormatter
 	// that format status using 
 	// 		receipt.status = Boolean(parseInt(receipt.status));
-	status: number;
+	status: '0x0' | '0x1';
 
 	// incompatible fields
 	transactionIndex: null;

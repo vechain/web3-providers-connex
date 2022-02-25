@@ -81,7 +81,8 @@ export function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetRecei
 	});
 
 	return {
-		status: !receipt.reverted ? 1 : 0,
+		status: !receipt.reverted ? '0x1' : '0x0',
+		
 		blockHash: receipt.meta.blockID,
 		blockNumber: receipt.meta.blockNumber,
 		transactionHash: receipt.meta.txID,
