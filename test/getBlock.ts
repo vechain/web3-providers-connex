@@ -72,6 +72,11 @@ describe('Testing getBlock', () => {
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
+
+		if(!blk.thor) {
+			assert.fail('thor undefined');
+		}
+		
 		expect(blk.hash).to.eql(hash);
 		expect(blk.number).to.eql(num);
 		expect(blk.hash).to.eql(blk.thor.id);

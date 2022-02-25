@@ -2,16 +2,14 @@
 
 'use strict';
 
-import { RetBlock, RetReceipt, RetTransaction } from './types'
+import { RetBlock, RetReceipt, RetTransaction, RetLog } from './types'
 import { JsonRpcResponse } from 'web3-core-helpers'
 import { randomBytes } from 'crypto';
-import { Log } from 'web3-core';
 
 const web3Utils = require('web3-utils');
 
 export const toRetBlock = function (b: Connex.Thor.Block): RetBlock {
 	return {
-		// existing fields
 		hash: b.id,
 		parentHash: b.parentID,
 		number: b.number,
@@ -25,14 +23,14 @@ export const toRetBlock = function (b: Connex.Thor.Block): RetBlock {
 		transactions: b.transactions,
 		miner: b.signer,
 
-		// non-existing fields
-		difficulty: 0,
-		totalDifficulty: 0,
-		uncles: [],
-		sha3Uncles: '',
-		nonce: '',
-		logsBloom: '',
-		extraData: '',
+		// incompatible fields
+		difficulty: null,
+		totalDifficulty: null,
+		uncles: null,
+		sha3Uncles: null,
+		nonce: null,
+		logsBloom: null,
+		extraData: null,
 
 		// original block returned by connex
 		thor: b,
@@ -57,17 +55,18 @@ export const toRetTransaction = function (tx: Connex.Thor.Transaction): RetTrans
 		input: tx.clauses[0].data,
 		value: tx.clauses[0].value,
 		gas: tx.gas,
-
-		nonce: Number.MAX_VALUE,
 		transactionIndex: null,
-		gasPrice: '',
+		
+		// incompatible fields
+		nonce: null,
+		gasPrice: null,
 
 		thor: tx,
 	};
 }
 
 export function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
-	const logs: Log[] = receipt.outputs[0].events.map(event => {
+	const logs: RetLog[] = receipt.outputs[0].events.map(event => {
 		return {
 			blockHash: receipt.meta.blockID,
 			blockNumber: receipt.meta.blockNumber,
@@ -76,8 +75,8 @@ export function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetRecei
 			topics: event.topics.map((x) => x),
 			data: event.data,
 
-			transactionIndex: Number.MAX_VALUE,
-			logIndex: Number.MAX_VALUE,
+			transactionIndex: null,
+			logIndex: null,
 		}
 	});
 
@@ -88,12 +87,12 @@ export function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetRecei
 		transactionHash: receipt.meta.txID,
 		gasUsed: receipt.gasUsed,
 
-		transactionIndex: Number.MAX_VALUE,
-		cumulativeGasUsed: 0,
-		effectiveGasPrice: 0,
-		logsBloom: '',
-		from: '',
-		to: '',
+		transactionIndex: null,
+		cumulativeGasUsed: null,
+		effectiveGasPrice: null,
+		logsBloom: null,
+		from: null,
+		to: null,
 
 		contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : undefined,
 		logs: logs,

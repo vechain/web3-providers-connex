@@ -60,6 +60,10 @@ describe('Testing getTransaction', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
+		if(!tx.thor) {
+			assert.fail('thor undefined');
+		}
+
 		expect(tx.hash).to.eql(tx.thor.id);
 		expect(tx.blockNumber).to.eql(tx.thor.meta.blockNumber);
 		expect(tx.blockHash).to.eql(tx.thor.meta.blockID);

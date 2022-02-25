@@ -53,16 +53,20 @@ describe('Testing getBalance', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
+		if(!receipt.thor) {
+			assert.fail('thor undefined');
+		}
+
 		expect(receipt.blockHash).to.eql(receipt.thor.meta.blockID);
 		expect(receipt.blockNumber).to.eql(receipt.thor.meta.blockNumber);
 		expect(receipt.transactionHash).to.eql(receipt.thor.meta.txID);
 		expect(receipt.logs.length).to.eql(0);
 		expect(receipt.status).to.eql(!receipt.thor.reverted);
 
-		expect(receipt.transactionIndex).to.be.null;
-		expect(receipt.contractAddress).to.be.null;
-		expect(receipt.cumulativeGasUsed).to.be.null;
+		expect(receipt.contractAddress).to.be.undefined;
 
+		expect(receipt.transactionIndex).to.be.null;
+		expect(receipt.cumulativeGasUsed).to.be.null;
 		expect(receipt.from).to.be.null;
 		expect(receipt.to).to.be.null;
 	})
@@ -78,15 +82,19 @@ describe('Testing getBalance', () => {
 		}
 
 		receipt.logs.forEach((log, index) => {
+			if(!receipt.thor) {
+				assert.fail('thor undefined');
+			}
+
 			expect(log.blockHash).to.eql(receipt.thor.meta.blockID);
 			expect(log.blockNumber).to.eql(receipt.thor.meta.blockNumber);
 			expect(log.transactionHash).to.eql(receipt.thor.meta.txID);
-			expect(log.transactionIndex).to.be.null;
-
 			expect(log.address).to.eql(web3.utils.toChecksumAddress(
 				receipt.thor.outputs[0].events[index].address));
 			expect(log.topics).to.eql(receipt.thor.outputs[0].events[index].topics);
 			expect(log.data).to.eql(receipt.thor.outputs[0].events[index].data);
+
+			expect(log.transactionIndex).to.be.null;
 		})
 	})
 })
