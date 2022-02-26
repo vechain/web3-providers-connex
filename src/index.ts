@@ -2,15 +2,14 @@
 
 import Connex from '@vechain/connex';
 import { JsonRpcPayload, Callback, ConnexTxObj } from './types';
-import {
-	toRetBlock,
-	toRpcResponse,
-	toRetTransaction,
-	toRetReceipt,
-	hexToNumber,
-} from './utils';
+import { toRpcResponse, hexToNumber } from './utils';
 import { Err } from './error';
-import { InputFormatter } from './formatter';
+import {
+	InputFormatter,
+	outputBlockFormatter,
+	outputReceiptFormatter,
+	outputTransactionFormatter,
+} from './formatter';
 
 type MethodHandler = (rpcPayload: JsonRpcPayload, callback: Callback) => void;
 
@@ -36,7 +35,8 @@ export class ConnexProvider {
 		this.methodMap['eth_getTransactionReceipt'] = this._getTransactionReceipt;
 		this.methodMap['eth_getStorageAt'] = this._getStorageAt;
 		this.methodMap['eth_sendTransaction'] = this._sendTransaction;
-		
+		this.methodMap['eth_call'] = this._call;
+
 		this.methodMap['eth_gasPrice'] = this._gasPrice;
 	}
 
@@ -63,6 +63,20 @@ export class ConnexProvider {
 			_rpcPayload = input.payload;
 		}
 		exec(_rpcPayload, callback);
+	}
+
+	private _call = (rpcPayload: JsonRpcPayload, callback: Callback) => {
+		const txObj: ConnexTxObj = rpcPayload.params[0];
+		let explainer = this.connex.thor.explain(txObj.clauses);
+		if (txObj.from) { explainer = explainer.caller(txObj.from); }
+		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
+		explainer.execute()
+			.then((ret: Connex.VM.Output[]) => {
+				callback(null, toRpcResponse(ret[0], rpcPayload.id));
+			})
+			.catch(err => {
+				callback(err)
+			});
 	}
 
 	private _gasPrice = (rpcPayload: JsonRpcPayload, callback: Callback) => {
@@ -100,7 +114,7 @@ export class ConnexProvider {
 					callback(null, toRpcResponse(null, rpcPayload.id));
 				} else {
 					callback(null, toRpcResponse(
-						toRetReceipt(receipt),
+						outputReceiptFormatter(receipt),
 						rpcPayload.id,
 					));
 				}
@@ -176,7 +190,7 @@ export class ConnexProvider {
 					callback(Err.TransactionNotFound(hash));
 				} else {
 					callback(null, toRpcResponse(
-						toRetTransaction(tx),
+						outputTransactionFormatter(tx),
 						rpcPayload.id,
 					));
 				}
@@ -201,7 +215,7 @@ export class ConnexProvider {
 					callback(Err.BlockNotFound(num ? num : 'lastest'));
 				} else {
 					callback(null, toRpcResponse(
-						toRetBlock(blk),
+						outputBlockFormatter(blk),
 						rpcPayload.id,
 					));
 				}
@@ -219,7 +233,7 @@ export class ConnexProvider {
 					callback(Err.BlockNotFound(hash));
 				} else {
 					callback(null, toRpcResponse(
-						toRetBlock(blk),
+						outputBlockFormatter(blk),
 						rpcPayload.id,
 					));
 				}
