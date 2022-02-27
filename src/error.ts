@@ -31,6 +31,6 @@ export const Err = {
 	// },
 
 	MethodParamNotSupported: (method: string, index: number) => {
-		return new TypeError(`Parameter with index=${index}} of method=${method} not supported`);
+		return new TypeError(`Parameter with index=${index} of method=${method} not supported`);
 	}
 }
