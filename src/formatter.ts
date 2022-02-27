@@ -4,10 +4,10 @@ import {
 	JsonRpcPayload,
 	Web3TxObj,
 	ConnexTxObj,
-	RetLog, 
-	RetReceipt, 
-	RetBlock, 
-	RetTransaction, 
+	RetLog,
+	RetReceipt,
+	RetBlock,
+	RetTransaction,
 	ConvertedPayload,
 } from './types';
 import { hexToNumber, toBlockNumber, toBytes32 } from './utils';
@@ -23,15 +23,15 @@ export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { paylo
 InputFormatter.eth_getBlockByNumber = function (payload: JsonRpcPayload) {
 	const num = toBlockNumber(payload.params[0]);
 	if (num === null) {
-		return { 
-			payload: emptyPayload, 
-			err: Err.BlockNotFound('pending') 
+		return {
+			payload: emptyPayload,
+			err: Err.BlockNotFound('pending')
 		};
 	}
 	// payload.params[0] = num;
-	return { 
-		payload: { id: payload.id, params: [num] }, 
-		err: null 
+	return {
+		payload: { id: payload.id, params: [num] },
+		err: null
 	};
 }
 
@@ -39,14 +39,14 @@ InputFormatter.eth_getBalance = function (payload: JsonRpcPayload) {
 	if (payload.params.length == 2 &&
 		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
 	) {
-		return { 
-			payload: emptyPayload, 
-			err: Err.MethodParamNotSupported('getBalance', 2) 
+		return {
+			payload: emptyPayload,
+			err: Err.MethodParamNotSupported('eth_getBalance', 2)
 		};
 	}
-	return { 
-		payload: {id: payload.id, params: payload.params}, 
-		err: null 
+	return {
+		payload: { id: payload.id, params: payload.params },
+		err: null
 	};
 }
 
@@ -54,11 +54,11 @@ InputFormatter.eth_getCode = function (payload: JsonRpcPayload) {
 	if (payload.params.length >= 2 &&
 		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
 	) {
-		return { payload: emptyPayload, err: Err.MethodParamNotSupported('getCode', 2) };
+		return { payload: emptyPayload, err: Err.MethodParamNotSupported('eth_getCode', 2) };
 	}
-	return { 
-		payload: {id: payload.id, params: payload.params}, 
-		err: null 
+	return {
+		payload: { id: payload.id, params: payload.params },
+		err: null
 	};
 }
 
@@ -66,14 +66,14 @@ InputFormatter.eth_getStorageAt = function (payload: JsonRpcPayload) {
 	if (payload.params.length >= 3 &&
 		!(typeof payload.params[2] === 'string' && payload.params[2] === 'latest')
 	) {
-		return { payload: emptyPayload, err: Err.MethodParamNotSupported('getStorageAt', 3) };
+		return { payload: emptyPayload, err: Err.MethodParamNotSupported('eth_getStorageAt', 3) };
 	}
 
 	let params = payload.params.map((x) => x);
 	params[1] = toBytes32(params[1]);
-	return { 
-		payload: {id: payload.id, params: params}, 
-		err: null 
+	return {
+		payload: { id: payload.id, params: params },
+		err: null
 	};
 }
 
@@ -92,9 +92,9 @@ InputFormatter.eth_sendTransaction = function (payload: JsonRpcPayload) {
 	}
 	// payload.params[0] = o2;
 
-	return { 
-		payload: {id: payload.id, params: [o2]}, 
-		err: null 
+	return {
+		payload: { id: payload.id, params: [o2] },
+		err: null
 	};
 }
 
@@ -102,26 +102,27 @@ InputFormatter.eth_call = function (payload: JsonRpcPayload) {
 	if (payload.params.length >= 2 &&
 		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
 	) {
-		return { payload: emptyPayload, err: Err.MethodParamNotSupported('call', 2) };
+		return { payload: emptyPayload, err: Err.MethodParamNotSupported('eth_call', 2) };
 	}
 
 	return InputFormatter.eth_sendTransaction(payload);
 }
 
 export const outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
-	const logs: RetLog[] = receipt.outputs[0].events.map(event => {
-		return {
-			blockHash: receipt.meta.blockID,
-			blockNumber: receipt.meta.blockNumber,
-			transactionHash: receipt.meta.txID,
-			address: event.address,
-			topics: event.topics.map((x) => x),
-			data: event.data,
+	const logs: RetLog[] = (receipt.outputs.length > 0 && receipt.outputs[0].events.length > 0) ?
+		receipt.outputs[0].events.map(event => {
+			return {
+				blockHash: receipt.meta.blockID,
+				blockNumber: receipt.meta.blockNumber,
+				transactionHash: receipt.meta.txID,
+				address: event.address,
+				topics: event.topics.map((x) => x),
+				data: event.data,
 
-			transactionIndex: null,
-			logIndex: null,
-		}
-	});
+				transactionIndex: null,
+				logIndex: null,
+			}
+		}) : [];
 
 	return {
 		status: !receipt.reverted ? '0x1' : '0x0',
