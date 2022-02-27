@@ -1,7 +1,7 @@
 'use strict';
 
 import Connex from '@vechain/connex';
-import { JsonRpcPayload, Callback, ConnexTxObj } from './types';
+import { JsonRpcPayload, Callback, ConnexTxObj, ConvertedPayload } from './types';
 import { toRpcResponse, hexToNumber } from './utils';
 import { Err } from './error';
 import {
@@ -11,7 +11,7 @@ import {
 	outputTransactionFormatter,
 } from './formatter';
 
-type MethodHandler = (rpcPayload: JsonRpcPayload, callback: Callback) => void;
+type MethodHandler = (payload: ConvertedPayload, callback: Callback) => void;
 
 export class ConnexProvider {
 	readonly connex: Connex;
@@ -42,80 +42,84 @@ export class ConnexProvider {
 
 	/**
 	 * Function [send] defined in interface [AbstractProvider]
-	 * @param {JsonRpcPayload} rpcPayload 
+	 * @param {Jsonpayload} payload 
 	 * @param {Callback} callback 
 	 * @returns 
 	 */
-	public sendAsync(rpcPayload: JsonRpcPayload, callback: Callback) {
-		const exec = this.methodMap[rpcPayload.method];
+	public sendAsync(payload: JsonRpcPayload, callback: Callback) {
+		const exec = this.methodMap[payload.method];
 		if (!exec) {
-			callback(Err.MethodNotFound(rpcPayload.method));
+			callback(Err.MethodNotFound(payload.method));
 			return;
 		}
 
-		let _rpcPayload = rpcPayload;
-		if (InputFormatter[rpcPayload.method]) {
-			const input = InputFormatter[rpcPayload.method](rpcPayload);
+		let _payload: ConvertedPayload = {
+			id: payload.id,
+			params: payload.params
+		};
+
+		if (InputFormatter[payload.method]) {
+			const input = InputFormatter[payload.method](payload);
 			if (input.err) {
 				callback(input.err);
 				return;
 			}
-			_rpcPayload = input.payload;
+			_payload = input.payload;
 		}
-		exec(_rpcPayload, callback);
+		exec(_payload, callback);
 	}
 
-	private _call = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		const txObj: ConnexTxObj = rpcPayload.params[0];
+	private _call = (payload: ConvertedPayload, callback: Callback) => {
+		const txObj: ConnexTxObj = payload.params[0];
 		let explainer = this.connex.thor.explain(txObj.clauses);
 		if (txObj.from) { explainer = explainer.caller(txObj.from); }
 		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
 		explainer.execute()
 			.then((ret: Connex.VM.Output[]) => {
-				callback(null, toRpcResponse(ret[0], rpcPayload.id));
+				callback(null, toRpcResponse(ret[0].data, payload.id));
 			})
 			.catch(err => {
 				callback(err)
 			});
 	}
 
-	private _gasPrice = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		callback(null, toRpcResponse(0, rpcPayload.id));
+	private _gasPrice = (payload: ConvertedPayload, callback: Callback) => {
+		callback(null, toRpcResponse(0, payload.id));
 	}
 
-	private _sendTransaction = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		const txObj: ConnexTxObj = rpcPayload.params[0];
+	private _sendTransaction = (payload: ConvertedPayload, callback: Callback) => {
+		const txObj: ConnexTxObj = payload.params[0];
 		let ss = this.connex.vendor.sign('tx', txObj.clauses);
 		if (txObj.from) { ss = ss.signer(txObj.from); }
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
 		ss.request()
 			.then(ret => {
-				callback(null, toRpcResponse(ret.txid, rpcPayload.id));
+				callback(null, toRpcResponse(ret.txid, payload.id));
 			})
 			.catch(err => {
 				callback(err);
 			});
 	}
 
-	private _getStorageAt = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		this.connex.thor.account(rpcPayload.params[0]).getStorage(rpcPayload.params[1])
+	private _getStorageAt = (payload: ConvertedPayload, callback: Callback) => {
+		this.connex.thor.account(payload.params[0]).getStorage(payload.params[1])
 			.then(storage => {
-				callback(null, toRpcResponse(storage.value, rpcPayload.id));
+				callback(null, toRpcResponse(storage.value, payload.id));
 			})
 			.catch(err => {
 				callback(err);
 			});
 	}
 
-	private _getTransactionReceipt = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		this.connex.thor.transaction(rpcPayload.params[0]).getReceipt()
+	private _getTransactionReceipt = (payload: ConvertedPayload, callback: Callback) => {
+		this.connex.thor.transaction(payload.params[0]).getReceipt()
 			.then(receipt => {
 				if (!receipt) {
-					callback(null, toRpcResponse(null, rpcPayload.id));
+					callback(null, toRpcResponse(null, payload.id));
 				} else {
 					callback(null, toRpcResponse(
 						outputReceiptFormatter(receipt),
-						rpcPayload.id,
+						payload.id,
 					));
 				}
 			})
@@ -124,9 +128,9 @@ export class ConnexProvider {
 			});
 	}
 
-	private _isSyncing = (rpcPayload: JsonRpcPayload, callback: Callback) => {
+	private _isSyncing = (payload: ConvertedPayload, callback: Callback) => {
 		if (this.connex.thor.status.progress == 1) {
-			callback(null, toRpcResponse(false, rpcPayload.id));
+			callback(null, toRpcResponse(false, payload.id));
 		} else {
 			const highestBlock = Math.floor(
 				(Date.now() - this.connex.thor.genesis.timestamp) / 10000
@@ -137,22 +141,22 @@ export class ConnexProvider {
 					highestBlock: highestBlock,
 					head: this.connex.thor.status.head,
 				},
-				rpcPayload.id,
+				payload.id,
 			));
 		}
 	}
 
-	private _getCode = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		this.connex.thor.account(rpcPayload.params[0]).getCode()
+	private _getCode = (payload: ConvertedPayload, callback: Callback) => {
+		this.connex.thor.account(payload.params[0]).getCode()
 			.then(code => {
-				callback(null, toRpcResponse(code.code, rpcPayload.id));
+				callback(null, toRpcResponse(code.code, payload.id));
 			})
 			.catch(err => {
 				callback(err);
 			})
 	}
 
-	private _getBlockNumber = (rpcPayload: JsonRpcPayload, callback: Callback) => {
+	private _getBlockNumber = (payload: ConvertedPayload, callback: Callback) => {
 		this.connex.thor.block().get()
 			.then(blk => {
 				if (!blk) {
@@ -160,7 +164,7 @@ export class ConnexProvider {
 				} else {
 					callback(null, toRpcResponse(
 						blk.number,
-						rpcPayload.id
+						payload.id
 					));
 				}
 			})
@@ -169,12 +173,12 @@ export class ConnexProvider {
 			})
 	}
 
-	private _getBalance = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		this.connex.thor.account(rpcPayload.params[0]).get()
+	private _getBalance = (payload: ConvertedPayload, callback: Callback) => {
+		this.connex.thor.account(payload.params[0]).get()
 			.then(acc => {
 				callback(null, toRpcResponse(
 					acc.balance,
-					rpcPayload.id,
+					payload.id,
 				))
 			})
 			.catch(err => {
@@ -182,8 +186,8 @@ export class ConnexProvider {
 			})
 	}
 
-	private _getTransactionByHash = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		const hash: string = rpcPayload.params[0];
+	private _getTransactionByHash = (payload: ConvertedPayload, callback: Callback) => {
+		const hash: string = payload.params[0];
 		this.connex.thor.transaction(hash).get()
 			.then(tx => {
 				if (!tx) {
@@ -191,7 +195,7 @@ export class ConnexProvider {
 				} else {
 					callback(null, toRpcResponse(
 						outputTransactionFormatter(tx),
-						rpcPayload.id,
+						payload.id,
 					));
 				}
 			})
@@ -200,15 +204,15 @@ export class ConnexProvider {
 			})
 	}
 
-	private _getChainId = (rpcPayload: JsonRpcPayload, callback: Callback) => {
+	private _getChainId = (payload: ConvertedPayload, callback: Callback) => {
 		callback(null, toRpcResponse(
 			this.chainTag,
-			rpcPayload.id,
+			payload.id,
 		));
 	}
 
-	private _getBlockByNumber = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		const num = rpcPayload.params[0];
+	private _getBlockByNumber = (payload: ConvertedPayload, callback: Callback) => {
+		const num = payload.params[0];
 		this.connex.thor.block(num).get()
 			.then(blk => {
 				if (!blk) {
@@ -216,7 +220,7 @@ export class ConnexProvider {
 				} else {
 					callback(null, toRpcResponse(
 						outputBlockFormatter(blk),
-						rpcPayload.id,
+						payload.id,
 					));
 				}
 			})
@@ -225,8 +229,8 @@ export class ConnexProvider {
 			})
 	}
 
-	private _getBlockByHash = (rpcPayload: JsonRpcPayload, callback: Callback) => {
-		const hash: string = rpcPayload.params[0];
+	private _getBlockByHash = (payload: ConvertedPayload, callback: Callback) => {
+		const hash: string = payload.params[0];
 		this.connex.thor.block(hash).get()
 			.then(blk => {
 				if (!blk) {
@@ -234,7 +238,7 @@ export class ConnexProvider {
 				} else {
 					callback(null, toRpcResponse(
 						outputBlockFormatter(blk),
-						rpcPayload.id,
+						payload.id,
 					));
 				}
 			})

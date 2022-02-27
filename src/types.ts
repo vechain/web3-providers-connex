@@ -74,7 +74,7 @@ export interface RetLog extends Omit<Log, 'transactionIndex' | 'logIndex'> {
 	logIndex: null;
 }
 
-export interface Web3TxObj {
+export type Web3TxObj = {
 	to?: string;
 	from?: string;
 	value?: string;
@@ -85,4 +85,9 @@ export interface Web3TxObj {
 export interface ConnexTxObj extends Omit<Web3TxObj, 'gas'> {
 	clauses: [Connex.VM.Clause];
 	gas?: number;
+}
+
+export type ConvertedPayload = {
+	params: any[];
+	id: number;
 }

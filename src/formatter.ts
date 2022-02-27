@@ -1,39 +1,53 @@
 'use strict';
 
-import { 
-	JsonRpcPayload, 
-	Web3TxObj, 
+import {
+	JsonRpcPayload,
+	Web3TxObj,
 	ConnexTxObj,
-	RetLog, RetReceipt, RetBlock, RetTransaction,
+	RetLog, 
+	RetReceipt, 
+	RetBlock, 
+	RetTransaction, 
+	ConvertedPayload,
 } from './types';
 import { hexToNumber, toBlockNumber, toBytes32 } from './utils';
 import { Err } from './error';
 
-const emptyPayload: JsonRpcPayload = {
+const emptyPayload: ConvertedPayload = {
 	id: 0,
-	method: '',
 	params: [],
-	jsonrpc: ''
 }
 
-export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { payload: JsonRpcPayload, err: TypeError | null }> = {};
+export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { payload: ConvertedPayload, err: TypeError | null }> = {};
 
 InputFormatter.eth_getBlockByNumber = function (payload: JsonRpcPayload) {
 	const num = toBlockNumber(payload.params[0]);
 	if (num === null) {
-		return { payload: emptyPayload, err: Err.BlockNotFound('pending') }
+		return { 
+			payload: emptyPayload, 
+			err: Err.BlockNotFound('pending') 
+		};
 	}
-	payload.params[0] = num;
-	return { payload: payload, err: null };
+	// payload.params[0] = num;
+	return { 
+		payload: { id: payload.id, params: [num] }, 
+		err: null 
+	};
 }
 
 InputFormatter.eth_getBalance = function (payload: JsonRpcPayload) {
 	if (payload.params.length == 2 &&
 		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
 	) {
-		return { payload: emptyPayload, err: Err.MethodParamNotSupported('getBalance', 2) };
+		return { 
+			payload: emptyPayload, 
+			err: Err.MethodParamNotSupported('getBalance', 2) 
+		};
 	}
-	return { payload: payload, err: null };
+	return { 
+		payload: {id: payload.id, params: payload.params}, 
+		err: null 
+	};
 }
 
 InputFormatter.eth_getCode = function (payload: JsonRpcPayload) {
@@ -42,7 +56,10 @@ InputFormatter.eth_getCode = function (payload: JsonRpcPayload) {
 	) {
 		return { payload: emptyPayload, err: Err.MethodParamNotSupported('getCode', 2) };
 	}
-	return { payload: payload, err: null };
+	return { 
+		payload: {id: payload.id, params: payload.params}, 
+		err: null 
+	};
 }
 
 InputFormatter.eth_getStorageAt = function (payload: JsonRpcPayload) {
@@ -52,8 +69,12 @@ InputFormatter.eth_getStorageAt = function (payload: JsonRpcPayload) {
 		return { payload: emptyPayload, err: Err.MethodParamNotSupported('getStorageAt', 3) };
 	}
 
-	payload.params[1] = toBytes32(payload.params[1]);
-	return { payload: payload, err: null };
+	let params = payload.params.map((x) => x);
+	params[1] = toBytes32(params[1]);
+	return { 
+		payload: {id: payload.id, params: params}, 
+		err: null 
+	};
 }
 
 InputFormatter.eth_sendTransaction = function (payload: JsonRpcPayload) {
@@ -69,14 +90,17 @@ InputFormatter.eth_sendTransaction = function (payload: JsonRpcPayload) {
 		from: o1.from,
 		data: o1.data,
 	}
-	payload.params[0] = o2;
+	// payload.params[0] = o2;
 
-	return { payload: payload, err: null };
+	return { 
+		payload: {id: payload.id, params: [o2]}, 
+		err: null 
+	};
 }
 
 InputFormatter.eth_call = function (payload: JsonRpcPayload) {
 	if (payload.params.length >= 2 &&
-		!(typeof payload.params[2] === 'string' && payload.params[2] === 'latest')
+		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
 	) {
 		return { payload: emptyPayload, err: Err.MethodParamNotSupported('call', 2) };
 	}
