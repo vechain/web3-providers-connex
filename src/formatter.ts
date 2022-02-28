@@ -86,11 +86,8 @@ InputFormatter.eth_sendTransaction = function (payload: JsonRpcPayload) {
 			data: !!o1.data ? o1.data : '0x',
 		}],
 		gas: !!o1.gas ? hexToNumber(o1.gas) : undefined,
-
 		from: o1.from,
-		data: o1.data,
 	}
-	// payload.params[0] = o2;
 
 	return {
 		payload: { id: payload.id, params: [o2] },
@@ -105,6 +102,10 @@ InputFormatter.eth_call = function (payload: JsonRpcPayload) {
 		return { payload: emptyPayload, err: Err.MethodParamNotSupported('eth_call', 2) };
 	}
 
+	return InputFormatter.eth_sendTransaction(payload);
+}
+
+InputFormatter.eth_estimateGas = function (payload: JsonRpcPayload) {
 	return InputFormatter.eth_sendTransaction(payload);
 }
 

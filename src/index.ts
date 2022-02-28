@@ -7,7 +7,7 @@ import {
 	ConnexTxObj,
 	ConvertedPayload
 } from './types';
-import { toRpcResponse, hexToNumber } from './utils';
+import { toRpcResponse, hexToNumber, getErrMsg } from './utils';
 import { Err } from './error';
 import {
 	InputFormatter,
@@ -15,7 +15,7 @@ import {
 	outputReceiptFormatter,
 	outputTransactionFormatter,
 } from './formatter';
-import { abi } from 'thor-devkit';
+import { Transaction } from 'thor-devkit';
 
 type MethodHandler = (payload: ConvertedPayload, callback: Callback) => void;
 
@@ -42,6 +42,7 @@ export class ConnexProvider {
 		this.methodMap['eth_getStorageAt'] = this._getStorageAt;
 		this.methodMap['eth_sendTransaction'] = this._sendTransaction;
 		this.methodMap['eth_call'] = this._call;
+		this.methodMap['eth_estimateGas'] = this._estimateGas;
 
 		this.methodMap['eth_gasPrice'] = this._gasPrice;
 	}
@@ -75,28 +76,45 @@ export class ConnexProvider {
 		exec(_payload, callback);
 	}
 
-	private _call = (payload: ConvertedPayload, callback: Callback) => {
+	private _estimateGas = (payload: ConvertedPayload, callback: Callback) => {
 		const txObj: ConnexTxObj = payload.params[0];
-		let explainer = this.connex.thor.explain(txObj.clauses);
+		let explainer = this.connex.thor.explain([txObj.clauses[0]]);
 		if (txObj.from) { explainer = explainer.caller(txObj.from); }
 		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
 		explainer.execute()
 			.then((outputs: Connex.VM.Output[]) => {
 				const output = outputs[0];
 				if (output.reverted) {
-					const errorSig = '0x08c379a0';
-					let errMsg = output?.revertReason || output.vmError || output.data;
+					callback({ data: getErrMsg(output) });
+				}
 
-					if (!errMsg.startsWith('0x')) {
-						// encode error message to allow sendTxCallback to decode later
-						errMsg = abi.encodeParameter('string', errMsg);
-					}
+				const clause: Transaction.Clause = {
+					to: txObj.clauses[0].to,
+					value: txObj.clauses[0].value,
+					data: txObj.clauses[0].data ? txObj.clauses[0].data : '0x',
+				};
 
-					if (!errMsg.startsWith(errorSig)) {
-						errMsg = errorSig + errMsg.slice(2);
-					}
+				const execGas = outputs.reduce((sum, out) => sum + out.gasUsed, 0);
+				const intrinsicGas = Transaction.intrinsicGas([clause]);
+				const estimatedGas = intrinsicGas + (execGas ? (execGas + 15000) : 0);
 
-					callback({ data: errMsg });
+				callback(null, toRpcResponse(estimatedGas, payload.id));
+			})
+			.catch(err => {
+				callback(err)
+			});
+	}
+
+	private _call = (payload: ConvertedPayload, callback: Callback) => {
+		const txObj: ConnexTxObj = payload.params[0];
+		let explainer = this.connex.thor.explain([txObj.clauses[0]]);
+		if (txObj.from) { explainer = explainer.caller(txObj.from); }
+		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
+		explainer.execute()
+			.then((outputs: Connex.VM.Output[]) => {
+				const output = outputs[0];
+				if (output.reverted) {
+					callback({ data: getErrMsg(output) });
 				}
 
 				callback(null, toRpcResponse(output.data, payload.id));
@@ -112,7 +130,7 @@ export class ConnexProvider {
 
 	private _sendTransaction = (payload: ConvertedPayload, callback: Callback) => {
 		const txObj: ConnexTxObj = payload.params[0];
-		let ss = this.connex.vendor.sign('tx', txObj.clauses);
+		let ss = this.connex.vendor.sign('tx', [txObj.clauses[0]]);
 		if (txObj.from) { ss = ss.signer(txObj.from); }
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
 		ss.request()

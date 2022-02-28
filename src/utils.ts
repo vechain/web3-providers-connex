@@ -3,6 +3,7 @@
 import { JsonRpcResponse } from 'web3-core-helpers'
 import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
+import { abi } from 'thor-devkit';
 
 export const toRpcResponse = function (ret: any, id: number): JsonRpcResponse {
 	return {
@@ -37,4 +38,20 @@ export function hexToNumber(hex: string): number {
 
 export function randAddr(): string {
 	return '0x' + randomBytes(20).toString('hex');
+}
+
+export function getErrMsg(output: Connex.VM.Output): string {
+	const errorSig = '0x08c379a0';
+	let errMsg = output?.revertReason || output.vmError || output.data;
+
+	if (!errMsg.startsWith('0x')) {
+		// encode error message to allow sendTxCallback to decode later
+		errMsg = abi.encodeParameter('string', errMsg);
+	}
+
+	if (!errMsg.startsWith(errorSig)) {
+		errMsg = errorSig + errMsg.slice(2);
+	}
+
+	return errMsg;
 }
