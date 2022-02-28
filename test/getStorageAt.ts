@@ -35,7 +35,7 @@ describe('Testing getStorageAt', () => {
 
 	it('option not supported', async () => {
 		const opt = 'earliest';
-		const expectedErr = Err.MethodParamNotSupported('getStorageAt', 3);
+		const expectedErr = Err.MethodParamNotSupported('eth_getStorageAt', 3);
 		try {
 			await web3.eth.getStorageAt(addr, 0, opt);
 			assert.fail();
@@ -44,7 +44,7 @@ describe('Testing getStorageAt', () => {
 		}
 	})
 
-	it('test', () => {
+	it('test', async () => {
 		const tests: { key: number | string, expected: string }[] = [
 			{ key: 1, expected: '0x0000000000000000000000007092bed3954d4702a868a0d968c6aba3fc87eabd' },
 			{ key: '0x' + '0'.repeat(63) + '1', expected: '0x0000000000000000000000007092bed3954d4702a868a0d968c6aba3fc87eabd' },
@@ -52,8 +52,9 @@ describe('Testing getStorageAt', () => {
 			{ key: 2 ** 64, expected: '0x' + '0'.repeat(64) },
 		]
 
-		tests.forEach(async (t) => {
+		for(let i = 0; i< tests.length; i++) {
 			let value: string;
+			const t = tests[i];
 			try {
 				value = await web3.eth.getStorageAt(addr, t.key);
 			} catch (err: any) {
@@ -61,6 +62,6 @@ describe('Testing getStorageAt', () => {
 			}
 
 			expect(value).to.eql(t.expected);
-		});
+		}
 	})
 })
