@@ -15,7 +15,7 @@ import {
 	outputReceiptFormatter,
 	outputTransactionFormatter,
 } from './formatter';
-import {abi} from 'thor-devkit';
+import { abi } from 'thor-devkit';
 
 type MethodHandler = (payload: ConvertedPayload, callback: Callback) => void;
 
@@ -87,7 +87,7 @@ export class ConnexProvider {
 					const errorSig = '0x08c379a0';
 					let errMsg = output?.revertReason || output.vmError || output.data;
 
-					if(!errMsg.startsWith('0x')) {
+					if (!errMsg.startsWith('0x')) {
 						// encode error message to allow sendTxCallback to decode later
 						errMsg = abi.encodeParameter('string', errMsg);
 					}

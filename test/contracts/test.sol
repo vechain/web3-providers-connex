@@ -11,12 +11,11 @@ contract Test {
 	}
 
 	function get() public view returns (uint, string memory) {
+		require(a_ > 10, 'Test error message in contract call');
 		return (a_, b_);
 	}
 
 	function set(uint a, string memory b) public {
-		require(a > 10, 'Test error message');
-
 		a_ = a;
 		b_ = b;
 	}
