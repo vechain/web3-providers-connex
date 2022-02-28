@@ -14,22 +14,6 @@ export const Err = {
 		return new TypeError(`No transaction found with id/hash=${hash}`);
 	},
 
-	// InvalidBlockHash: (hash: string) => {
-	// 	return new TypeError(`Invalid block id/hash=${hash}`);
-	// },
-
-	// InvalidBlockNumber: (number: string | number) => {
-	// 	return new TypeError(`Invalid block number=${number}`);
-	// },
-
-	// InvalidTransactionHash: (hash: string) => {
-	// 	return new TypeError(`Invalid transaction id/hash=${hash}`);
-	// },
-
-	// InvalidStorageKey: (key: string | number) => {
-	// 	return new TypeError(`Invalid storage key=${key}`);
-	// },
-
 	MethodParamNotSupported: (method: string, index: number) => {
 		return new TypeError(`Parameter with index=${index} of method=${method} not supported`);
 	}
