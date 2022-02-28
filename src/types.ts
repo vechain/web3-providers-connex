@@ -10,7 +10,7 @@ export interface JsonRpcPayload {
 	params: any[];
 }
 
-export type Callback = (err: Error | null, result?: any) => void;
+export type Callback = (err: any, result?: any) => void;
 
 export interface RetBlock extends Omit<Block,
 	'difficulty' |

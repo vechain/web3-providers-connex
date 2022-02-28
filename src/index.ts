@@ -1,7 +1,12 @@
 'use strict';
 
 import Connex from '@vechain/connex';
-import { JsonRpcPayload, Callback, ConnexTxObj, ConvertedPayload } from './types';
+import {
+	JsonRpcPayload,
+	Callback,
+	ConnexTxObj,
+	ConvertedPayload
+} from './types';
 import { toRpcResponse, hexToNumber } from './utils';
 import { Err } from './error';
 import {
@@ -10,6 +15,7 @@ import {
 	outputReceiptFormatter,
 	outputTransactionFormatter,
 } from './formatter';
+import {abi} from 'thor-devkit';
 
 type MethodHandler = (payload: ConvertedPayload, callback: Callback) => void;
 
@@ -75,8 +81,25 @@ export class ConnexProvider {
 		if (txObj.from) { explainer = explainer.caller(txObj.from); }
 		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
 		explainer.execute()
-			.then((ret: Connex.VM.Output[]) => {
-				callback(null, toRpcResponse(ret[0].data, payload.id));
+			.then((outputs: Connex.VM.Output[]) => {
+				const output = outputs[0];
+				if (output.reverted) {
+					const errorSig = '0x08c379a0';
+					let errMsg = output?.revertReason || output.vmError || output.data;
+
+					if(!errMsg.startsWith('0x')) {
+						// encode error message to allow sendTxCallback to decode later
+						errMsg = abi.encodeParameter('string', errMsg);
+					}
+
+					if (!errMsg.startsWith(errorSig)) {
+						errMsg = errorSig + errMsg.slice(2);
+					}
+
+					callback({ data: errMsg });
+				}
+
+				callback(null, toRpcResponse(output.data, payload.id));
 			})
 			.catch(err => {
 				callback(err)
