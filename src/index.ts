@@ -152,21 +152,27 @@ export class ConnexProvider {
 	}
 
 	private _isSyncing = (payload: ConvertedPayload, callback: Callback) => {
-		if (this.connex.thor.status.progress == 1) {
-			callback(null, toRpcResponse(false, payload.id));
-		} else {
-			const highestBlock = Math.floor(
-				(Date.now() - this.connex.thor.genesis.timestamp) / 10000
-			);
-			callback(null, toRpcResponse(
-				{
-					currentBlock: this.connex.thor.status.head.number,
-					highestBlock: highestBlock,
-					head: this.connex.thor.status.head,
-				},
-				payload.id,
-			));
-		}
+		this.connex.thor.ticker().next()
+			.then(() => {
+				if (this.connex.thor.status.progress == 1) {
+					callback(null, toRpcResponse(false, payload.id));
+				} else {
+					const highestBlock = Math.floor(
+						(Date.now() - this.connex.thor.genesis.timestamp) / 10000
+					);
+					callback(null, toRpcResponse(
+						{
+							currentBlock: this.connex.thor.status.head.number,
+							highestBlock: highestBlock,
+							head: this.connex.thor.status.head,
+						},
+						payload.id,
+					));
+				}
+			})
+			.catch(err => {
+				callback(err);
+			})
 	}
 
 	private _getCode = (payload: ConvertedPayload, callback: Callback) => {
