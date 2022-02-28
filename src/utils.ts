@@ -1,13 +1,8 @@
-/// <reference types="@vechain/connex" />
-
 'use strict';
 
-import { RetBlock, RetReceipt, RetTransaction, RetLog } from './types'
 import { JsonRpcResponse } from 'web3-core-helpers'
 import { randomBytes } from 'crypto';
-import {abi} from 'thor-devkit';
-
-const web3Utils = require('web3-utils');
+import web3Utils from 'web3-utils';
 
 export const toRpcResponse = function (ret: any, id: number): JsonRpcResponse {
 	return {
@@ -42,16 +37,4 @@ export function hexToNumber(hex: string): number {
 
 export function randAddr(): string {
 	return '0x' + randomBytes(20).toString('hex');
-}
-
-export function decodeRevertReason(data: string): string {
-	const errorSig = '0x08c379a0';
-	try {
-		if (data.startsWith(errorSig)) {
-			return abi.decodeParameter('string', '0x' + data.slice(errorSig.length)) as string;
-		}
-		return '';
-	} catch {
-		return '';
-	}
 }
