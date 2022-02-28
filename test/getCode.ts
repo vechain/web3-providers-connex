@@ -10,7 +10,7 @@ import { ConnexProvider } from '../src/index';
 import { urls } from './settings'
 import { Err } from '../src/error';
 
-describe('Testing getBalance', () => {
+describe('Testing getCode', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
 	// wallet.import(soloAccounts[0]);

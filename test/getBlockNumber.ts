@@ -9,7 +9,7 @@ import Web3 from 'web3';
 import { ConnexProvider } from '../src/index';
 import { urls } from './settings'
 
-describe('Testing getChainId', () => {
+describe('Testing getBlockNumber', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
 	// wallet.import(soloAccounts[0]);
@@ -30,7 +30,7 @@ describe('Testing getChainId', () => {
 		driver.close();
 	})
 
-	it('try', async () => {
+	it('get the latest block number', async () => {
 		try {
 			await web3.eth.getBlockNumber();
 		} catch(err: any) {

@@ -30,7 +30,7 @@ describe('Testing getChainId', () => {
 		driver.close();
 	})
 
-	it('existing hash/id', async () => {
+	it('get mainnet chainTag', async () => {
 		const tag = 74;
 		let id: number;
 
