@@ -16,5 +16,9 @@ export const Err = {
 
 	MethodParamNotSupported: (method: string, index: number) => {
 		return new TypeError(`Parameter with index=${index} of method=${method} not supported`);
+	},
+
+	ArgumentMissingOrInvalid: (method: string, arg: string) => {
+		return new TypeError(`Argument missing or invalid: method=${method}, argName=${arg}`);
 	}
 }

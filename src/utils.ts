@@ -4,6 +4,7 @@ import { JsonRpcResponse } from 'web3-core-helpers'
 import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
 import { abi } from 'thor-devkit';
+import { FilterOpts } from './types';
 
 export const toRpcResponse = function (ret: any, id: number): JsonRpcResponse {
 	return {
@@ -14,17 +15,21 @@ export const toRpcResponse = function (ret: any, id: number): JsonRpcResponse {
 }
 
 /**
- * Convert the block number into format compatible with connex.js
+ * Convert the input into either block id or block number compatible with connex.thor.block()
  * @param {hex | 'earliest' | 'latest' | 'pending'} input
- * @returns {number | null | undefined} Return null if input === 'pending' and undefined if input === 'latest'
+ * @returns {string | number | null | undefined} Return null not recognized and undefined if input === 'latest'
  */
-export function toBlockNumber(input: string): number | null | undefined {
-	let num: number | null | undefined = null;
+export function parseBlockNumber(input: string): string | number | null | undefined {
+	// Return block id;
+	if (web3Utils.isHexStrict(input) && input.length == 66) {
+		return input;
+	}
 
-	if (web3Utils.isHex(input)) { num = web3Utils.hexToNumber(input); }
+	// Convert block number;
+	let num: number | null | undefined = null;
+	if (web3Utils.isHexStrict(input)) { num = web3Utils.hexToNumber(input); }
 	else if (input === 'earliest') { num = 0; }
 	else if (input === 'latest') { num = undefined; }
-
 	return num;
 }
 
@@ -54,4 +59,24 @@ export function getErrMsg(output: Connex.VM.Output): string {
 	}
 
 	return errMsg;
+}
+
+export function toFilterCriteria(args: FilterOpts): Connex.Thor.Filter.Criteria<"event">[] {
+	const setCriteria = (address: string, topics: any) => {
+		const c: Connex.Thor.Filter.Criteria<"event"> = {};
+
+		c.address = address;
+		if (topics[0]) { c.topic0 = topics[0]; }
+		if (topics[1]) { c.topic1 = topics[1]; }
+		if (topics[2]) { c.topic2 = topics[2]; }
+		if (topics[3]) { c.topic3 = topics[3]; }
+
+		return c;
+	}
+
+	return !Array.isArray(args.address) ?
+		[setCriteria(args.address, args.topics)] :
+		args.address.map((addr, i) => {
+			return setCriteria(addr, args.topics[i]);
+		});
 }

@@ -9,8 +9,10 @@ import {
 	RetBlock,
 	RetTransaction,
 	ConvertedPayload,
+	FilterOpts,
+	ConvertedFilterOpts,
 } from './types';
-import { hexToNumber, toBlockNumber, toBytes32 } from './utils';
+import { hexToNumber, parseBlockNumber, toBytes32, toFilterCriteria } from './utils';
 import { Err } from './error';
 
 const emptyPayload: ConvertedPayload = {
@@ -21,7 +23,7 @@ const emptyPayload: ConvertedPayload = {
 export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { payload: ConvertedPayload, err: TypeError | null }> = {};
 
 InputFormatter.eth_getBlockByNumber = function (payload: JsonRpcPayload) {
-	const num = toBlockNumber(payload.params[0]);
+	const num = parseBlockNumber(payload.params[0]);
 	if (num === null) {
 		return {
 			payload: emptyPayload,
@@ -109,6 +111,41 @@ InputFormatter.eth_estimateGas = function (payload: JsonRpcPayload) {
 	return InputFormatter.eth_sendTransaction(payload);
 }
 
+InputFormatter.eth_getLogs = function (payload: JsonRpcPayload) {
+	const args: FilterOpts = payload.params[0];
+
+	// cannot be null
+	const fromBlock = parseBlockNumber(args.fromBlock);
+	if (typeof fromBlock !== 'number') {
+		return {
+			payload: emptyPayload,
+			err: Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock'),
+		};
+	}
+
+	const toBlock = parseBlockNumber(args.toBlock);
+	if (typeof toBlock !== 'number') {
+		return {
+			payload: emptyPayload,
+			err: Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock'),
+		};
+	}
+
+	const out: ConvertedFilterOpts = {
+		range: {
+			unit: 'block',
+			from: fromBlock,
+			to: toBlock,
+		},
+		criteria: toFilterCriteria(args),
+	}
+
+	return {
+		payload: { id: payload.id, params: [out] },
+		err: null
+	};
+}
+
 export const outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
 	const logs: RetLog[] = (receipt.outputs.length > 0 && receipt.outputs[0].events.length > 0) ?
 		receipt.outputs[0].events.map(event => {
@@ -194,4 +231,19 @@ export const outputTransactionFormatter = function (tx: Connex.Thor.Transaction)
 
 		thor: tx,
 	};
+}
+
+export const outputLogsFormatter = function (ret: Connex.Thor.Filter.Row<'event'>[]): RetLog[] {
+	return ret.map((ret) => {
+		return {
+			address: ret.address,
+			topics: ret.topics,
+			data: ret.data,
+			blockHash: ret.meta.blockID,
+			blockNumber: ret.meta.blockNumber,
+			transactionHash: ret.meta.txID,
+			transactionIndex: null,
+			logIndex: null,
+		};
+	});
 }

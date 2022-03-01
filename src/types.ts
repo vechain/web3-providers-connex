@@ -91,3 +91,15 @@ export type ConvertedPayload = {
 	params: any[];
 	id: number;
 }
+
+export type FilterOpts = {
+	address: string | string[];
+	fromBlock: string;
+	toBlock: string;
+	topics: any;
+}
+
+export type ConvertedFilterOpts = {
+	range: Connex.Thor.Filter.Range;
+	criteria: Connex.Thor.Filter.Criteria<'event'>[];
+}

@@ -5,13 +5,15 @@ import {
 	JsonRpcPayload,
 	Callback,
 	ConnexTxObj,
-	ConvertedPayload
+	ConvertedPayload,
+	ConvertedFilterOpts
 } from './types';
-import { toRpcResponse, hexToNumber, getErrMsg } from './utils';
+import { toRpcResponse, hexToNumber, getErrMsg, toFilterCriteria } from './utils';
 import { Err } from './error';
 import {
 	InputFormatter,
 	outputBlockFormatter,
+	outputLogsFormatter,
 	outputReceiptFormatter,
 	outputTransactionFormatter,
 } from './formatter';
@@ -43,6 +45,7 @@ export class ConnexProvider {
 		this.methodMap['eth_sendTransaction'] = this._sendTransaction;
 		this.methodMap['eth_call'] = this._call;
 		this.methodMap['eth_estimateGas'] = this._estimateGas;
+		this.methodMap['eth_getLogs'] = this._getLogs;
 
 		this.methodMap['eth_gasPrice'] = this._gasPrice;
 	}
@@ -74,6 +77,23 @@ export class ConnexProvider {
 			_payload = input.payload;
 		}
 		exec(_payload, callback);
+	}
+
+	private _getLogs = (payload: ConvertedPayload, callback: Callback) => {
+		const MAX_LIMIT = 256;
+		const params: ConvertedFilterOpts = payload.params[0];
+		this.connex.thor.filter('event', params.criteria)
+			.range(params.range)
+			.apply(0, MAX_LIMIT)
+			.then((ret: Connex.Thor.Filter.Row<'event'>[]) => {
+				callback(null, toRpcResponse(
+					outputLogsFormatter(ret),
+					payload.id,
+				));
+			})
+			.catch(err => {
+				callback(err);
+			});
 	}
 
 	private _estimateGas = (payload: ConvertedPayload, callback: Callback) => {
