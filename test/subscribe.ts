@@ -9,6 +9,7 @@ const Web3 = require('web3');
 import { ConnexProvider } from '../src/index';
 import { urls, soloAccounts, bin, abi } from './settings'
 import { wait } from '../src/utils';
+import { RetLog } from '../src/types';
 
 describe('Testing subscribe', () => {
 	const net = new SimpleNet(urls.solo);
@@ -58,9 +59,44 @@ describe('Testing subscribe', () => {
 				],
 			}
 
-			const sub = web3.eth.subscribe('logs', subOpts, (err: any, result: any) => {
+			const topics = [
+				{
+					topics: [
+						web3.utils.sha3('Deploy(address,uint256,string)'),
+						web3.eth.abi.encodeParameter('address', wallet.list[0].address),
+					],
+					data: web3.eth.abi.encodeParameters(['uint', 'string'], [100, 'deploy']),
+				},
+				{
+					topics: [
+						web3.utils.sha3('Set(address,uint256,string)'),
+						web3.eth.abi.encodeParameter('address', wallet.list[1].address),
+					],
+					data: web3.eth.abi.encodeParameters(['uint', 'string'], [200, 'set1']),
+				},
+				{
+					topics: [
+						web3.utils.sha3('Set(address,uint256,string)'),
+						web3.eth.abi.encodeParameter('address', wallet.list[2].address),
+					],
+					data: web3.eth.abi.encodeParameters(['uint', 'string'], [300, 'set2']),
+				}
+			]
+
+			const sub = web3.eth.subscribe('logs', subOpts, (err: any, result: RetLog) => {
 				if (!err) { console.log(result); }
 				else { assert.fail(err); }
+
+				let check = false;
+
+				for (let i = 0; i < topics.length; i++) {
+					check = result.data === topics[i].data &&
+						result.topics[0] === topics[i].topics[0] &&
+						result.topics[1] === topics[i].topics[1];
+					if (check) { break; }
+				}
+
+				expect(check).to.be.true;
 			})
 
 			await wait(1000);
