@@ -3,9 +3,9 @@
 import { Block, Transaction, TransactionReceipt } from 'web3-eth';
 import { Log } from 'web3-core';
 
-export interface JsonRpcPayload {
+export type JsonRpcPayload = {
 	id: number;
-	jsonrpc: string;
+	jsonrpc?: string;
 	method: string;
 	params: any[];
 }
@@ -102,4 +102,13 @@ export type FilterOpts = {
 export type ConvertedFilterOpts = {
 	range: Connex.Thor.Filter.Range;
 	criteria: Connex.Thor.Filter.Criteria<'event'>[];
+}
+
+export type SubscriptionResponse = {
+	jsonrpc?: string;
+	method: string;
+	params: {
+		subscription: string;
+		result: any;
+	};
 }

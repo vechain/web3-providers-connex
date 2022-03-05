@@ -8,7 +8,7 @@ import {
 	ConvertedPayload,
 	ConvertedFilterOpts
 } from './types';
-import { toRpcResponse, hexToNumber, getErrMsg, toFilterCriteria } from './utils';
+import { toRpcResponse, hexToNumber, getErrMsg, toFilterCriteria, toSubscriptionResponse } from './utils';
 import { Err } from './error';
 import {
 	InputFormatter,
@@ -17,37 +17,52 @@ import {
 	outputReceiptFormatter,
 	outputTransactionFormatter,
 } from './formatter';
-import { Transaction } from 'thor-devkit';
+import { Transaction, keccak256 } from 'thor-devkit';
+import EventEmitter from 'eventemitter3';
 
 type MethodHandler = (payload: ConvertedPayload, callback: Callback) => void;
 
-export class ConnexProvider {
+export class ConnexProvider extends EventEmitter {
 	readonly connex: Connex;
 	readonly chainTag: number;
 
-	private readonly methodMap: Record<string, MethodHandler> = {};
+	private readonly _methodMap: Record<string, MethodHandler> = {};
+	// Map<name, >
+	private _subscriptions: Record<'newHeads' | 'logs', Record<string, any[]>> = {
+		newHeads: {},
+		logs: {},
+	};
 
 	constructor(connex: Connex) {
+		super();
+
 		this.connex = connex;
 		const id = connex.thor.genesis.id;
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
 
-		this.methodMap['eth_getBlockByHash'] = this._getBlockByHash;
-		this.methodMap['eth_getBlockByNumber'] = this._getBlockByNumber;
-		this.methodMap['eth_chainId'] = this._getChainId;
-		this.methodMap['eth_getTransactionByHash'] = this._getTransactionByHash;
-		this.methodMap['eth_getBalance'] = this._getBalance;
-		this.methodMap['eth_blockNumber'] = this._getBlockNumber;
-		this.methodMap['eth_getCode'] = this._getCode;
-		this.methodMap['eth_syncing'] = this._isSyncing;
-		this.methodMap['eth_getTransactionReceipt'] = this._getTransactionReceipt;
-		this.methodMap['eth_getStorageAt'] = this._getStorageAt;
-		this.methodMap['eth_sendTransaction'] = this._sendTransaction;
-		this.methodMap['eth_call'] = this._call;
-		this.methodMap['eth_estimateGas'] = this._estimateGas;
-		this.methodMap['eth_getLogs'] = this._getLogs;
+		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
+		this._methodMap['eth_getBlockByNumber'] = this._getBlockByNumber;
+		this._methodMap['eth_chainId'] = this._getChainId;
+		this._methodMap['eth_getTransactionByHash'] = this._getTransactionByHash;
+		this._methodMap['eth_getBalance'] = this._getBalance;
+		this._methodMap['eth_blockNumber'] = this._getBlockNumber;
+		this._methodMap['eth_getCode'] = this._getCode;
+		this._methodMap['eth_syncing'] = this._isSyncing;
+		this._methodMap['eth_getTransactionReceipt'] = this._getTransactionReceipt;
+		this._methodMap['eth_getStorageAt'] = this._getStorageAt;
+		this._methodMap['eth_sendTransaction'] = this._sendTransaction;
+		this._methodMap['eth_call'] = this._call;
+		this._methodMap['eth_estimateGas'] = this._estimateGas;
+		this._methodMap['eth_getLogs'] = this._getLogs;
 
-		this.methodMap['eth_gasPrice'] = this._gasPrice;
+		this._methodMap['eth_subscribe'] = this._subscribe;
+		this._methodMap['eth_unsubscribe'] = this._unsubscribe;
+
+		// dummy
+		this._methodMap['eth_gasPrice'] = this._gasPrice;
+
+		// console.log('Start subloop');
+		this._subLoop();
 	}
 
 	/**
@@ -57,7 +72,7 @@ export class ConnexProvider {
 	 * @returns 
 	 */
 	public sendAsync(payload: JsonRpcPayload, callback: Callback) {
-		const exec = this.methodMap[payload.method];
+		const exec = this._methodMap[payload.method];
 		if (!exec) {
 			callback(Err.MethodNotFound(payload.method));
 			return;
@@ -77,6 +92,94 @@ export class ConnexProvider {
 			_payload = input.payload;
 		}
 		exec(_payload, callback);
+	}
+
+	private _subscribe = (payload: ConvertedPayload, callback: Callback) => {
+		const subId = this._getSubscriptionId(payload.params);
+		const subName: string = payload.params[0];
+
+		if (subName !== 'newHeads' && subName !== 'logs') {
+			callback(Err.InvalidSubscriptionName(subName));
+			return;
+		}
+
+		if (this._subscriptions[subName][subId]) {
+			callback(Err.SubscriptionAlreadyExist());
+			return;
+		}
+
+		this._subscriptions[subName][subId] = payload.params[1] || {};
+
+		callback(null, toRpcResponse(subId, payload.id));
+	}
+
+	private _unsubscribe = (payload: ConvertedPayload, callback: Callback) => {
+		const subId: string = payload.params[0];
+
+		if (!this._subscriptions['newHeads'][subId] && !this._subscriptions['logs'][subId]) {
+			callback(Err.SubscriptionIdNotFound);
+		}
+
+		this._subscriptions['newHeads'][subId] ?
+			delete this._subscriptions['newHeads'][subId] :
+			delete this._subscriptions['logs'][subId];
+
+		callback(null, toRpcResponse(true, payload.id));
+	}
+
+	private _subLoop: () => void = async () => {
+		const ticker = this.connex.thor.ticker();
+		
+		try {
+			for (; ;) {
+				const best = await ticker.next();
+	
+				const newHeadsKeys = Object.keys(this._subscriptions['newHeads']);
+				if (newHeadsKeys.length > 0) {
+					(async () => {
+						try {
+							const blk = await this.connex.thor.block().get();
+							if (blk) {
+								newHeadsKeys.forEach(key => {
+									this.emit('data', toSubscriptionResponse(
+										outputBlockFormatter(blk), key
+									));
+								})
+							}
+						} catch { }
+					})();
+				}
+	
+				const logsKeys = Object.keys(this._subscriptions['logs']);
+				if (logsKeys.length > 0) {
+					logsKeys.forEach(async (key) => {
+						const MAX_LIMIT = 256;
+						const range: Connex.Thor.Filter.Range = {
+							unit: 'block',
+							from: best.number,
+							to: best.number,
+						}
+						try {
+							const ret = await this.connex.thor.filter('event', this._subscriptions['logs'][key])
+								.range(range)
+								.apply(0, MAX_LIMIT);
+	
+							if (ret) {
+								this.emit('data', toSubscriptionResponse(
+									outputLogsFormatter(ret), key
+								));
+							}
+						} catch { }
+					});
+				}
+			}
+		} catch(err: any) {
+			throw new TypeError(err);
+		}
+	}
+
+	private _getSubscriptionId = (params: any[]) => {
+		return '0x' + keccak256(JSON.stringify(params)).toString('hex');
 	}
 
 	private _getLogs = (payload: ConvertedPayload, callback: Callback) => {

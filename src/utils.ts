@@ -4,7 +4,7 @@ import { JsonRpcResponse } from 'web3-core-helpers'
 import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
 import { abi } from 'thor-devkit';
-import { FilterOpts } from './types';
+import { FilterOpts, SubscriptionResponse } from './types';
 
 export const toRpcResponse = function (ret: any, id: number): JsonRpcResponse {
 	return {
@@ -12,6 +12,17 @@ export const toRpcResponse = function (ret: any, id: number): JsonRpcResponse {
 		jsonrpc: '2.0',
 		result: ret,
 	};
+}
+
+export const toSubscriptionResponse = function(ret: any, id: string): SubscriptionResponse {
+	return {
+		jsonrpc: '2.0',
+		method: 'eth_subscribe',
+		params: {
+			subscription: id,
+			result: ret,
+		}
+	}
 }
 
 /**
@@ -79,4 +90,10 @@ export function toFilterCriteria(args: FilterOpts): Connex.Thor.Filter.Criteria<
 		args.address.map((addr, i) => {
 			return setCriteria(addr, args.topics[i]);
 		});
+}
+
+export const wait = (ms: number) => {
+	return new Promise(resolve => {
+		setTimeout(() => resolve(true), ms);
+	});
 }

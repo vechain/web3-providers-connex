@@ -146,6 +146,31 @@ InputFormatter.eth_getLogs = function (payload: JsonRpcPayload) {
 	};
 }
 
+InputFormatter.eth_subscribe = function (payload: JsonRpcPayload) {
+	const name: string = payload.params[0];
+	if (!name) {
+		throw new TypeError('Subscription name undefined');
+	}
+
+	switch (name) {
+		case 'newHeads':
+			return {
+				payload: { id: payload.id, params: ['newHeads'] },
+				err: null
+			};
+		case 'logs':
+			return {
+				err: null,
+				payload: {
+					id: payload.id,
+					params: ['logs', toFilterCriteria(payload.params[1])],
+				}
+			}
+		default:
+			return { err: Err.InvalidSubscriptionName(name), payload: emptyPayload };
+	}
+}
+
 export const outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
 	const logs: RetLog[] = (receipt.outputs.length > 0 && receipt.outputs[0].events.length > 0) ?
 		receipt.outputs[0].events.map(event => {

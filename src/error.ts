@@ -20,5 +20,17 @@ export const Err = {
 
 	ArgumentMissingOrInvalid: (method: string, arg: string) => {
 		return new TypeError(`Argument missing or invalid: method=${method}, argName=${arg}`);
+	},
+
+	SubscriptionIdNotFound: (id: string) => {
+		return new TypeError(`Subscription id=${id} not found`);
+	},
+
+	SubscriptionAlreadyExist: () => {
+		return new TypeError(`Subscription already exists`);
+	},
+
+	InvalidSubscriptionName: (name: string) => {
+		return new TypeError(`Invalid subscription name=${name}`);
 	}
 }
