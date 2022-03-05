@@ -7,7 +7,7 @@ import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 
 import { ConnexProvider } from '../src/index';
 import { urls, soloAccounts, abi, bin } from './settings'
-import Web3 from 'web3';
+const Web3 = require('web3');
 import { RetLog } from '../src/types';
 
 describe('Testing getPastLogs', () => {

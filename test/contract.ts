@@ -7,7 +7,7 @@ import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 
 import { ConnexProvider } from '../src/index';
 import { urls, soloAccounts, abi, bin } from './settings'
-import Web3 from 'web3';
+const Web3 = require('web3');
 
 describe('Testing contract', () => {
 	const net = new SimpleNet(urls.solo);
@@ -40,7 +40,7 @@ describe('Testing contract', () => {
 		const args = [100, 'test contract deploy'];
 
 		try {
-			const deployed = await contract.deploy({
+			contract = await contract.deploy({
 				data: bin,
 				arguments: args,
 			})
@@ -48,9 +48,9 @@ describe('Testing contract', () => {
 					from: from,
 				})
 
-			contractAddress = deployed.options.address;
+			contractAddress = contract.options.address;
 
-			const ret: string[] = await deployed.methods.get().call();
+			const ret: string[] = await contract.methods.get().call();
 			args.forEach((val, i) => {
 				expect(ret[i]).to.eql('' + val);
 			})
