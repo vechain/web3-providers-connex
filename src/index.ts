@@ -305,7 +305,7 @@ export class ConnexProvider extends EventEmitter {
 						{
 							currentBlock: this.connex.thor.status.head.number,
 							highestBlock: highestBlock,
-							head: this.connex.thor.status.head,
+							thor: this.connex.thor.status,
 						},
 						payload.id,
 					));
