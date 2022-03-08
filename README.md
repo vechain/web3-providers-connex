@@ -85,3 +85,11 @@ The returned header object:
 #### web3.eth.subscribe('logs')
 The returned log object:
 * Unsupported properties `transactionIndex` and `logIndex` - `null`.
+
+## Examples
+See [tests](https://github.com/zzGHzz/web3-providers-connex/tree/main/test) for more examples.
+
+## License
+This software is licensed under the
+[GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.html), also included
+in *LICENSE* file in repository.
