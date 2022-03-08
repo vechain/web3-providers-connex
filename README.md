@@ -18,7 +18,7 @@ The returned sync object:
 
 * `currentBlock` [`Number`]
 * `highestBlock` [`Number`]
-* `thor` [`Connex.Thor.Status`] - Data returned by `connex.thor.status`.
+* `thor` [[`Connex.Thor.Status`](https://docs.vechain.org/connex/api.html#thor-status)].
 
 #### getBlockNumber
 #### getBalance
@@ -46,13 +46,13 @@ The returned block object:
 * `hash` [32 bytes] - Thor block ID;
 * `transactions` - Array of transaction IDs;
 * Unsupported properties `difficulty`, `totalDifficulty`, `uncles`, `sha3Uncles`, `nonce`, `logsBloom`, `extraData` and `baseFeePerGas` - `null | undefined`;
-* `thor` [`Connex.Thor.Block`].
+* `thor` [[`Connex.Thor.Block`](https://docs.vechain.org/connex/api.html#thor-block)].
 
 #### getTransaction
 The returned transaction object:
 * `hash` - Thor transaction ID;
 * Unsupported properties `nonce`, `gasPrice`, `transactionIndex`, `maxPriorityFeePerGas` and `maxFeePerGas` - `null | undefined`;
-* `thor` [`Connex.Thor.Transaction`].
+* `thor` [[`Connex.Thor.Transaction`](https://docs.vechain.org/connex/api.html#thor-transaction)].
 
 #### getTransactionReceipt
 The returned log object:
@@ -60,7 +60,7 @@ The returned log object:
 
 The returned transaction receipt object:
 * Unsupported properties `from`, `to`, `transactionIndex`, `cumulativeGasUsed`, `effectiveGasPrice`, `logsBloom` and `events` - `null | undefined`;
-* `thor` [Connex.Thor.Transaction.Receipt].  
+* `thor` [[`Connex.Thor.Transaction.Receipt`](https://docs.vechain.org/connex/api.html#thor-receipt)].  
 
 #### sendTransaction
 The input transaction object:
