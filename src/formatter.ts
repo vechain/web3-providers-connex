@@ -11,6 +11,7 @@ import {
 	ConvertedPayload,
 	FilterOpts,
 	ConvertedFilterOpts,
+	RetHeader,
 } from './types';
 import { hexToNumber, parseBlockNumber, toBytes32, toFilterCriteria } from './utils';
 import { Err } from './error';
@@ -271,4 +272,25 @@ export const outputLogsFormatter = function (ret: Connex.Thor.Filter.Row<'event'
 			logIndex: null,
 		};
 	});
+}
+
+export const outputHeaderFormatter = function (b: Connex.Thor.Block): RetHeader {
+	return {
+		hash: b.id,
+		parentHash: b.parentID,
+		number: b.number,
+		stateRoot: b.stateRoot,
+		receiptsRoot: b.receiptsRoot,
+		transactionRoot: b.txsRoot,
+		timestamp: b.timestamp,
+		gasLimit: b.gasLimit,
+		gasUsed: b.gasUsed,
+		miner: b.signer,
+
+		// unsupported
+		nonce: null,
+		sha3Uncles: null,
+		logsBloom: null,
+		extraData: null,
+	}
 }

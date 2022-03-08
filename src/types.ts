@@ -1,6 +1,6 @@
 'use strict';
 
-import { Block, Transaction, TransactionReceipt } from 'web3-eth';
+import { Block, Transaction, TransactionReceipt, BlockHeader } from 'web3-eth';
 import { Log } from 'web3-core';
 
 export type JsonRpcPayload = {
@@ -31,6 +31,18 @@ export interface RetBlock extends Omit<Block,
 	extraData: null;
 
 	thor?: Connex.Thor.Block;
+}
+
+export interface RetHeader extends Omit<BlockHeader, 
+	'nonce' |
+	'sha3Uncles' |
+	'logsBloom' |
+	'extraData' 
+>{
+    nonce: null;
+    sha3Uncles: null;
+    logsBloom: null;
+    extraData: null;
 }
 
 export interface RetTransaction extends Omit<Transaction, 'nonce' | 'gasPrice'> {

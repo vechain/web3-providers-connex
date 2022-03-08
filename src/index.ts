@@ -13,6 +13,7 @@ import { Err } from './error';
 import {
 	InputFormatter,
 	outputBlockFormatter,
+	outputHeaderFormatter,
 	outputLogsFormatter,
 	outputReceiptFormatter,
 	outputTransactionFormatter,
@@ -142,7 +143,7 @@ export class ConnexProvider extends EventEmitter {
 							if (blk) {
 								newHeadsKeys.forEach(key => {
 									this.emit('data', toSubscriptionResponse(
-										outputBlockFormatter(blk), key
+										outputHeaderFormatter(blk), key
 									));
 								})
 							}
