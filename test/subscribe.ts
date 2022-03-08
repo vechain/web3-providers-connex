@@ -84,8 +84,7 @@ describe('Testing subscribe', () => {
 			]
 
 			const sub = web3.eth.subscribe('logs', subOpts, (err: any, result: RetLog) => {
-				if (!err) { console.log(result); }
-				else { assert.fail(err); }
+				if (err) { assert.fail(err); }
 
 				let check = false;
 
@@ -97,6 +96,9 @@ describe('Testing subscribe', () => {
 				}
 
 				expect(check).to.be.true;
+			})
+			.on('data', (log: Object) => {
+				console.log(`On data: ${JSON.stringify(log)}`);
 			})
 
 			await wait(1000);
@@ -117,8 +119,10 @@ describe('Testing subscribe', () => {
 
 	it('subscribe newBlockHeaders', async () => {
 		const sub = web3.eth.subscribe('newBlockHeaders', (err: any, result: any) => {
-			if (!err) { console.log(result); }
-			else { assert.fail(err); }
+			if (err) { assert.fail(err); }
+		})
+		.on('data', (header: object) => {
+			console.log(`On data: ${JSON.stringify(header)}`);
 		});
 
 		await wait(50000);
