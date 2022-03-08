@@ -2,20 +2,14 @@
 	"compilerOptions": {
 		"target": "es6",
 		"module": "commonjs",
-		"outDir": "lib",
-		
-		"declaration": true,
-		"esModuleInterop": true,
 
+		"outDir": "dist",
+		"declaration": true,
+		"inlineSourceMap": true,
+
+		"esModuleInterop": true,
 		"strict": true,
-		"noImplicitAny": true,
-		"strictNullChecks": true,
-		"strictFunctionTypes": true,
-		"strictBindCallApply": true,
-		"strictPropertyInitialization": true,
-		"alwaysStrict": true,
-		"noImplicitThis": true,
-		"noImplicitReturns": true,
+		"allowSyntheticDefaultImports": true,
 	},
 	"include": [
         "./src",

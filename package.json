@@ -1,28 +1,35 @@
 {
-  "name": "web3-providers-connex",
-  "version": "0.1.0",
-  "description": "Web3.js provider built upon Connex.js to allow Web3.js to be compatible with the Thor protocol",
-  "main": "index.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Peter Zhou",
-  "license": "LGPL-3.0",
-  "dependencies": {
-    "@types/chai": "^4.3.0",
-    "@types/mocha": "^9.1.0",
-    "@types/node": "^10.17.60",
-    "@types/web3": "^1.2.2",
-    "@vechain/connex": "^2.0.9",
-    "@vechain/connex-driver": "^2.0.8",
-    "@vechain/connex-framework": "^2.0.8",
-    "chai": "^4.3.6",
-    "debug": "^2.6.9",
-    "eventemitter3": "^4.0.4",
-    "mocha": "^9.2.0",
-    "thor-devkit": "^2.0.4",
-    "ts-node": "^10.5.0",
-    "typescript": "^4.5.5",
-    "web3": "^1.7.0"
-  }
+	"name": "web3-providers-connex",
+	"version": "0.1.0",
+	"description": "Web3.js provider built upon Connex.js to allow Web3.js to be compatible with the Thor protocol",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "rm -rf dist/ esm/ && node_modules/.bin/tsc -d -p . "
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/zzGHzz/web3-providers-connex.git"
+	},
+	"author": "Peter Zhou",
+	"license": "LGPL-3.0",
+	"dependencies": {
+		"@types/chai": "^4.3.0",
+		"@types/mocha": "^9.1.0",
+		"@types/node": "^10.17.60",
+		"@types/web3": "^1.2.2",
+		"@vechain/connex": "^2.0.9",
+		"@vechain/connex-driver": "^2.0.8",
+		"@vechain/connex-framework": "^2.0.8",
+		"chai": "^4.3.6",
+		"eventemitter3": "^4.0.4",
+		"mocha": "^9.2.0",
+		"thor-devkit": "^2.0.4",
+		"ts-node": "^10.5.0",
+		"typescript": "^4.5.5",
+		"web3": "^1.7.0"
+	}
 }
