@@ -1,5 +1,9 @@
 # web3-providers-connex
 Web3.js provider implemented using Connex.js. It makes possible to use web3.js to interact with the VeChain Thor protocol.
+## Installation
+```
+npm i web3-providers-connex
+```
 ## Usage
 ```ts
 const provider = new ConnexProvider(connex); // connex is an object of Connex
