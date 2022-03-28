@@ -21,7 +21,7 @@ const emptyPayload: ConvertedPayload = {
 	params: [],
 }
 
-export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { payload: ConvertedPayload, err: TypeError | null }> = {};
+export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { payload: ConvertedPayload, err: Error | null }> = {};
 
 InputFormatter.eth_getBlockByNumber = function (payload: JsonRpcPayload) {
 	const num = parseBlockNumber(payload.params[0]);
@@ -150,7 +150,7 @@ InputFormatter.eth_getLogs = function (payload: JsonRpcPayload) {
 InputFormatter.eth_subscribe = function (payload: JsonRpcPayload) {
 	const name: string = payload.params[0];
 	if (!name) {
-		throw new TypeError('Subscription name undefined');
+		throw new Error('Subscription name undefined');
 	}
 
 	switch (name) {

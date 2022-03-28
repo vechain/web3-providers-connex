@@ -175,7 +175,7 @@ export class ConnexProvider extends EventEmitter {
 				}
 			}
 		} catch(err: any) {
-			throw new TypeError(err);
+			throw new Error(err);
 		}
 	}
 
