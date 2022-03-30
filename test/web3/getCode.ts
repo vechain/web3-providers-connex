@@ -6,9 +6,8 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider } from '../../src/index';
-import { urls } from '../settings'
-import { Err } from '../../src/error';
+import { ConnexProvider, Err } from '@index';
+import { urls } from '../settings';
 
 describe('Testing getCode', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -55,7 +54,7 @@ describe('Testing getCode', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 		expect(code).to.eql(expectedCode);
-		
+
 		try {
 			code = await web3.eth.getCode(addr);
 		} catch (err: any) {

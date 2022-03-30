@@ -6,10 +6,9 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider } from '../../src/index';
+import { ConnexProvider, RetReceipt } from '@index';
 import { urls, soloAccounts } from '../settings'
-import { RetReceipt } from '../../src/types';
-import { randAddr } from '../../src/utils';
+import { randAddr } from '@pkg/utils';
 
 describe('Testing sendTransaction', () => {
 	const net = new SimpleNet(urls.solo);

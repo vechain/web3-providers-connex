@@ -8,7 +8,7 @@ import { BigNumber, ethers } from 'ethers';
 
 import { ConnexProvider } from '../../src/index';
 import { urls } from '../settings'
-import { Err } from '../../src/error';
+import { Err } from '@err';
 
 describe('Testing getBalance', () => {
 	const net = new SimpleNet(urls.mainnet);

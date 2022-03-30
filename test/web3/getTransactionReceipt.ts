@@ -6,9 +6,8 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider } from '../../src/index';
-import { urls } from '../settings'
-import { RetReceipt } from '../../src/types';
+import { ConnexProvider, RetReceipt } from '@index';
+import { urls } from '../settings';
 
 describe('Testing getBalance', () => {
 	const net = new SimpleNet(urls.mainnet);

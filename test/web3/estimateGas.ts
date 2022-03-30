@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider } from '../../src/index';
+import { ConnexProvider } from '@index';
 import { urls, soloAccounts } from '../settings';
 
 describe('Testing estimateGas', () => {

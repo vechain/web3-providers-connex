@@ -8,8 +8,8 @@
 		"dist"
 	],
 	"scripts": {
-		"test": "mocha --no-timeouts --colors -r ts-node/register test/*/*.ts",
-		"build": "rm -rf dist/ esm/ && node_modules/.bin/tsc -d -p . "
+		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
+		"test-web3": "mocha --no-timeouts --colors -r ts-node/register test/web3/*.ts"
 	},
 	"repository": {
 		"type": "git",
@@ -33,5 +33,8 @@
 		"ts-node": "^10.5.0",
 		"typescript": "^4.5.5",
 		"web3": "^1.7.0"
+	},
+	"devDependencies": {
+		"tsconfig-paths": "^3.14.1"
 	}
 }

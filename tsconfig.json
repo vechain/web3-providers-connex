@@ -2,16 +2,29 @@
 	"compilerOptions": {
 		"target": "es6",
 		"module": "commonjs",
-
 		"outDir": "dist",
 		"declaration": true,
 		"inlineSourceMap": true,
-
 		"esModuleInterop": true,
 		"strict": true,
 		"allowSyntheticDefaultImports": true,
+		
+		"baseUrl": ".",
+		"paths":{
+			"@index":[
+				"src/index"
+			],
+			"@pkg/*":[
+				"src/*"
+			]
+		}
 	},
 	"include": [
-        "./src",
-    ]
+		"./src",
+	],
+	"ts-node": {
+		"require": [
+			"tsconfig-paths/register"
+		]
+	}
 }

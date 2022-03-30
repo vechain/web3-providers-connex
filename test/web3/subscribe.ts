@@ -6,10 +6,9 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider } from '../../src/index';
+import { ConnexProvider, RetBlock, RetLog } from '@index';
 import { urls, soloAccounts, bin, abi } from '../settings'
-import { wait } from '../../src/utils';
-import { RetBlock, RetLog } from '../../src/types';
+import { wait } from '@pkg/utils';
 
 describe('Testing subscribe', () => {
 	const net = new SimpleNet(urls.solo);
