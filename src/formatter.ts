@@ -8,7 +8,7 @@ import {
 	RetReceipt,
 	RetBlock,
 	RetTransaction,
-	ConvertedPayload,
+	Payload,
 	FilterOpts,
 	ConvertedFilterOpts,
 	RetHeader,
@@ -16,12 +16,12 @@ import {
 import { hexToNumber, parseBlockNumber, toBytes32, toFilterCriteria } from './utils';
 import { Err } from './error';
 
-const emptyPayload: ConvertedPayload = {
+const emptyPayload: Payload = {
 	id: 0,
 	params: [],
 }
 
-export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { payload: ConvertedPayload, err: Error | null }> = {};
+export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { payload: Payload, err: Error | null }> = {};
 
 InputFormatter.eth_getBlockByNumber = function (payload: JsonRpcPayload) {
 	const num = parseBlockNumber(payload.params[0]);
@@ -156,16 +156,13 @@ InputFormatter.eth_subscribe = function (payload: JsonRpcPayload) {
 	switch (name) {
 		case 'newHeads':
 			return {
-				payload: { id: payload.id, params: ['newHeads'] },
+				payload: { id: 0, params: ['newHeads'] },
 				err: null
 			};
 		case 'logs':
 			return {
 				err: null,
-				payload: {
-					id: payload.id,
-					params: ['logs', toFilterCriteria(payload.params[1])],
-				}
+				payload: { id: 0, params: ['logs', toFilterCriteria(payload.params[1])] }
 			}
 		default:
 			return { err: Err.InvalidSubscriptionName(name), payload: emptyPayload };

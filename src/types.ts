@@ -99,9 +99,9 @@ export interface ConnexTxObj extends Omit<Web3TxObj, 'gas'> {
 	gas?: number;
 }
 
-export type ConvertedPayload = {
-	params: any[];
+export type Payload = {
 	id: number;
+	params: any[];
 }
 
 export type FilterOpts = {
@@ -116,10 +116,10 @@ export type ConvertedFilterOpts = {
 	criteria: Connex.Thor.Filter.Criteria<'event'>[];
 }
 
-export type SubscriptionResponse = {
+export type Eip1193SubResp = {
 	jsonrpc?: string;
-	method: string;
-	params: {
+	type: string;
+	data: {
 		subscription: string;
 		result: any;
 	};

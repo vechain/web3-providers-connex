@@ -2,13 +2,11 @@
 
 import Connex from '@vechain/connex';
 import {
-	JsonRpcPayload,
-	Callback,
 	ConnexTxObj,
-	ConvertedPayload,
+	Payload,
 	ConvertedFilterOpts
 } from './types';
-import { toRpcResponse, hexToNumber, getErrMsg, toFilterCriteria, toSubscriptionResponse } from './utils';
+import { hexToNumber, getErrMsg, toEip1193SubResp } from './utils';
 import { Err } from './error';
 import {
 	InputFormatter,
@@ -20,8 +18,9 @@ import {
 } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
+import { RequestArguments } from 'web3-core';
 
-type MethodHandler = (payload: ConvertedPayload, callback: Callback) => void;
+type MethodHandler = (payload: Payload) => Promise<any>;
 
 export class ConnexProvider extends EventEmitter {
 	readonly connex: Connex;
@@ -66,75 +65,69 @@ export class ConnexProvider extends EventEmitter {
 		this._subLoop();
 	}
 
-	/**
-	 * Function [send] defined in interface [AbstractProvider]
-	 * @param {Jsonpayload} payload 
-	 * @param {Callback} callback 
-	 * @returns 
-	 */
-	public sendAsync(payload: JsonRpcPayload, callback: Callback) {
-		const exec = this._methodMap[payload.method];
+	public async request(req: RequestArguments) {
+		const exec = this._methodMap[req.method];
 		if (!exec) {
-			callback(Err.MethodNotFound(payload.method));
-			return;
+			return Promise.reject(Err.MethodNotFound(req.method));
 		}
 
-		let _payload: ConvertedPayload = {
-			id: payload.id,
-			params: payload.params
+		let _payload: Payload = {
+			id: req['id'],
+			params: req.params
 		};
 
-		if (InputFormatter[payload.method]) {
-			const input = InputFormatter[payload.method](payload);
+		if (InputFormatter[req.method]) {
+			const input = InputFormatter[req.method]({
+				id: req['id'],
+				method: req.method,
+				params: req.params || []
+			});
 			if (input.err) {
-				callback(input.err);
-				return;
+				return Promise.reject(input.err);
 			}
 			_payload = input.payload;
 		}
-		exec(_payload, callback);
+		return exec(_payload);
 	}
 
-	private _subscribe = (payload: ConvertedPayload, callback: Callback) => {
+	private _subscribe = async (payload: Payload) => {
 		const subId = this._getSubscriptionId(payload.params);
 		const subName: string = payload.params[0];
 
 		if (subName !== 'newHeads' && subName !== 'logs') {
-			callback(Err.InvalidSubscriptionName(subName));
-			return;
+			return Promise.reject(Err.InvalidSubscriptionName(subName));
 		}
 
 		if (this._subscriptions[subName][subId]) {
-			callback(Err.SubscriptionAlreadyExist());
-			return;
+			return subId;
 		}
 
 		this._subscriptions[subName][subId] = payload.params[1] || {};
 
-		callback(null, toRpcResponse(subId, payload.id));
+		return subId;
 	}
 
-	private _unsubscribe = (payload: ConvertedPayload, callback: Callback) => {
+	private _unsubscribe = async (payload: Payload) => {
 		const subId: string = payload.params[0];
 
 		if (!this._subscriptions['newHeads'][subId] && !this._subscriptions['logs'][subId]) {
-			callback(Err.SubscriptionIdNotFound);
+			return Promise.reject(Err.SubscriptionIdNotFound);
 		}
 
 		this._subscriptions['newHeads'][subId] ?
 			delete this._subscriptions['newHeads'][subId] :
 			delete this._subscriptions['logs'][subId];
 
-		callback(null, toRpcResponse(true, payload.id));
+		return true;
 	}
 
 	private _subLoop: () => void = async () => {
 		const ticker = this.connex.thor.ticker();
-		
+
 		try {
 			for (; ;) {
 				const best = await ticker.next();
-	
+
 				const newHeadsKeys = Object.keys(this._subscriptions['newHeads']);
 				if (newHeadsKeys.length > 0) {
 					(async () => {
@@ -142,7 +135,7 @@ export class ConnexProvider extends EventEmitter {
 							const blk = await this.connex.thor.block().get();
 							if (blk) {
 								newHeadsKeys.forEach(key => {
-									this.emit('data', toSubscriptionResponse(
+									this.emit('message', toEip1193SubResp(
 										outputHeaderFormatter(blk), key
 									));
 								})
@@ -150,7 +143,7 @@ export class ConnexProvider extends EventEmitter {
 						} catch { }
 					})();
 				}
-	
+
 				const logsKeys = Object.keys(this._subscriptions['logs']);
 				if (logsKeys.length > 0) {
 					logsKeys.forEach(async (key) => {
@@ -164,9 +157,9 @@ export class ConnexProvider extends EventEmitter {
 							const ret = await this.connex.thor.filter('event', this._subscriptions['logs'][key])
 								.range(range)
 								.apply(0, MAX_LIMIT);
-	
+
 							if (ret) {
-								this.emit('data', toSubscriptionResponse(
+								this.emit('message', toEip1193SubResp(
 									outputLogsFormatter(ret), key
 								));
 							}
@@ -174,247 +167,209 @@ export class ConnexProvider extends EventEmitter {
 					});
 				}
 			}
-		} catch(err: any) {
+		} catch (err: any) {
 			throw new Error(err);
 		}
 	}
 
 	private _getSubscriptionId = (params: any[]) => {
-		return '0x' + keccak256(JSON.stringify(params)).toString('hex');
+		return '0x' + keccak256((new Date()).getTime().toString(), JSON.stringify(params)).toString('hex');
 	}
 
-	private _getLogs = (payload: ConvertedPayload, callback: Callback) => {
+	private _getLogs = async (payload: Payload) => {
 		const MAX_LIMIT = 256;
 		const params: ConvertedFilterOpts = payload.params[0];
-		this.connex.thor.filter('event', params.criteria)
-			.range(params.range)
-			.apply(0, MAX_LIMIT)
-			.then((ret: Connex.Thor.Filter.Row<'event'>[]) => {
-				callback(null, toRpcResponse(
-					outputLogsFormatter(ret),
-					payload.id,
-				));
-			})
-			.catch(err => {
-				callback(err);
-			});
+		try {
+			const ret = await this.connex.thor.filter('event', params.criteria)
+				.range(params.range)
+				.apply(0, MAX_LIMIT);
+			return outputLogsFormatter(ret);
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
 	}
 
-	private _estimateGas = (payload: ConvertedPayload, callback: Callback) => {
+	private _estimateGas = async (payload: Payload) => {
 		const txObj: ConnexTxObj = payload.params[0];
 		let explainer = this.connex.thor.explain([txObj.clauses[0]]);
 		if (txObj.from) { explainer = explainer.caller(txObj.from); }
 		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
-		explainer.execute()
-			.then((outputs: Connex.VM.Output[]) => {
-				const output = outputs[0];
-				if (output.reverted) {
-					callback({ data: getErrMsg(output) });
-				}
+		try {
+			const outputs = await explainer.execute();
 
-				const clause: Transaction.Clause = {
-					to: txObj.clauses[0].to,
-					value: txObj.clauses[0].value,
-					data: txObj.clauses[0].data ? txObj.clauses[0].data : '0x',
-				};
+			const output = outputs[0];
+			if (output.reverted) {
+				return Promise.reject({ data: getErrMsg(output) });
+			}
 
-				const execGas = outputs.reduce((sum, out) => sum + out.gasUsed, 0);
-				const intrinsicGas = Transaction.intrinsicGas([clause]);
-				const estimatedGas = intrinsicGas + (execGas ? (execGas + 15000) : 0);
+			const clause: Transaction.Clause = {
+				to: txObj.clauses[0].to,
+				value: txObj.clauses[0].value,
+				data: txObj.clauses[0].data ? txObj.clauses[0].data : '0x',
+			};
 
-				callback(null, toRpcResponse(estimatedGas, payload.id));
-			})
-			.catch(err => {
-				callback(err)
-			});
+			const execGas = outputs.reduce((sum, out) => sum + out.gasUsed, 0);
+			const intrinsicGas = Transaction.intrinsicGas([clause]);
+			const estimatedGas = intrinsicGas + (execGas ? (execGas + 15000) : 0);
+
+			return estimatedGas;
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
 	}
 
-	private _call = (payload: ConvertedPayload, callback: Callback) => {
+	private _call = async (payload: Payload) => {
 		const txObj: ConnexTxObj = payload.params[0];
 		let explainer = this.connex.thor.explain([txObj.clauses[0]]);
 		if (txObj.from) { explainer = explainer.caller(txObj.from); }
 		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
-		explainer.execute()
-			.then((outputs: Connex.VM.Output[]) => {
-				const output = outputs[0];
-				if (output.reverted) {
-					callback({ data: getErrMsg(output) });
-				}
-
-				callback(null, toRpcResponse(output.data, payload.id));
-			})
-			.catch(err => {
-				callback(err)
-			});
+		try {
+			const outputs = await explainer.execute();
+			const output = outputs[0];
+			if (output.reverted) {
+				return Promise.reject({ data: getErrMsg(output) });
+			}
+			return output.data;
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
 	}
 
-	private _gasPrice = (payload: ConvertedPayload, callback: Callback) => {
-		callback(null, toRpcResponse(0, payload.id));
+	private _gasPrice = async (payload: Payload) => {
+		return 0;
 	}
 
-	private _sendTransaction = (payload: ConvertedPayload, callback: Callback) => {
+	private _sendTransaction = async (payload: Payload) => {
 		const txObj: ConnexTxObj = payload.params[0];
 		let ss = this.connex.vendor.sign('tx', [txObj.clauses[0]]);
 		if (txObj.from) { ss = ss.signer(txObj.from); }
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
-		ss.request()
-			.then(ret => {
-				callback(null, toRpcResponse(ret.txid, payload.id));
-			})
-			.catch(err => {
-				callback(err);
-			});
+		try {
+			const ret = await ss.request()
+			return ret.txid;
+		} catch (err: any) {
+			return Promise.reject(err);
+		};
 	}
 
-	private _getStorageAt = (payload: ConvertedPayload, callback: Callback) => {
-		this.connex.thor.account(payload.params[0]).getStorage(payload.params[1])
-			.then(storage => {
-				callback(null, toRpcResponse(storage.value, payload.id));
-			})
-			.catch(err => {
-				callback(err);
-			});
+	private _getStorageAt = async (payload: Payload) => {
+		try {
+			const storage = await this.connex.thor.account(payload.params[0]).getStorage(payload.params[1]);
+			return storage.value;
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
 	}
 
-	private _getTransactionReceipt = (payload: ConvertedPayload, callback: Callback) => {
-		this.connex.thor.transaction(payload.params[0]).getReceipt()
-			.then(receipt => {
-				if (!receipt) {
-					callback(null, toRpcResponse(null, payload.id));
-				} else {
-					callback(null, toRpcResponse(
-						outputReceiptFormatter(receipt),
-						payload.id,
-					));
-				}
-			})
-			.catch(err => {
-				callback(err);
-			});
-	}
-
-	private _isSyncing = (payload: ConvertedPayload, callback: Callback) => {
-		this.connex.thor.ticker().next()
-			.then(() => {
-				if (this.connex.thor.status.progress == 1) {
-					callback(null, toRpcResponse(false, payload.id));
-				} else {
-					const highestBlock = Math.floor(
-						(Date.now() - this.connex.thor.genesis.timestamp) / 10000
-					);
-					callback(null, toRpcResponse(
-						{
-							currentBlock: this.connex.thor.status.head.number,
-							highestBlock: highestBlock,
-							thor: this.connex.thor.status,
-						},
-						payload.id,
-					));
-				}
-			})
-			.catch(err => {
-				callback(err);
-			})
-	}
-
-	private _getCode = (payload: ConvertedPayload, callback: Callback) => {
-		this.connex.thor.account(payload.params[0]).getCode()
-			.then(code => {
-				callback(null, toRpcResponse(code.code, payload.id));
-			})
-			.catch(err => {
-				callback(err);
-			})
-	}
-
-	private _getBlockNumber = (payload: ConvertedPayload, callback: Callback) => {
-		this.connex.thor.block().get()
-			.then(blk => {
-				if (!blk) {
-					callback(Err.BlockNotFound('latest'));
-				} else {
-					callback(null, toRpcResponse(
-						blk.number,
-						payload.id
-					));
-				}
-			})
-			.catch(err => {
-				callback(err);
-			})
-	}
-
-	private _getBalance = (payload: ConvertedPayload, callback: Callback) => {
-		this.connex.thor.account(payload.params[0]).get()
-			.then(acc => {
-				callback(null, toRpcResponse(
-					acc.balance,
-					payload.id,
-				))
-			})
-			.catch(err => {
-				callback(err);
-			})
-	}
-
-	private _getTransactionByHash = (payload: ConvertedPayload, callback: Callback) => {
+	private _getTransactionReceipt = async (payload: Payload) => {
 		const hash: string = payload.params[0];
-		this.connex.thor.transaction(hash).get()
-			.then(tx => {
-				if (!tx) {
-					callback(Err.TransactionNotFound(hash));
-				} else {
-					callback(null, toRpcResponse(
-						outputTransactionFormatter(tx),
-						payload.id,
-					));
-				}
-			})
-			.catch(err => {
-				callback(err);
-			})
+		try {
+			const receipt = await this.connex.thor.transaction(hash).getReceipt();
+			if (!receipt) {
+				return null;
+			} else {
+				return outputReceiptFormatter(receipt);
+			}
+		} catch (err: any) {
+			return Promise.reject(err);
+		};
 	}
 
-	private _getChainId = (payload: ConvertedPayload, callback: Callback) => {
-		callback(null, toRpcResponse(
-			this.chainTag,
-			payload.id,
-		));
+	private _isSyncing = async (payload: Payload) => {
+		try {
+			await this.connex.thor.ticker().next()
+			if (this.connex.thor.status.progress == 1) {
+				return false;
+			} else {
+				const highestBlock = Math.floor(
+					(Date.now() - this.connex.thor.genesis.timestamp) / 10000
+				);
+				return {
+					startingBlock: null,
+					currentBlock: this.connex.thor.status.head.number,
+					highestBlock: highestBlock,
+					thor: this.connex.thor.status,
+				};
+			}
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
 	}
 
-	private _getBlockByNumber = (payload: ConvertedPayload, callback: Callback) => {
+	private _getCode = async (payload: Payload) => {
+		try {
+			const code = await this.connex.thor.account(payload.params[0]).getCode();
+			return code.code;
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
+	}
+
+	private _getBlockNumber = async (payload: Payload) => {
+		try {
+			const blk = await this.connex.thor.block().get()
+			if (!blk) {
+				return Promise.reject(Err.BlockNotFound('latest'));
+			} else {
+				return blk.number;
+			}
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
+	}
+
+	private _getBalance = async (payload: Payload) => {
+		try {
+			const acc = await this.connex.thor.account(payload.params[0]).get();
+			return acc.balance;
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
+	}
+
+	private _getTransactionByHash = async (payload: Payload) => {
+		const hash: string = payload.params[0];
+		try {
+			const tx = await this.connex.thor.transaction(hash).get();
+			if (!tx) {
+				return Promise.reject(Err.TransactionNotFound(hash));
+			} else {
+				return outputTransactionFormatter(tx);
+			}
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
+	}
+
+	private _getChainId = async (payload: Payload) => {
+		return this.chainTag;
+	}
+
+	private _getBlockByNumber = async (payload: Payload) => {
 		const num = payload.params[0];
-		this.connex.thor.block(num).get()
-			.then(blk => {
-				if (!blk) {
-					callback(Err.BlockNotFound(num ? num : 'lastest'));
-				} else {
-					callback(null, toRpcResponse(
-						outputBlockFormatter(blk),
-						payload.id,
-					));
-				}
-			})
-			.catch(err => {
-				callback(err);
-			})
+		try {
+			const blk = await this.connex.thor.block(num).get();
+			if (!blk) {
+				return Promise.reject(Err.BlockNotFound(num ? (num == 0 ? 'earliest' : num) : 'latest'));
+			} else {
+				return outputBlockFormatter(blk);
+			}
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
 	}
 
-	private _getBlockByHash = (payload: ConvertedPayload, callback: Callback) => {
+	private _getBlockByHash = async (payload: Payload) => {
 		const hash: string = payload.params[0];
-		this.connex.thor.block(hash).get()
-			.then(blk => {
-				if (!blk) {
-					callback(Err.BlockNotFound(hash));
-				} else {
-					callback(null, toRpcResponse(
-						outputBlockFormatter(blk),
-						payload.id,
-					));
-				}
-			})
-			.catch(err => {
-				callback(err);
-			})
+		try {
+			const blk = await this.connex.thor.block(hash).get();
+			if (!blk) {
+				return Promise.reject(Err.BlockNotFound(hash));
+			} else {
+				return outputBlockFormatter(blk);
+			}
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
 	}
 }

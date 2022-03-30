@@ -1,24 +1,16 @@
 'use strict';
 
-import { JsonRpcResponse } from 'web3-core-helpers'
+// import { JsonRpcResponse } from 'web3-core-helpers'
 import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
 import { abi } from 'thor-devkit';
-import { FilterOpts, SubscriptionResponse } from './types';
+import { FilterOpts, Eip1193SubResp } from './types';
 
-export const toRpcResponse = function (ret: any, id: number): JsonRpcResponse {
-	return {
-		id: id,
-		jsonrpc: '2.0',
-		result: ret,
-	};
-}
-
-export const toSubscriptionResponse = function(ret: any, id: string): SubscriptionResponse {
+export const toEip1193SubResp = function(ret: any, id: string): Eip1193SubResp {
 	return {
 		jsonrpc: '2.0',
-		method: 'eth_subscribe',
-		params: {
+		type: 'eth_subscription',
+		data: {
 			subscription: id,
 			result: ret,
 		}
@@ -27,7 +19,7 @@ export const toSubscriptionResponse = function(ret: any, id: string): Subscripti
 
 /**
  * Convert the input into either block id or block number compatible with connex.thor.block()
- * @param {hex | 'earliest' | 'latest' | 'pending'} input
+ * @param {hex | 'earliest' | 'latest' } input
  * @returns {string | number | null | undefined} Return null not recognized and undefined if input === 'latest'
  */
 export function parseBlockNumber(input: string): string | number | null | undefined {
