@@ -99,7 +99,7 @@ export class ConnexProvider extends EventEmitter {
 		}
 
 		if (this._subscriptions[subName][subId]) {
-			return subId;
+			return Promise.reject(Err.SubscriptionAlreadyExist(subId));
 		}
 
 		this._subscriptions[subName][subId] = payload.params[1] || {};

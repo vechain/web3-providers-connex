@@ -6,10 +6,10 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider } from '../src/index';
-import { urls } from './settings'
-import { RetTransaction } from '../src/types';
-import { Err } from '../src/error';
+import { ConnexProvider } from '../../src/index';
+import { urls } from '../settings'
+import { RetTransaction } from '../../src/types';
+import { Err } from '../../src/error';
 
 describe('Testing getTransaction', () => {
 	const net = new SimpleNet(urls.mainnet);

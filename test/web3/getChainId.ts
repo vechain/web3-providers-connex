@@ -6,10 +6,10 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider } from '../src/index';
-import { urls } from './settings'
+import { ConnexProvider } from '../../src/index';
+import { urls } from '../settings'
 
-describe('Testing isSyncing', () => {
+describe('Testing getChainId', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
 	// wallet.import(soloAccounts[0]);
@@ -30,21 +30,16 @@ describe('Testing isSyncing', () => {
 		driver.close();
 	})
 
-	it('call', async () => {
-		let ret: any;
+	it('get mainnet chainTag', async () => {
+		const tag = 74;
+		let id: number;
+
 		try {
-			ret = await web3.eth.isSyncing();
-		} catch (err: any) {
+			id = await web3.eth.getChainId();
+		} catch(err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		if (typeof ret === 'boolean') {
-			assert.isFalse(ret, 'Only false returned for boolean value');
-		} else {
-			assert.isTrue(
-				!!ret.currentBlock && typeof ret.currentBlock === 'number'
-				&& !!ret.highestBlock && typeof ret.currentBlock === 'number'
-			);
-		}
+		expect(id).to.eql(tag);
 	})
 })

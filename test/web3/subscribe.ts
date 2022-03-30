@@ -6,10 +6,10 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider } from '../src/index';
-import { urls, soloAccounts, bin, abi } from './settings'
-import { wait } from '../src/utils';
-import { RetLog } from '../src/types';
+import { ConnexProvider } from '../../src/index';
+import { urls, soloAccounts, bin, abi } from '../settings'
+import { wait } from '../../src/utils';
+import { RetBlock, RetLog } from '../../src/types';
 
 describe('Testing subscribe', () => {
 	const net = new SimpleNet(urls.solo);
@@ -97,9 +97,9 @@ describe('Testing subscribe', () => {
 
 				expect(check).to.be.true;
 			})
-			.on('data', (log: Object) => {
-				console.log(`On data: ${JSON.stringify(log)}`);
-			})
+				.on('data', (log: Object) => {
+					console.log(`On data: ${JSON.stringify(log)}`);
+				})
 
 			await wait(1000);
 
@@ -108,9 +108,7 @@ describe('Testing subscribe', () => {
 			await wait(10000);
 
 			sub.unsubscribe((err: any, success: boolean) => {
-				if (!err && success) {
-					console.log('Success of unsubscribing logs');
-				} else { assert.fail(err); }
+				if (err) { assert.fail(err); }
 			});
 		} catch (err: any) {
 			assert.fail(err);
@@ -118,19 +116,23 @@ describe('Testing subscribe', () => {
 	})
 
 	it('subscribe newBlockHeaders', async () => {
-		const sub = web3.eth.subscribe('newBlockHeaders', (err: any, result: any) => {
+		let blockNumber: number;
+		const sub = web3.eth.subscribe('newBlockHeaders', (err: any, result: RetBlock) => {
 			if (err) { assert.fail(err); }
+			if (!blockNumber) { blockNumber = result.number; }
+			else {
+				expect(result.number).to.eql(blockNumber + 1);
+				blockNumber ++;
+			}
 		})
-		.on('data', (header: object) => {
-			console.log(`On data: ${JSON.stringify(header)}`);
-		});
+			.on('data', (header: object) => {
+				console.log(`On data: ${JSON.stringify(header)}`);
+			});
 
 		await wait(50000);
 
 		sub.unsubscribe((err: any, success: boolean) => {
-			if (!err && success) {
-				console.log('Success of unsubscribing newBlockHeaders');
-			} else { assert.fail(err); }
+			if (err) { assert.fail(err); }
 		});
 	})
 })

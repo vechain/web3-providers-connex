@@ -1,7 +1,6 @@
 'use strict';
 
 import { HDNode } from 'thor-devkit';
-import { AbiItem } from 'web3-utils';
 import fs from 'fs';
 import path from 'path';
 
@@ -18,7 +17,7 @@ export { soloAccounts }
 export const urls = {
 	testnet: 'http://sync-testnet.veblocks.net/',
 	mainnet: 'http://sync-mainnet.veblocks.net/',
-	solo: 'http://localhost:8669/'
+	solo: 'http://127.0.0.1:8669/'
 }
 
 const solcJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd() + '/test/contracts/test.json')).toString());

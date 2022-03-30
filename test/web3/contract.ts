@@ -5,8 +5,8 @@ import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 
-import { ConnexProvider } from '../src/index';
-import { urls, soloAccounts, abi, bin } from './settings'
+import { ConnexProvider } from '../../src/index';
+import { urls, soloAccounts, abi, bin } from '../settings'
 const Web3 = require('web3');
 
 describe('Testing contract', () => {

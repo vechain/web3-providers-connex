@@ -8,6 +8,7 @@
 		"dist"
 	],
 	"scripts": {
+		"test": "mocha --no-timeouts --colors -r ts-node/register test/*/*.ts",
 		"build": "rm -rf dist/ esm/ && node_modules/.bin/tsc -d -p . "
 	},
 	"repository": {
@@ -25,6 +26,7 @@
 		"@vechain/connex-driver": "^2.0.8",
 		"@vechain/connex-framework": "^2.0.8",
 		"chai": "^4.3.6",
+		"ethers": "^5.6.2",
 		"eventemitter3": "^4.0.4",
 		"mocha": "^9.2.0",
 		"thor-devkit": "^2.0.4",
