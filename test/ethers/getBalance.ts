@@ -6,9 +6,8 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { BigNumber, ethers } from 'ethers';
 
-import { ConnexProvider } from '../../src/index';
+import { ConnexProvider, Err } from '../../src/index';
 import { urls } from '../settings'
-import { Err } from '@err';
 
 describe('Testing getBalance', () => {
 	const net = new SimpleNet(urls.mainnet);

@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider, Err } from '@index';
+import { ConnexProvider, Err } from '../../src/index';
 import { urls } from '../settings';
 
 describe('Testing getStorageAt', () => {
