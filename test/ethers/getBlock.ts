@@ -4,11 +4,10 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 
-import { ConnexProvider } from '../../src/index';
+import { ConnexProvider, Err } from '../../src/index';
 import { urls } from '../settings'
-import { Err } from '../../src/error';
 
 describe('Testing getBlock', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -71,7 +70,7 @@ describe('Testing getBlock', () => {
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
-		
+
 		expect(blk.hash).to.eql(hash);
 		expect(blk.number).to.eql(num);
 	})
