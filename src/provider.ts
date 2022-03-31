@@ -3,7 +3,6 @@
 import Connex from '@vechain/connex';
 import {
 	ConnexTxObj,
-	Payload,
 	ConvertedFilterOpts
 } from './types';
 import { hexToNumber, getErrMsg, toEip1193SubResp } from './utils';
@@ -19,21 +18,22 @@ import {
 import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
 import { RequestArguments } from 'web3-core';
+import { Net } from '@vechain/connex-driver';
 
 type MethodHandler = (params: any[]) => Promise<any>;
 
 export class ConnexProvider extends EventEmitter {
 	readonly connex: Connex;
 	readonly chainTag: number;
+	readonly net?: Net;
 
 	private readonly _methodMap: Record<string, MethodHandler> = {};
-	// Map<name, >
 	private _subscriptions: Record<'newHeads' | 'logs', Record<string, any[]>> = {
 		newHeads: {},
 		logs: {},
 	};
 
-	constructor(connex: Connex) {
+	constructor(connex: Connex, net?: Net) {
 		super();
 
 		this.connex = connex;
@@ -57,6 +57,11 @@ export class ConnexProvider extends EventEmitter {
 
 		this._methodMap['eth_subscribe'] = this._subscribe;
 		this._methodMap['eth_unsubscribe'] = this._unsubscribe;
+
+		if (net) {
+			this.net = net;
+			this._methodMap['eth_sendRawTransaction'] = this._sendRawTransaction;
+		}
 
 		// dummy
 		this._methodMap['eth_gasPrice'] = this._gasPrice;
@@ -86,6 +91,20 @@ export class ConnexProvider extends EventEmitter {
 		}
 
 		return exec(paramsOrErr);
+	}
+
+	private _sendRawTransaction = async (params: any[]) => {
+		try {
+			const resp = await this.net!.http(
+				"POST",
+				"transactions",
+				{ body: { raw: params[0] } }
+			);
+			if (!resp.id) { return Promise.reject(`Invalid http response: ${resp}`); }
+			return resp.id;
+		} catch (err: any) {
+			return Promise.reject(err);
+		}
 	}
 
 	private _subscribe = async (params: any[]) => {

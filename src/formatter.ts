@@ -8,14 +8,13 @@ import {
 	RetReceipt,
 	RetBlock,
 	RetTransaction,
-	Payload,
 	FilterOpts,
 	ConvertedFilterOpts,
 	RetHeader,
 } from './types';
 import { hexToNumber, parseBlockNumber, toBytes32, toFilterCriteria } from './utils';
 import { Err } from './error';
-
+import web3Utils from 'web3-utils';
 
 export const InputFormatter: Record<string, (payload: JsonRpcPayload) => any[] | Error> = {};
 
@@ -127,6 +126,14 @@ InputFormatter.eth_subscribe = function (payload: JsonRpcPayload) {
 		default:
 			return Err.InvalidSubscriptionName(name);
 	}
+}
+
+InputFormatter.eth_sendRawTransaction = function(payload: JsonRpcPayload) {
+	const raw: string = payload.params[0];
+	if(!web3Utils.isHexStrict(raw)){
+		return Err.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
+	}
+	return [raw];
 }
 
 export const outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
