@@ -97,11 +97,6 @@ export interface ConnexTxObj extends Omit<Web3TxObj, 'gas'> {
 	gas?: number;
 }
 
-export type Payload = {
-	id: number;
-	params: any[];
-}
-
 export type FilterOpts = {
 	address: string | string[];
 	fromBlock: string;
