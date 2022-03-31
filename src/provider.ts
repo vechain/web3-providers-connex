@@ -20,7 +20,7 @@ import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
 import { RequestArguments } from 'web3-core';
 
-type MethodHandler = (payload: Payload) => Promise<any>;
+type MethodHandler = (params: any[]) => Promise<any>;
 
 export class ConnexProvider extends EventEmitter {
 	readonly connex: Connex;
@@ -71,28 +71,26 @@ export class ConnexProvider extends EventEmitter {
 			return Promise.reject(Err.MethodNotFound(req.method));
 		}
 
-		let _payload: Payload = {
-			id: req['id'],
-			params: req.params
-		};
+		let paramsOrErr: any[] | Error = req.params || [];
 
 		if (InputFormatter[req.method]) {
-			const input = InputFormatter[req.method]({
+			paramsOrErr = InputFormatter[req.method]({
 				id: req['id'],
 				method: req.method,
 				params: req.params || []
 			});
-			if (input.err) {
-				return Promise.reject(input.err);
-			}
-			_payload = input.payload;
 		}
-		return exec(_payload);
+
+		if (paramsOrErr instanceof Error) {
+			return Promise.reject(paramsOrErr);
+		}
+
+		return exec(paramsOrErr);
 	}
 
-	private _subscribe = async (payload: Payload) => {
-		const subId = this._getSubscriptionId(payload.params);
-		const subName: string = payload.params[0];
+	private _subscribe = async (params: any[]) => {
+		const subId = this._getSubscriptionId(params);
+		const subName: string = params[0];
 
 		if (subName !== 'newHeads' && subName !== 'logs') {
 			return Promise.reject(Err.InvalidSubscriptionName(subName));
@@ -102,13 +100,13 @@ export class ConnexProvider extends EventEmitter {
 			return Promise.reject(Err.SubscriptionAlreadyExist(subId));
 		}
 
-		this._subscriptions[subName][subId] = payload.params[1] || {};
+		this._subscriptions[subName][subId] = params[1] || {};
 
 		return subId;
 	}
 
-	private _unsubscribe = async (payload: Payload) => {
-		const subId: string = payload.params[0];
+	private _unsubscribe = async (params: any[]) => {
+		const subId: string = params[0];
 
 		if (!this._subscriptions['newHeads'][subId] && !this._subscriptions['logs'][subId]) {
 			return Promise.reject(Err.SubscriptionIdNotFound);
@@ -176,12 +174,12 @@ export class ConnexProvider extends EventEmitter {
 		return '0x' + keccak256((new Date()).getTime().toString(), JSON.stringify(params)).toString('hex');
 	}
 
-	private _getLogs = async (payload: Payload) => {
+	private _getLogs = async (params: any[]) => {
 		const MAX_LIMIT = 256;
-		const params: ConvertedFilterOpts = payload.params[0];
+		const opts: ConvertedFilterOpts = params[0];
 		try {
-			const ret = await this.connex.thor.filter('event', params.criteria)
-				.range(params.range)
+			const ret = await this.connex.thor.filter('event', opts.criteria)
+				.range(opts.range)
 				.apply(0, MAX_LIMIT);
 			return outputLogsFormatter(ret);
 		} catch (err: any) {
@@ -189,8 +187,8 @@ export class ConnexProvider extends EventEmitter {
 		}
 	}
 
-	private _estimateGas = async (payload: Payload) => {
-		const txObj: ConnexTxObj = payload.params[0];
+	private _estimateGas = async (params: any[]) => {
+		const txObj: ConnexTxObj = params[0];
 		let explainer = this.connex.thor.explain([txObj.clauses[0]]);
 		if (txObj.from) { explainer = explainer.caller(txObj.from); }
 		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
@@ -218,8 +216,8 @@ export class ConnexProvider extends EventEmitter {
 		}
 	}
 
-	private _call = async (payload: Payload) => {
-		const txObj: ConnexTxObj = payload.params[0];
+	private _call = async (params: any[]) => {
+		const txObj: ConnexTxObj = params[0];
 		let explainer = this.connex.thor.explain([txObj.clauses[0]]);
 		if (txObj.from) { explainer = explainer.caller(txObj.from); }
 		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
@@ -235,12 +233,12 @@ export class ConnexProvider extends EventEmitter {
 		}
 	}
 
-	private _gasPrice = async (payload: Payload) => {
+	private _gasPrice = async (params: any[]) => {
 		return 0;
 	}
 
-	private _sendTransaction = async (payload: Payload) => {
-		const txObj: ConnexTxObj = payload.params[0];
+	private _sendTransaction = async (params: any[]) => {
+		const txObj: ConnexTxObj = params[0];
 		let ss = this.connex.vendor.sign('tx', [txObj.clauses[0]]);
 		if (txObj.from) { ss = ss.signer(txObj.from); }
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
@@ -252,17 +250,17 @@ export class ConnexProvider extends EventEmitter {
 		};
 	}
 
-	private _getStorageAt = async (payload: Payload) => {
+	private _getStorageAt = async (params: any[]) => {
 		try {
-			const storage = await this.connex.thor.account(payload.params[0]).getStorage(payload.params[1]);
+			const storage = await this.connex.thor.account(params[0]).getStorage(params[1]);
 			return storage.value;
 		} catch (err: any) {
 			return Promise.reject(err);
 		}
 	}
 
-	private _getTransactionReceipt = async (payload: Payload) => {
-		const hash: string = payload.params[0];
+	private _getTransactionReceipt = async (params: any[]) => {
+		const hash: string = params[0];
 		try {
 			const receipt = await this.connex.thor.transaction(hash).getReceipt();
 			if (!receipt) {
@@ -275,7 +273,7 @@ export class ConnexProvider extends EventEmitter {
 		};
 	}
 
-	private _isSyncing = async (payload: Payload) => {
+	private _isSyncing = async (params: any[]) => {
 		try {
 			await this.connex.thor.ticker().next()
 			if (this.connex.thor.status.progress == 1) {
@@ -296,16 +294,16 @@ export class ConnexProvider extends EventEmitter {
 		}
 	}
 
-	private _getCode = async (payload: Payload) => {
+	private _getCode = async (params: any[]) => {
 		try {
-			const code = await this.connex.thor.account(payload.params[0]).getCode();
+			const code = await this.connex.thor.account(params[0]).getCode();
 			return code.code;
 		} catch (err: any) {
 			return Promise.reject(err);
 		}
 	}
 
-	private _getBlockNumber = async (payload: Payload) => {
+	private _getBlockNumber = async (params: any[]) => {
 		try {
 			const blk = await this.connex.thor.block().get()
 			if (!blk) {
@@ -318,17 +316,17 @@ export class ConnexProvider extends EventEmitter {
 		}
 	}
 
-	private _getBalance = async (payload: Payload) => {
+	private _getBalance = async (params: any[]) => {
 		try {
-			const acc = await this.connex.thor.account(payload.params[0]).get();
+			const acc = await this.connex.thor.account(params[0]).get();
 			return acc.balance;
 		} catch (err: any) {
 			return Promise.reject(err);
 		}
 	}
 
-	private _getTransactionByHash = async (payload: Payload) => {
-		const hash: string = payload.params[0];
+	private _getTransactionByHash = async (params: any[]) => {
+		const hash: string = params[0];
 		try {
 			const tx = await this.connex.thor.transaction(hash).get();
 			if (!tx) {
@@ -341,12 +339,12 @@ export class ConnexProvider extends EventEmitter {
 		}
 	}
 
-	private _getChainId = async (payload: Payload) => {
+	private _getChainId = async (params: any[]) => {
 		return this.chainTag;
 	}
 
-	private _getBlockByNumber = async (payload: Payload) => {
-		const num = payload.params[0];
+	private _getBlockByNumber = async (params: any[]) => {
+		const num = params[0];
 		try {
 			const blk = await this.connex.thor.block(num).get();
 			if (!blk) {
@@ -359,8 +357,8 @@ export class ConnexProvider extends EventEmitter {
 		}
 	}
 
-	private _getBlockByHash = async (payload: Payload) => {
-		const hash: string = payload.params[0];
+	private _getBlockByHash = async (params: any[]) => {
+		const hash: string = params[0];
 		try {
 			const blk = await this.connex.thor.block(hash).get();
 			if (!blk) {

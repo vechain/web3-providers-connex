@@ -16,68 +16,46 @@ import {
 import { hexToNumber, parseBlockNumber, toBytes32, toFilterCriteria } from './utils';
 import { Err } from './error';
 
-const emptyPayload: Payload = {
-	id: 0,
-	params: [],
-}
 
-export const InputFormatter: Record<string, (payload: JsonRpcPayload) => { payload: Payload, err: Error | null }> = {};
+export const InputFormatter: Record<string, (payload: JsonRpcPayload) => any[] | Error> = {};
 
 InputFormatter.eth_getBlockByNumber = function (payload: JsonRpcPayload) {
 	const num = parseBlockNumber(payload.params[0]);
 	if (num === null) {
-		return {
-			payload: emptyPayload,
-			err: Err.BlockNotFound('pending')
-		};
+		return Err.BlockNotFound('pending');
 	}
 	// payload.params[0] = num;
-	return {
-		payload: { id: payload.id, params: [num] },
-		err: null
-	};
+	return [num];
 }
 
 InputFormatter.eth_getBalance = function (payload: JsonRpcPayload) {
 	if (payload.params.length == 2 &&
 		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
 	) {
-		return {
-			payload: emptyPayload,
-			err: Err.MethodParamNotSupported('eth_getBalance', 2)
-		};
+		return Err.MethodParamNotSupported('eth_getBalance', 2);
 	}
-	return {
-		payload: { id: payload.id, params: payload.params },
-		err: null
-	};
+	return payload.params;
 }
 
 InputFormatter.eth_getCode = function (payload: JsonRpcPayload) {
 	if (payload.params.length >= 2 &&
 		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
 	) {
-		return { payload: emptyPayload, err: Err.MethodParamNotSupported('eth_getCode', 2) };
+		return Err.MethodParamNotSupported('eth_getCode', 2);
 	}
-	return {
-		payload: { id: payload.id, params: payload.params },
-		err: null
-	};
+	return payload.params;
 }
 
 InputFormatter.eth_getStorageAt = function (payload: JsonRpcPayload) {
 	if (payload.params.length >= 3 &&
 		!(typeof payload.params[2] === 'string' && payload.params[2] === 'latest')
 	) {
-		return { payload: emptyPayload, err: Err.MethodParamNotSupported('eth_getStorageAt', 3) };
+		return Err.MethodParamNotSupported('eth_getStorageAt', 3);
 	}
 
 	let params = payload.params.map((x) => x);
 	params[1] = toBytes32(params[1]);
-	return {
-		payload: { id: payload.id, params: params },
-		err: null
-	};
+	return params;
 }
 
 InputFormatter.eth_sendTransaction = function (payload: JsonRpcPayload) {
@@ -92,17 +70,14 @@ InputFormatter.eth_sendTransaction = function (payload: JsonRpcPayload) {
 		from: o1.from,
 	}
 
-	return {
-		payload: { id: payload.id, params: [o2] },
-		err: null
-	};
+	return [o2];
 }
 
 InputFormatter.eth_call = function (payload: JsonRpcPayload) {
 	if (payload.params.length >= 2 &&
 		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
 	) {
-		return { payload: emptyPayload, err: Err.MethodParamNotSupported('eth_call', 2) };
+		return Err.MethodParamNotSupported('eth_call', 2);
 	}
 
 	return InputFormatter.eth_sendTransaction(payload);
@@ -118,18 +93,12 @@ InputFormatter.eth_getLogs = function (payload: JsonRpcPayload) {
 	// cannot be null
 	const fromBlock = parseBlockNumber(args.fromBlock);
 	if (typeof fromBlock !== 'number') {
-		return {
-			payload: emptyPayload,
-			err: Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock'),
-		};
+		return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock');
 	}
 
 	const toBlock = parseBlockNumber(args.toBlock);
 	if (typeof toBlock !== 'number') {
-		return {
-			payload: emptyPayload,
-			err: Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock'),
-		};
+		return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock');
 	}
 
 	const out: ConvertedFilterOpts = {
@@ -141,10 +110,7 @@ InputFormatter.eth_getLogs = function (payload: JsonRpcPayload) {
 		criteria: toFilterCriteria(args),
 	}
 
-	return {
-		payload: { id: payload.id, params: [out] },
-		err: null
-	};
+	return [out];
 }
 
 InputFormatter.eth_subscribe = function (payload: JsonRpcPayload) {
@@ -155,17 +121,11 @@ InputFormatter.eth_subscribe = function (payload: JsonRpcPayload) {
 
 	switch (name) {
 		case 'newHeads':
-			return {
-				payload: { id: 0, params: ['newHeads'] },
-				err: null
-			};
+			return ['newHeads'];
 		case 'logs':
-			return {
-				err: null,
-				payload: { id: 0, params: ['logs', toFilterCriteria(payload.params[1])] }
-			}
+			return ['logs', toFilterCriteria(payload.params[1])];
 		default:
-			return { err: Err.InvalidSubscriptionName(name), payload: emptyPayload };
+			return Err.InvalidSubscriptionName(name);
 	}
 }
 
