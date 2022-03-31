@@ -18,8 +18,7 @@ export interface RetBlock extends Omit<Block,
 	'uncles' |
 	'sha3Uncles' |
 	'nonce' |
-	'logsBloom' |
-	'extraData'
+	'logsBloom'
 > {
 	// incompatible fields
 	difficulty: null;
@@ -28,7 +27,6 @@ export interface RetBlock extends Omit<Block,
 	sha3Uncles: null;
 	nonce: null;
 	logsBloom: null;
-	extraData: null;
 
 	thor?: Connex.Thor.Block;
 }

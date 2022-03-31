@@ -181,6 +181,7 @@ export const outputBlockFormatter = function (b: Connex.Thor.Block): RetBlock {
 		gasUsed: b.gasUsed,
 		transactions: b.transactions,
 		miner: b.signer,
+		extraData: '0x',
 
 		// incompatible fields
 		difficulty: null,
@@ -189,7 +190,6 @@ export const outputBlockFormatter = function (b: Connex.Thor.Block): RetBlock {
 		sha3Uncles: null,
 		nonce: null,
 		logsBloom: null,
-		extraData: null,
 
 		// original block returned by connex
 		thor: b,
