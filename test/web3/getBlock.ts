@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider, Err, RetBlock } from '../../src/index';
+import { ConnexProvider, Err, types } from '../../src/index';
 import { urls } from '../settings';
 
 describe('Testing getBlock', () => {
@@ -20,7 +20,7 @@ describe('Testing getBlock', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider(new Framework(driver)));
+			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -33,25 +33,25 @@ describe('Testing getBlock', () => {
 	it('non-existing hash', async () => {
 		const hash = '0x' + '0'.repeat(64);
 		try {
-			await web3.eth.getBlock(hash);
-			assert.fail();
+			const blk = await web3.eth.getBlock(hash);
+			expect(blk).to.be.null;
 		} catch (err: any) {
-			expect(err.message).to.eql(Err.BlockNotFound(hash).message);
+			assert.fail(`Unexpected error: ${err}`);
 		}
 	})
 
 	it('non-existing number', async () => {
 		const num = 2 ** 32 - 1;
 		try {
-			await web3.eth.getBlock(num);
-			assert.fail();
+			const blk = await web3.eth.getBlock(num);
+			expect(blk).to.be.null;
 		} catch (err: any) {
-			expect(err.message).to.eql(Err.BlockNotFound(num).message);
+			assert.fail(`Unexpected error: ${err}`);
 		}
 	})
 
 	it('pending', async () => {
-		const expectedErr = Err.BlockNotFound('pending');
+		const expectedErr = Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
 		try {
 			await web3.eth.getBlock('pending');
 			assert.fail();
@@ -64,17 +64,17 @@ describe('Testing getBlock', () => {
 		const hash = '0x00af11f1090c43dcb9e23f3acd04fb9271ac08df0e1303711a851c03a960d571';
 		const num = 11473393;
 
-		let blk: RetBlock;
+		let blk: types.RetBlock;
 		try {
 			blk = await web3.eth.getBlock(hash);
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		if(!blk.thor) {
+		if (!blk.thor) {
 			assert.fail('thor undefined');
 		}
-		
+
 		expect(blk.hash).to.eql(hash);
 		expect(blk.number).to.eql(num);
 		expect(blk.hash).to.eql(blk.thor.id);
@@ -85,7 +85,7 @@ describe('Testing getBlock', () => {
 		const hash = '0x00af11f1090c43dcb9e23f3acd04fb9271ac08df0e1303711a851c03a960d571';
 		const num = 11473393;
 
-		let blk: RetBlock;
+		let blk: types.RetBlock;
 		try {
 			blk = await web3.eth.getBlock(num);
 		} catch (err: any) {
@@ -106,7 +106,7 @@ describe('Testing getBlock', () => {
 
 	it('earliest', async () => {
 		const genesisId = '0x00000000851caf3cfdb6e899cf5958bfb1ac3413d346d43539627e6be7ec1b4a';
-		let blk: RetBlock;
+		let blk: types.RetBlock;
 		try {
 			blk = await web3.eth.getBlock('earliest');
 		} catch (err: any) {

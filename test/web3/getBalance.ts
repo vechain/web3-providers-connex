@@ -12,7 +12,6 @@ import { urls } from '../settings';
 describe('Testing getBalance', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
 
 	let driver: Driver;
 	let web3: any;
@@ -20,7 +19,7 @@ describe('Testing getBalance', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider(new Framework(driver)));
+			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -53,7 +52,7 @@ describe('Testing getBalance', () => {
 		}
 
 		expect(balance).to.eql(expectedBalance);
-		
+
 		try {
 			balance = await web3.eth.getBalance(addr);
 		} catch (err: any) {

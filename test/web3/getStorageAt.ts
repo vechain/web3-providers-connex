@@ -12,7 +12,6 @@ import { urls } from '../settings';
 describe('Testing getStorageAt', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
 
 	let driver: Driver;
 	let web3: any;
@@ -20,7 +19,7 @@ describe('Testing getStorageAt', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider(new Framework(driver)));
+			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -51,7 +50,7 @@ describe('Testing getStorageAt', () => {
 			{ key: 2 ** 64, expected: '0x' + '0'.repeat(64) },
 		]
 
-		for(let i = 0; i< tests.length; i++) {
+		for (let i = 0; i < tests.length; i++) {
 			let value: string;
 			const t = tests[i];
 			try {

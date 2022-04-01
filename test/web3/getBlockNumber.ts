@@ -20,7 +20,7 @@ describe('Testing getBlockNumber', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider(new Framework(driver)));
+			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -33,7 +33,7 @@ describe('Testing getBlockNumber', () => {
 	it('get the latest block number', async () => {
 		try {
 			await web3.eth.getBlockNumber();
-		} catch(err: any) {
+		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 	})

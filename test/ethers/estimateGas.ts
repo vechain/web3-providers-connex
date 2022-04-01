@@ -20,7 +20,7 @@ describe('Testing estimateGas', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ethers.providers.Web3Provider(new ConnexProvider(new Framework(driver)));
+			provider = new ethers.providers.Web3Provider(new ConnexProvider({connex: new Framework(driver)}));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}

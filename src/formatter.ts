@@ -21,7 +21,7 @@ export const InputFormatter: Record<string, (payload: JsonRpcPayload) => any[] |
 InputFormatter.eth_getBlockByNumber = function (payload: JsonRpcPayload) {
 	const num = parseBlockNumber(payload.params[0]);
 	if (num === null) {
-		return Err.BlockNotFound('pending');
+		return Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
 	}
 	// payload.params[0] = num;
 	return [num];

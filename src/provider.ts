@@ -18,7 +18,7 @@ import {
 import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
 import { RequestArguments } from 'web3-core';
-import { Net } from '@vechain/connex-driver';
+import { Net, Wallet } from '@vechain/connex-driver';
 
 type MethodHandler = (params: any[]) => Promise<any>;
 
@@ -26,6 +26,7 @@ export class ConnexProvider extends EventEmitter {
 	readonly connex: Connex;
 	readonly chainTag: number;
 	readonly net?: Net;
+	readonly wallet?: Wallet;
 
 	private readonly _methodMap: Record<string, MethodHandler> = {};
 	private _subscriptions: Record<'newHeads' | 'logs', Record<string, any[]>> = {
@@ -33,11 +34,11 @@ export class ConnexProvider extends EventEmitter {
 		logs: {},
 	};
 
-	constructor(connex: Connex, net?: Net) {
+	constructor(opt: { connex: Connex, wallet?: Wallet, net?: Net }) {
 		super();
 
-		this.connex = connex;
-		const id = connex.thor.genesis.id;
+		this.connex = opt.connex;
+		const id = opt.connex.thor.genesis.id;
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
 
 		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
@@ -58,9 +59,14 @@ export class ConnexProvider extends EventEmitter {
 		this._methodMap['eth_subscribe'] = this._subscribe;
 		this._methodMap['eth_unsubscribe'] = this._unsubscribe;
 
-		if (net) {
-			this.net = net;
+		if (opt.net) {
+			this.net = opt.net;
 			this._methodMap['eth_sendRawTransaction'] = this._sendRawTransaction;
+		}
+
+		if (opt.wallet) {
+			this.wallet = opt.wallet,
+				this._methodMap['eth_accounts'] = this._accounts;
 		}
 
 		// dummy
@@ -93,12 +99,32 @@ export class ConnexProvider extends EventEmitter {
 		return exec(paramsOrErr);
 	}
 
+	private _accounts = async (params: any) => {
+		if (!this.wallet) {
+			return [];
+		}
+
+		return this.wallet.list.map(key => key.address);
+	}
+
+	private get headerValidator() {
+		return (headers: Record<string, string>) => {
+			const xgid = headers['x-genesis-id']
+			if (xgid && xgid !== this.connex.thor.genesis.id) {
+				throw new Error(`responded 'x-genesis-id' not matched`)
+			}
+		}
+	}
+
 	private _sendRawTransaction = async (params: any[]) => {
 		try {
 			const resp = await this.net!.http(
 				"POST",
 				"transactions",
-				{ body: { raw: params[0] } }
+				{
+					body: { raw: params[0] },
+					validateResponseHeader: this.headerValidator
+				}
 			);
 			if (!resp.id) { return Promise.reject(`Invalid http response: ${resp}`); }
 			return resp.id;
@@ -326,7 +352,7 @@ export class ConnexProvider extends EventEmitter {
 		try {
 			const blk = await this.connex.thor.block().get()
 			if (!blk) {
-				return Promise.reject(Err.BlockNotFound('latest'));
+				return null; //Promise.reject(Err.BlockNotFound('latest'));
 			} else {
 				return blk.number;
 			}
@@ -348,8 +374,9 @@ export class ConnexProvider extends EventEmitter {
 		const hash: string = params[0];
 		try {
 			const tx = await this.connex.thor.transaction(hash).get();
+			
 			if (!tx) {
-				return Promise.reject(Err.TransactionNotFound(hash));
+				return null; //Promise.reject(Err.TransactionNotFound(hash));
 			} else {
 				return outputTransactionFormatter(tx);
 			}
@@ -367,7 +394,7 @@ export class ConnexProvider extends EventEmitter {
 		try {
 			const blk = await this.connex.thor.block(num).get();
 			if (!blk) {
-				return Promise.reject(Err.BlockNotFound(num ? (num == 0 ? 'earliest' : num) : 'latest'));
+				return null; //Promise.reject(Err.BlockNotFound(num ? (num == 0 ? 'earliest' : num) : 'latest'));
 			} else {
 				return outputBlockFormatter(blk);
 			}
@@ -381,7 +408,7 @@ export class ConnexProvider extends EventEmitter {
 		try {
 			const blk = await this.connex.thor.block(hash).get();
 			if (!blk) {
-				return Promise.reject(Err.BlockNotFound(hash));
+				return null; //Promise.reject(Err.BlockNotFound(hash));
 			} else {
 				return outputBlockFormatter(blk);
 			}

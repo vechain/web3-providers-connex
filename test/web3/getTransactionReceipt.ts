@@ -6,13 +6,12 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider, RetReceipt } from '../../src/index';
+import { ConnexProvider, types } from '../../src/index';
 import { urls } from '../settings';
 
 describe('Testing getBalance', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
 
 	let driver: Driver;
 	let web3: any;
@@ -20,7 +19,7 @@ describe('Testing getBalance', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider(new Framework(driver)));
+			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -32,7 +31,7 @@ describe('Testing getBalance', () => {
 
 	it('non-existing', async () => {
 		const hash = '0x' + '0'.repeat(64);
-		let receipt: RetReceipt;
+		let receipt: types.RetReceipt;
 		try {
 			receipt = await web3.eth.getTransactionReceipt(hash);
 		} catch (err: any) {
@@ -44,15 +43,15 @@ describe('Testing getBalance', () => {
 
 	it('without log', async () => {
 		const hash = '0xc5e0da1aedd7e194b49e8e72977affb3737c335a1d2c385c49a7510cc2fc4928';
-		
-		let receipt: RetReceipt;
+
+		let receipt: types.RetReceipt;
 		try {
 			receipt = await web3.eth.getTransactionReceipt(hash);
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		if(!receipt.thor) {
+		if (!receipt.thor) {
 			assert.fail('thor undefined');
 		}
 
@@ -70,10 +69,10 @@ describe('Testing getBalance', () => {
 		expect(receipt.to).to.be.null;
 	})
 
-	it('with log', async() => {
+	it('with log', async () => {
 		const hash = '0xe50017fb80165941a7501a845d20822a6b573bd659d8310a1ba8b6f7308cf634';
-		
-		let receipt: RetReceipt;
+
+		let receipt: types.RetReceipt;
 		try {
 			receipt = await web3.eth.getTransactionReceipt(hash);
 		} catch (err: any) {
@@ -81,7 +80,7 @@ describe('Testing getBalance', () => {
 		}
 
 		receipt.logs.forEach((log, index) => {
-			if(!receipt.thor) {
+			if (!receipt.thor) {
 				assert.fail('thor undefined');
 			}
 

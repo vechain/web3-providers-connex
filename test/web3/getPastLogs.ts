@@ -5,7 +5,7 @@ import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 
-import { ConnexProvider, RetLog } from '../../src/index';
+import { ConnexProvider, types } from '../../src/index';
 import { urls, soloAccounts, abi, bin } from '../settings';
 const Web3 = require('web3');
 
@@ -22,7 +22,7 @@ describe('Testing getPastLogs', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider(new Framework(driver)));
+			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -54,7 +54,7 @@ describe('Testing getPastLogs', () => {
 			const best = await web3.eth.getBlockNumber();
 
 			const topic0 = web3.utils.sha3('Deploy(address,uint256,string)');
-			const ret: RetLog[] = await web3.eth.getPastLogs({
+			const ret: types.RetLog[] = await web3.eth.getPastLogs({
 				fromBlock: 'earliest',
 				toBlock: best,
 				address: contractAddress,
@@ -80,7 +80,7 @@ describe('Testing getPastLogs', () => {
 
 			const best = await web3.eth.getBlockNumber();
 
-			const ret: RetLog[] = await web3.eth.getPastLogs({
+			const ret: types.RetLog[] = await web3.eth.getPastLogs({
 				fromBlock: 'earliest',
 				toBlock: best,
 				address: [contractAddress, contractAddress],
@@ -89,7 +89,7 @@ describe('Testing getPastLogs', () => {
 					[web3.utils.sha3('Set(address,uint256,string)')],
 				],
 			});
-			
+
 			expect(ret[0].address).to.eql(contractAddress);
 			expect(ret[0].topics[1]).to.eql(web3.eth.abi.encodeParameter('address', deployer));
 			expect(ret[0].data).to.eql(web3.eth.abi.encodeParameters(['uint', 'string'], args0));

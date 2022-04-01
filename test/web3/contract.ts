@@ -22,7 +22,7 @@ describe('Testing contract', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider(new Framework(driver)));
+			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -83,7 +83,7 @@ describe('Testing contract', () => {
 		const errMsg = 'Test error message in contract call';
 
 		try {
-			await contract.methods.set(10, 'hello').send({from: from})
+			await contract.methods.set(10, 'hello').send({ from: from })
 			await contract.methods.get().call();
 		} catch (err: any) {
 			const msg: string = err.reason;

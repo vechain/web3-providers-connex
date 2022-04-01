@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
-import { ConnexProvider, Err, RetTransaction } from '../../src/index';
+import { ConnexProvider, Err, types } from '../../src/index';
 import { urls } from '../settings';
 
 describe('Testing getTransaction', () => {
@@ -20,7 +20,7 @@ describe('Testing getTransaction', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider(new Framework(driver)));
+			web3 = new Web3(new ConnexProvider({connex: new Framework(driver)}));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -32,12 +32,11 @@ describe('Testing getTransaction', () => {
 
 	it('non-existing hash/id', async () => {
 		const hash = '0x' + '0'.repeat(64);
-		const expectedErr = Err.TransactionNotFound(hash);
 		try {
-			await web3.eth.getTransaction(hash);
-			assert.fail();
+			const tx = await web3.eth.getTransaction(hash);
+			expect(tx).to.be.null;
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedErr.message);
+			assert.fail(`Unexpected error: ${err}`);
 		}
 	})
 
@@ -51,7 +50,7 @@ describe('Testing getTransaction', () => {
 			value: '0',
 		}
 
-		let tx: RetTransaction;
+		let tx: types.RetTransaction;
 		try {
 			tx = await web3.eth.getTransaction(hash);
 		} catch (err: any) {
@@ -81,7 +80,7 @@ describe('Testing getTransaction', () => {
 			data: '0x'
 		}
 
-		let tx: RetTransaction;
+		let tx: types.RetTransaction;
 		try {
 			tx = await web3.eth.getTransaction(hash);
 		} catch (err: any) {
