@@ -4,10 +4,8 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import { ConnexProvider, signTransaction, types } from '../../src/index';
-import { randAddr } from '../../src/utils';
+import { ConnexProvider, types, utils } from '../../src/index';
 import { urls, soloAccounts } from '../settings';
-import { BigNumber, ethers } from 'ethers';
 const Web3 = require('web3');
 
 describe('Testing sendRawTransaction', () => {
@@ -34,9 +32,9 @@ describe('Testing sendRawTransaction', () => {
 	})
 
 	it('transfer value', async () => {
-		const raw = await signTransaction({
+		const raw = await utils.signTransaction({
 			from: wallet.list[0].address,
-			to: randAddr(),
+			to: utils.randAddr(),
 			value: '1' + '0'.repeat(18)
 		}, wallet, provider)
 
