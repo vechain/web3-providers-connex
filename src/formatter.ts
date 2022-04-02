@@ -216,7 +216,7 @@ export const outputTransactionFormatter = function (tx: Connex.Thor.Transaction)
 		transactionIndex: null,
 
 		// incompatible fields
-		nonce: null,
+		nonce: -1,
 		gasPrice: null,
 
 		thor: tx,

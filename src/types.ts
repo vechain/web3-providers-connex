@@ -43,9 +43,9 @@ export interface RetHeader extends Omit<BlockHeader,
     extraData: null;
 }
 
-export interface RetTransaction extends Omit<Transaction, 'nonce' | 'gasPrice'> {
+export interface RetTransaction extends Omit<Transaction, 'gasPrice'> {
 	// incompatible fields
-	nonce: null;
+	// nonce: null;
 	gasPrice: null;
 
 	thor?: Connex.Thor.Transaction;
