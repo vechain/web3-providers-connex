@@ -9,7 +9,7 @@ const Web3 = require('web3');
 import { ConnexProvider, types } from '../../src/index';
 import { urls } from '../settings';
 
-describe('Testing getBalance', () => {
+describe('Testing getTransactionReceipt', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
 
