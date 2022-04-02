@@ -12,7 +12,6 @@ import { urls } from '../settings'
 describe('Testing getBlock', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
 
 	let driver: Driver;
 	let provider: ethers.providers.Web3Provider;
@@ -20,7 +19,8 @@ describe('Testing getBlock', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ethers.providers.Web3Provider(new ConnexProvider({connex: new Framework(driver)}));
+			provider = new ethers.providers.Web3Provider(
+				new ConnexProvider({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -33,25 +33,25 @@ describe('Testing getBlock', () => {
 	it('non-existing hash', async () => {
 		const hash = '0x' + '0'.repeat(64);
 		try {
-			await provider.getBlock(hash);
-			assert.fail();
+			const blk = await provider.getBlock(hash);
+			expect(blk).to.be.null;
 		} catch (err: any) {
-			expect(err.message).to.eql(Err.BlockNotFound(hash).message);
+			assert.fail(`Unexpected error: ${err}`);
 		}
 	})
 
 	it('non-existing number', async () => {
 		const num = 2 ** 32 - 1;
 		try {
-			await provider.getBlock(num);
-			assert.fail();
+			const blk = await provider.getBlock(num);
+			expect(blk).to.be.null;
 		} catch (err: any) {
-			expect(err.message).to.eql(Err.BlockNotFound(num).message);
+			assert.fail(`Unexpected error: ${err}`);
 		}
 	})
 
 	it('pending', async () => {
-		const expectedErr = Err.BlockNotFound('pending');
+		const expectedErr = Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
 		try {
 			await provider.getBlock('pending');
 			assert.fail();
