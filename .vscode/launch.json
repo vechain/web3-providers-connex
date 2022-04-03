@@ -5,37 +5,38 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-            "name": "Current TS File",
-            "type": "node",
-            "request": "launch",
-            "args": [
-                "${relativeFile}"
-            ],
-            "runtimeArgs": [
-                "-r",
-                "ts-node/register"
-            ],
-            "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
-            "internalConsoleOptions": "neverOpen",
-			"console":"integratedTerminal",
-			"sourceMaps": true
-        },
-		{
+			"name": "Current TS File",
 			"type": "node",
 			"request": "launch",
+			"cwd": "${workspaceRoot}",
+			"args": [
+				"${relativeFile}"
+			],
+			"runtimeArgs": [
+				"-r",
+				"ts-node/register"
+			],
+			"protocol": "inspector",
+			"internalConsoleOptions": "openOnSessionStart",
+			"console": "integratedTerminal",
+			"sourceMaps": true
+		},
+		{
 			"name": "Mocha Current File",
+			"type": "node",
+			"request": "launch",
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
 			"args": [
-			  "--no-timeouts",
-			  "--colors",
-			  "${file}",
-			  "--require",
-			  "ts-node/register"
+				"--no-timeouts",
+				"--colors",
+				"${file}",
+				"-r",
+				"ts-node/register"
 			],
+			"protocol": "inspector",
+			"internalConsoleOptions": "openOnSessionStart",
 			"console": "integratedTerminal",
-			"sourceMaps": true,
-			"internalConsoleOptions": "openOnSessionStart"
-	  }
+			"sourceMaps": true
+		}
 	]
 }
