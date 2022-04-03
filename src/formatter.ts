@@ -16,246 +16,286 @@ import { hexToNumber, parseBlockNumber, toBytes32, toFilterCriteria } from './ut
 import { Err } from './error';
 import web3Utils from 'web3-utils';
 
-export const InputFormatter: Record<string, (payload: JsonRpcPayload) => any[] | Error> = {};
+export class Formatter {
+	readonly connex: Connex;
+	private readonly _inputFormatters: Record<string, (payload: JsonRpcPayload) => any[] | Error> = {};
 
-InputFormatter.eth_getBlockByNumber = function (payload: JsonRpcPayload) {
-	const num = parseBlockNumber(payload.params[0]);
-	if (num === null) {
-		return Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
-	}
-	// payload.params[0] = num;
-	return [num];
-}
+	constructor(connex: Connex) {
+		this.connex = connex;
 
-InputFormatter.eth_getBalance = function (payload: JsonRpcPayload) {
-	if (payload.params.length == 2 &&
-		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
-	) {
-		return Err.MethodParamNotSupported('eth_getBalance', 2);
-	}
-	return payload.params;
-}
-
-InputFormatter.eth_getCode = function (payload: JsonRpcPayload) {
-	if (payload.params.length >= 2 &&
-		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
-	) {
-		return Err.MethodParamNotSupported('eth_getCode', 2);
-	}
-	return payload.params;
-}
-
-InputFormatter.eth_getStorageAt = function (payload: JsonRpcPayload) {
-	if (payload.params.length >= 3 &&
-		!(typeof payload.params[2] === 'string' && payload.params[2] === 'latest')
-	) {
-		return Err.MethodParamNotSupported('eth_getStorageAt', 3);
+		this._inputFormatters['eth_getBlockByNumber'] = this._getBlockByNumber;
+		this._inputFormatters['eth_getBalance'] = this._getBalance;
+		this._inputFormatters['eth_getCode'] = this._getCode;
+		this._inputFormatters['eth_getStorageAt'] = this._getStorageAt;
+		this._inputFormatters['eth_sendTransaction'] = this._sendTransaction;
+		this._inputFormatters['eth_call'] = this._call;
+		this._inputFormatters['eth_estimateGas'] = this._estimateGas;
+		this._inputFormatters['eth_getLogs'] = this._getLogs;
+		this._inputFormatters['eth_subscribe'] = this._subscribe;
+		this._inputFormatters['eth_sendRawTransaction'] = this._sendRawTransaction;
 	}
 
-	let params = payload.params.map((x) => x);
-	params[1] = toBytes32(params[1]);
-	return params;
-}
+	formatInput = (payload: JsonRpcPayload) => {
+		const inputFormatter = this._inputFormatters[payload.method];
+		if (!inputFormatter) { return payload.params; }
 
-InputFormatter.eth_sendTransaction = function (payload: JsonRpcPayload) {
-	const o1: Web3TxObj = payload.params[0];
-	const o2: ConnexTxObj = {
-		clauses: [{
-			to: !!o1.to ? o1.to : null,
-			value: !!o1.value ? o1.value : 0,
-			data: !!o1.data ? o1.data : '0x',
-		}],
-		gas: !!o1.gas ? hexToNumber(o1.gas) : undefined,
-		from: o1.from,
+		return inputFormatter(payload);
 	}
 
-	return [o2];
-}
-
-InputFormatter.eth_call = function (payload: JsonRpcPayload) {
-	if (payload.params.length >= 2 &&
-		!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
-	) {
-		return Err.MethodParamNotSupported('eth_call', 2);
+	private _getBlockByNumber = (payload: JsonRpcPayload) => {
+		const num = parseBlockNumber(payload.params[0]);
+		if (num === null) {
+			return Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
+		}
+		// payload.params[0] = num;
+		return [num];
 	}
 
-	return InputFormatter.eth_sendTransaction(payload);
-}
-
-InputFormatter.eth_estimateGas = function (payload: JsonRpcPayload) {
-	return InputFormatter.eth_sendTransaction(payload);
-}
-
-InputFormatter.eth_getLogs = function (payload: JsonRpcPayload) {
-	const args: FilterOpts = payload.params[0];
-
-	// cannot be null
-	const fromBlock = parseBlockNumber(args.fromBlock);
-	if (typeof fromBlock !== 'number') {
-		return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock');
+	private _getBalance = (payload: JsonRpcPayload) => {
+		if (payload.params.length == 2 &&
+			!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
+		) {
+			return Err.MethodParamNotSupported('eth_getBalance', 2);
+		}
+		return payload.params;
 	}
 
-	const toBlock = parseBlockNumber(args.toBlock);
-	if (typeof toBlock !== 'number') {
-		return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock');
+	private _getCode = (payload: JsonRpcPayload) => {
+		if (payload.params.length >= 2 &&
+			!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
+		) {
+			return Err.MethodParamNotSupported('eth_getCode', 2);
+		}
+		return payload.params;
 	}
 
-	const out: ConvertedFilterOpts = {
-		range: {
-			unit: 'block',
-			from: fromBlock,
-			to: toBlock,
-		},
-		criteria: toFilterCriteria(args),
+	private _getStorageAt = (payload: JsonRpcPayload) => {
+		if (payload.params.length >= 3 &&
+			!(typeof payload.params[2] === 'string' && payload.params[2] === 'latest')
+		) {
+			return Err.MethodParamNotSupported('eth_getStorageAt', 3);
+		}
+
+		let params = payload.params.map((x) => x);
+		params[1] = toBytes32(params[1]);
+		return params;
 	}
 
-	return [out];
-}
+	private _sendTransaction = (payload: JsonRpcPayload) => {
+		const o1: Web3TxObj = payload.params[0];
+		const o2: ConnexTxObj = {
+			clauses: [{
+				to: !!o1.to ? o1.to : null,
+				value: !!o1.value ? o1.value : 0,
+				data: !!o1.data ? o1.data : '0x',
+			}],
+			gas: !!o1.gas ? hexToNumber(o1.gas) : undefined,
+			from: o1.from,
+		}
 
-InputFormatter.eth_subscribe = function (payload: JsonRpcPayload) {
-	const name: string = payload.params[0];
-	if (!name) {
-		throw new Error('Subscription name undefined');
+		return [o2];
 	}
 
-	switch (name) {
-		case 'newHeads':
-			return ['newHeads'];
-		case 'logs':
-			return ['logs', toFilterCriteria(payload.params[1])];
-		default:
-			return Err.InvalidSubscriptionName(name);
-	}
-}
+	private _call = (payload: JsonRpcPayload) => {
+		if (payload.params.length >= 2 &&
+			!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
+		) {
+			return Err.MethodParamNotSupported('eth_call', 2);
+		}
 
-InputFormatter.eth_sendRawTransaction = function(payload: JsonRpcPayload) {
-	const raw: string = payload.params[0];
-	if(!web3Utils.isHexStrict(raw)){
-		return Err.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
+		return this._sendTransaction(payload);
 	}
-	return [raw];
-}
 
-export const outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
-	const logs: RetLog[] = (receipt.outputs.length > 0 && receipt.outputs[0].events.length > 0) ?
-		receipt.outputs[0].events.map(event => {
+	private _estimateGas = (payload: JsonRpcPayload) => {
+		return this._sendTransaction(payload);
+	}
+
+	private _getLogs = (payload: JsonRpcPayload) => {
+		const args: FilterOpts = payload.params[0];
+
+		let fromBlock: number, toBlock: number;
+
+		if (!args.fromBlock) {
+			fromBlock = this.connex.thor.status.head.number; // fromBlock default set to latest
+		} else {
+			let test = parseBlockNumber(args.fromBlock);
+			if (test === undefined) {
+				test = this.connex.thor.status.head.number;
+			} else if (typeof test !== 'number') {
+				return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock');
+			}
+			fromBlock = test;
+		}
+
+		if (!args.toBlock) {
+			toBlock = this.connex.thor.status.head.number; // toBlock default set to latest
+		} else {
+			let test = parseBlockNumber(args.toBlock);
+			if (test === undefined) {
+				test = this.connex.thor.status.head.number;
+			} else if (typeof test !== 'number') {
+				return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock');
+			}
+			toBlock = test;
+		}
+
+		const out: ConvertedFilterOpts = {
+			range: {
+				unit: 'block',
+				from: fromBlock,
+				to: toBlock,
+			},
+			criteria: toFilterCriteria(args),
+		}
+
+		return [out];
+	}
+
+	private _subscribe = (payload: JsonRpcPayload) => {
+		const name: string = payload.params[0];
+		if (!name) {
+			throw new Error('Subscription name undefined');
+		}
+
+		switch (name) {
+			case 'newHeads':
+				return ['newHeads'];
+			case 'logs':
+				return ['logs', toFilterCriteria(payload.params[1])];
+			default:
+				return Err.InvalidSubscriptionName(name);
+		}
+	}
+
+	private _sendRawTransaction = function (payload: JsonRpcPayload) {
+		const raw: string = payload.params[0];
+		if (!web3Utils.isHexStrict(raw)) {
+			return Err.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
+		}
+		return [raw];
+	}
+
+	outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
+		const logs: RetLog[] = (receipt.outputs.length > 0 && receipt.outputs[0].events.length > 0) ?
+			receipt.outputs[0].events.map(event => {
+				return {
+					blockHash: receipt.meta.blockID,
+					blockNumber: receipt.meta.blockNumber,
+					transactionHash: receipt.meta.txID,
+					address: event.address,
+					topics: event.topics.map((x) => x),
+					data: event.data,
+
+					transactionIndex: -1,
+					logIndex: -1,
+				}
+			}) : [];
+
+		return {
+			status: !receipt.reverted ? '0x1' : '0x0',
+
+			blockHash: receipt.meta.blockID,
+			blockNumber: receipt.meta.blockNumber,
+			transactionHash: receipt.meta.txID,
+			gasUsed: receipt.gasUsed,
+
+			transactionIndex: -1,
+			cumulativeGasUsed: -1,
+			effectiveGasPrice: null,
+			logsBloom: null,
+			from: null,
+			to: null,
+
+			contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : undefined,
+			logs: logs,
+
+			thor: receipt,
+		};
+	}
+
+	outputBlockFormatter = function (b: Connex.Thor.Block): RetBlock {
+		return {
+			hash: b.id,
+			parentHash: b.parentID,
+			number: b.number,
+			size: b.size,
+			stateRoot: b.stateRoot,
+			receiptsRoot: b.receiptsRoot,
+			transactionRoot: b.txsRoot,
+			timestamp: b.timestamp,
+			gasLimit: b.gasLimit,
+			gasUsed: b.gasUsed,
+			transactions: b.transactions,
+			miner: b.signer,
+			extraData: '0x',
+
+			// incompatible fields
+			difficulty: null,
+			totalDifficulty: null,
+			uncles: null,
+			sha3Uncles: null,
+			nonce: null,
+			logsBloom: null,
+
+			// original block returned by connex
+			thor: b,
+		};
+	}
+
+	outputTransactionFormatter(tx: Connex.Thor.Transaction): RetTransaction {
+		return {
+			hash: tx.id,
+			blockNumber: tx.meta.blockNumber,
+			blockHash: tx.meta.blockID,
+			from: tx.origin,
+			to: tx.clauses[0].to,
+			input: tx.clauses[0].data,
+			value: tx.clauses[0].value,
+			gas: tx.gas,
+			transactionIndex: null,
+
+			// incompatible fields
+			nonce: -1,
+			gasPrice: null,
+
+			thor: tx,
+		};
+	}
+
+	outputLogsFormatter(ret: Connex.Thor.Filter.Row<'event'>[]): RetLog[] {
+		return ret.map((ret) => {
 			return {
-				blockHash: receipt.meta.blockID,
-				blockNumber: receipt.meta.blockNumber,
-				transactionHash: receipt.meta.txID,
-				address: event.address,
-				topics: event.topics.map((x) => x),
-				data: event.data,
+				address: ret.address,
+				topics: ret.topics,
+				data: ret.data,
+				blockHash: ret.meta.blockID,
+				blockNumber: ret.meta.blockNumber,
+				transactionHash: ret.meta.txID,
 
 				transactionIndex: -1,
 				logIndex: -1,
-			}
-		}) : [];
+			};
+		});
+	}
 
-	return {
-		status: !receipt.reverted ? '0x1' : '0x0',
-
-		blockHash: receipt.meta.blockID,
-		blockNumber: receipt.meta.blockNumber,
-		transactionHash: receipt.meta.txID,
-		gasUsed: receipt.gasUsed,
-
-		transactionIndex: -1,
-		cumulativeGasUsed: -1,
-		effectiveGasPrice: null,
-		logsBloom: null,
-		from: null,
-		to: null,
-
-		contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : undefined,
-		logs: logs,
-
-		thor: receipt,
-	};
-}
-
-export const outputBlockFormatter = function (b: Connex.Thor.Block): RetBlock {
-	return {
-		hash: b.id,
-		parentHash: b.parentID,
-		number: b.number,
-		size: b.size,
-		stateRoot: b.stateRoot,
-		receiptsRoot: b.receiptsRoot,
-		transactionRoot: b.txsRoot,
-		timestamp: b.timestamp,
-		gasLimit: b.gasLimit,
-		gasUsed: b.gasUsed,
-		transactions: b.transactions,
-		miner: b.signer,
-		extraData: '0x',
-
-		// incompatible fields
-		difficulty: null,
-		totalDifficulty: null,
-		uncles: null,
-		sha3Uncles: null,
-		nonce: null,
-		logsBloom: null,
-
-		// original block returned by connex
-		thor: b,
-	};
-}
-
-export const outputTransactionFormatter = function (tx: Connex.Thor.Transaction): RetTransaction {
-	return {
-		hash: tx.id,
-		blockNumber: tx.meta.blockNumber,
-		blockHash: tx.meta.blockID,
-		from: tx.origin,
-		to: tx.clauses[0].to,
-		input: tx.clauses[0].data,
-		value: tx.clauses[0].value,
-		gas: tx.gas,
-		transactionIndex: null,
-
-		// incompatible fields
-		nonce: -1,
-		gasPrice: null,
-
-		thor: tx,
-	};
-}
-
-export const outputLogsFormatter = function (ret: Connex.Thor.Filter.Row<'event'>[]): RetLog[] {
-	return ret.map((ret) => {
+	outputHeaderFormatter = (b: Connex.Thor.Block): RetHeader => {
 		return {
-			address: ret.address,
-			topics: ret.topics,
-			data: ret.data,
-			blockHash: ret.meta.blockID,
-			blockNumber: ret.meta.blockNumber,
-			transactionHash: ret.meta.txID,
-			
-			transactionIndex: -1,
-			logIndex: -1,
-		};
-	});
-}
+			hash: b.id,
+			parentHash: b.parentID,
+			number: b.number,
+			stateRoot: b.stateRoot,
+			receiptsRoot: b.receiptsRoot,
+			transactionRoot: b.txsRoot,
+			timestamp: b.timestamp,
+			gasLimit: b.gasLimit,
+			gasUsed: b.gasUsed,
+			miner: b.signer,
 
-export const outputHeaderFormatter = function (b: Connex.Thor.Block): RetHeader {
-	return {
-		hash: b.id,
-		parentHash: b.parentID,
-		number: b.number,
-		stateRoot: b.stateRoot,
-		receiptsRoot: b.receiptsRoot,
-		transactionRoot: b.txsRoot,
-		timestamp: b.timestamp,
-		gasLimit: b.gasLimit,
-		gasUsed: b.gasUsed,
-		miner: b.signer,
-
-		// unsupported
-		nonce: null,
-		sha3Uncles: null,
-		logsBloom: null,
-		extraData: null,
+			// unsupported
+			nonce: null,
+			sha3Uncles: null,
+			logsBloom: null,
+			extraData: null,
+		}
 	}
 }

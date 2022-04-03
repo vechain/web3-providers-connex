@@ -7,14 +7,7 @@ import {
 } from './types';
 import { hexToNumber, getErrMsg, toEip1193SubResp } from './utils';
 import { Err } from './error';
-import {
-	InputFormatter,
-	outputBlockFormatter,
-	outputHeaderFormatter,
-	outputLogsFormatter,
-	outputReceiptFormatter,
-	outputTransactionFormatter,
-} from './formatter';
+import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
 import { RequestArguments } from 'web3-core';
@@ -28,6 +21,7 @@ export class ConnexProvider extends EventEmitter {
 	readonly net?: Net;
 	readonly wallet?: Wallet;
 
+	private readonly _formatter: Formatter;
 	private readonly _methodMap: Record<string, MethodHandler> = {};
 	private _subscriptions: Record<'newHeads' | 'logs', Record<string, any[]>> = {
 		newHeads: {},
@@ -40,6 +34,8 @@ export class ConnexProvider extends EventEmitter {
 		this.connex = opt.connex;
 		const id = opt.connex.thor.genesis.id;
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
+
+		this._formatter = new Formatter(opt.connex);
 
 		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
 		this._methodMap['eth_getBlockByNumber'] = this._getBlockByNumber;
@@ -85,15 +81,19 @@ export class ConnexProvider extends EventEmitter {
 			return Promise.reject(Err.MethodNotFound(req.method));
 		}
 
-		let paramsOrErr: any[] | Error = req.params || [];
-
-		if (InputFormatter[req.method]) {
-			paramsOrErr = InputFormatter[req.method]({
-				id: req['id'],
-				method: req.method,
-				params: req.params || []
-			});
-		}
+		// let paramsOrErr: any[] | Error = req.params || [];
+		// if (InputFormatter[req.method]) {
+		// 	paramsOrErr = InputFormatter[req.method]({
+		// 		id: req['id'],
+		// 		method: req.method,
+		// 		params: req.params || []
+		// 	});
+		// }
+		const paramsOrErr = this._formatter.formatInput({
+			id: req.id,
+			method: req.method,
+			params: req.params || [],
+		})
 
 		if (paramsOrErr instanceof Error) {
 			return Promise.reject(paramsOrErr);
@@ -188,7 +188,7 @@ export class ConnexProvider extends EventEmitter {
 							if (blk) {
 								newHeadsKeys.forEach(key => {
 									this.emit('message', toEip1193SubResp(
-										outputHeaderFormatter(blk), key
+										this._formatter.outputHeaderFormatter(blk), key
 									));
 								})
 							}
@@ -212,7 +212,7 @@ export class ConnexProvider extends EventEmitter {
 
 							if (ret) {
 								this.emit('message', toEip1193SubResp(
-									outputLogsFormatter(ret), key
+									this._formatter.outputLogsFormatter(ret), key
 								));
 							}
 						} catch { }
@@ -235,7 +235,7 @@ export class ConnexProvider extends EventEmitter {
 			const ret = await this.connex.thor.filter('event', opts.criteria)
 				.range(opts.range)
 				.apply(0, MAX_LIMIT);
-			return outputLogsFormatter(ret);
+			return this._formatter.outputLogsFormatter(ret);
 		} catch (err: any) {
 			return Promise.reject(err);
 		}
@@ -320,7 +320,7 @@ export class ConnexProvider extends EventEmitter {
 			if (!receipt) {
 				return null;
 			} else {
-				return outputReceiptFormatter(receipt);
+				return this._formatter.outputReceiptFormatter(receipt);
 			}
 		} catch (err: any) {
 			return Promise.reject(err);
@@ -386,7 +386,7 @@ export class ConnexProvider extends EventEmitter {
 			if (!tx) {
 				return null; //Promise.reject(Err.TransactionNotFound(hash));
 			} else {
-				return outputTransactionFormatter(tx);
+				return this._formatter.outputTransactionFormatter(tx);
 			}
 		} catch (err: any) {
 			return Promise.reject(err);
@@ -404,7 +404,7 @@ export class ConnexProvider extends EventEmitter {
 			if (!blk) {
 				return null; //Promise.reject(Err.BlockNotFound(num ? (num == 0 ? 'earliest' : num) : 'latest'));
 			} else {
-				return outputBlockFormatter(blk);
+				return this._formatter.outputBlockFormatter(blk);
 			}
 		} catch (err: any) {
 			return Promise.reject(err);
@@ -418,7 +418,7 @@ export class ConnexProvider extends EventEmitter {
 			if (!blk) {
 				return null; //Promise.reject(Err.BlockNotFound(hash));
 			} else {
-				return outputBlockFormatter(blk);
+				return this._formatter.outputBlockFormatter(blk);
 			}
 		} catch (err: any) {
 			return Promise.reject(err);
