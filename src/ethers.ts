@@ -1,10 +1,29 @@
 'use strict';
 
-import { TransactionResponse, JsonRpcProvider, TransactionReceipt } from '@ethersproject/providers';
+import { TransactionResponse, JsonRpcProvider, TransactionReceipt, Provider } from '@ethersproject/providers';
 import { poll } from '@ethersproject/web';
-import { BigNumber } from 'ethers';
+import {
+	BigNumber,
+	ContractFactory,
+	Contract,
+	ContractReceipt,
+	ContractInterface,
+	Signer,
+	Event
+} from 'ethers';
 import { Formatter } from '@ethersproject/providers';
-import { isHexString } from '@ethersproject/bytes';
+import {
+	isHexString,
+	ParamType,
+	getAddress,
+	getStatic,
+	defineReadOnly,
+	deepCopy,
+	LogDescription,
+	BytesLike
+} from 'ethers/lib/utils'
+import { Logger } from "@ethersproject/logger";
+const logger = new Logger('web3-providers-connex/ethers');
 
 export const modifyProvider = (provider: JsonRpcProvider) => {
 	provider.getTransaction = async (transactionHash: string | Promise<string>) => {
@@ -118,6 +137,152 @@ export const modifyProvider = (provider: JsonRpcProvider) => {
 	}
 
 	return provider;
+}
+
+export const modifyFactory = (factory: ContractFactory) => {
+	factory.deploy = async (...args: Array<any>): Promise<Contract> => {
+		let overrides: any = {};
+
+		// If 1 extra parameter was passed in, it contains overrides
+		if (args.length === factory.interface.deploy.inputs.length + 1) {
+			overrides = args.pop();
+		}
+
+		// Make sure the call matches the constructor signature
+		logger.checkArgumentCount(args.length, factory.interface.deploy.inputs.length, " in Contract constructor");
+
+		// Resolve ENS names and promises in the arguments
+		const params = await resolveAddresses(factory.signer, args, factory.interface.deploy.inputs);
+		params.push(overrides);
+
+		// Get the deployment transaction (with optional overrides)
+		const unsignedTx = factory.getDeployTransaction(...params);
+
+		// Send the deployment transaction
+		const tx = await factory.signer.sendTransaction(unsignedTx);
+
+		// const address = getStatic<(tx: TransactionResponse) => string>(this.constructor, "getContractAddress")(tx);
+		const address = (<any>tx).creates;
+		const contract = getStatic<
+			(address: string, contractInterface: ContractInterface, signer?: Signer) => Contract
+		>(factory.constructor, "getContract")(address, factory.interface, factory.signer);
+
+		// Add the modified wait that wraps events
+		addContractWait(contract, tx);
+
+		defineReadOnly(contract, "deployTransaction", tx);
+		return contract;
+	}
+
+	const resolveAddresses = async (
+		resolver: Signer | Provider,
+		value: any, paramType: ParamType | Array<ParamType>
+	): Promise<any> => {
+		if (Array.isArray(paramType)) {
+			return await Promise.all(paramType.map((paramType, index) => {
+				return resolveAddresses(
+					resolver,
+					((Array.isArray(value)) ? value[index] : value[paramType.name]),
+					paramType
+				);
+			}));
+		}
+
+		if (paramType.type === "address") {
+			return await resolveName(resolver, value);
+		}
+
+		if (paramType.type === "tuple") {
+			return await resolveAddresses(resolver, value, paramType.components);
+		}
+
+		if (paramType.baseType === "array") {
+			if (!Array.isArray(value)) {
+				return Promise.reject(logger.makeError("invalid value for array", Logger.errors.INVALID_ARGUMENT, {
+					argument: "value",
+					value
+				}));
+			}
+			return await Promise.all(value.map((v) => resolveAddresses(resolver, v, paramType.arrayChildren)));
+		}
+
+		return value;
+	}
+
+	const resolveName = async (
+		resolver: Signer | Provider,
+		nameOrPromise: string | Promise<string>
+	): Promise<string> => {
+		const name = await nameOrPromise;
+
+		if (typeof (name) !== "string") {
+			logger.throwArgumentError("invalid address or ENS name", "name", name);
+		}
+
+		// If it is already an address, just use it (after adding checksum)
+		try {
+			return getAddress(name);
+		} catch (error) { }
+
+		if (!resolver) {
+			logger.throwError("a provider or signer is needed to resolve ENS names", Logger.errors.UNSUPPORTED_OPERATION, {
+				operation: "resolveName"
+			});
+		}
+
+		const address = await resolver.resolveName(name);
+
+		if (address == null) {
+			logger.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
+		}
+
+		return <string>address;
+	}
+
+	const addContractWait = (contract: Contract, tx: TransactionResponse) => {
+		const wait = tx.wait.bind(tx);
+		tx.wait = (confirmations?: number) => {
+			return wait(confirmations).then((receipt: ContractReceipt) => {
+				receipt.events = receipt.logs.map((log) => {
+					let event: Event = (<Event>deepCopy(log));
+					let parsed: LogDescription | null = null;
+					try {
+						parsed = contract.interface.parseLog(log);
+					} catch (e) { }
+
+					// Successfully parsed the event log; include it
+					if (parsed) {
+						event.args = parsed.args;
+						event.decode = (data: BytesLike, topics?: Array<any>) => {
+							if (!!parsed) {
+								return contract.interface.decodeEventLog(parsed.eventFragment, data, topics);
+							}
+						};
+						event.event = parsed.name;
+						event.eventSignature = parsed.signature;
+					}
+
+					// Useful operations
+					event.removeListener = () => { return contract.provider; }
+					event.getBlock = () => {
+						return contract.provider.getBlock(receipt.blockHash);
+					}
+					event.getTransaction = () => {
+						return contract.provider.getTransaction(receipt.transactionHash);
+					}
+					event.getTransactionReceipt = () => {
+						return Promise.resolve(receipt);
+					}
+
+					return event;
+				});
+
+				return receipt;
+			});
+		};
+	}
+
+	return factory;
 }
 
 // const MAX_POLL_NUM = 5;
