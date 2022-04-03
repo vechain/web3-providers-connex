@@ -74,6 +74,9 @@ export class ConnexProvider extends EventEmitter {
 
 		// console.log('Start subloop');
 		this._subLoop();
+
+		// Thor methods
+		this._methodMap['thor_next'] = this._next;
 	}
 
 	public async request(req: RequestArguments) {
@@ -99,6 +102,12 @@ export class ConnexProvider extends EventEmitter {
 		return exec(paramsOrErr);
 	}
 
+	private _next = async (params: any) => {
+		const ticker = this.connex.thor.ticker();
+		await ticker.next();
+		return true;
+	}
+
 	private _accounts = async (params: any) => {
 		if (!this.wallet) {
 			return [];
@@ -107,7 +116,7 @@ export class ConnexProvider extends EventEmitter {
 		return this.wallet.list.map(key => key.address);
 	}
 
-	private get headerValidator() {
+	private get _headerValidator() {
 		return (headers: Record<string, string>) => {
 			const xgid = headers['x-genesis-id']
 			if (xgid && xgid !== this.connex.thor.genesis.id) {
@@ -123,7 +132,7 @@ export class ConnexProvider extends EventEmitter {
 				"transactions",
 				{
 					body: { raw: params[0] },
-					validateResponseHeader: this.headerValidator
+					validateResponseHeader: this._headerValidator
 				}
 			);
 			if (!resp.id) { return Promise.reject(`Invalid http response: ${resp}`); }
@@ -374,7 +383,6 @@ export class ConnexProvider extends EventEmitter {
 		const hash: string = params[0];
 		try {
 			const tx = await this.connex.thor.transaction(hash).get();
-			
 			if (!tx) {
 				return null; //Promise.reject(Err.TransactionNotFound(hash));
 			} else {
