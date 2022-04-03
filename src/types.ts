@@ -31,16 +31,16 @@ export interface RetBlock extends Omit<Block,
 	thor?: Connex.Thor.Block;
 }
 
-export interface RetHeader extends Omit<BlockHeader, 
+export interface RetHeader extends Omit<BlockHeader,
 	'nonce' |
 	'sha3Uncles' |
 	'logsBloom' |
-	'extraData' 
->{
-    nonce: null;
-    sha3Uncles: null;
-    logsBloom: null;
-    extraData: null;
+	'extraData'
+> {
+	nonce: null;
+	sha3Uncles: null;
+	logsBloom: null;
+	extraData: null;
 }
 
 export interface RetTransaction extends Omit<Transaction, 'gasPrice'> {
@@ -53,8 +53,6 @@ export interface RetTransaction extends Omit<Transaction, 'gasPrice'> {
 
 export interface RetReceipt extends Omit<TransactionReceipt,
 	'status' |
-	'transactionIndex' |
-	'cumulativeGasUsed' |
 	'effectiveGasPrice' |
 	'logsBloom' |
 	'from' |
@@ -67,8 +65,6 @@ export interface RetReceipt extends Omit<TransactionReceipt,
 	status: '0x0' | '0x1';
 
 	// incompatible fields
-	transactionIndex: null;
-	cumulativeGasUsed: null;
 	effectiveGasPrice: null;
 	logsBloom: null;
 	from: null;
@@ -79,10 +75,7 @@ export interface RetReceipt extends Omit<TransactionReceipt,
 	thor?: Connex.Thor.Transaction.Receipt;
 }
 
-export interface RetLog extends Omit<Log, 'transactionIndex' | 'logIndex'> {
-	transactionIndex: null;
-	logIndex: null;
-}
+export interface RetLog extends Log { }
 
 export type Web3TxObj = {
 	to?: string;

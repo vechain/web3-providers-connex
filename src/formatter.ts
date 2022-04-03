@@ -147,8 +147,8 @@ export const outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor
 				topics: event.topics.map((x) => x),
 				data: event.data,
 
-				transactionIndex: null,
-				logIndex: null,
+				transactionIndex: -1,
+				logIndex: -1,
 			}
 		}) : [];
 
@@ -160,8 +160,8 @@ export const outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor
 		transactionHash: receipt.meta.txID,
 		gasUsed: receipt.gasUsed,
 
-		transactionIndex: null,
-		cumulativeGasUsed: null,
+		transactionIndex: -1,
+		cumulativeGasUsed: -1,
 		effectiveGasPrice: null,
 		logsBloom: null,
 		from: null,
@@ -232,8 +232,9 @@ export const outputLogsFormatter = function (ret: Connex.Thor.Filter.Row<'event'
 			blockHash: ret.meta.blockID,
 			blockNumber: ret.meta.blockNumber,
 			transactionHash: ret.meta.txID,
-			transactionIndex: null,
-			logIndex: null,
+			
+			transactionIndex: -1,
+			logIndex: -1,
 		};
 	});
 }
