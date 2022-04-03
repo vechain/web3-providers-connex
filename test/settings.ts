@@ -22,4 +22,4 @@ export const urls = {
 
 const solcJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd() + '/test/contracts/test.json')).toString());
 export const bin: string = solcJson.contracts['test.sol:Test'].bin;
-export const abi: string = solcJson.contracts['test.sol:Test'].abi;
+export const abi: any[] = solcJson.contracts['test.sol:Test'].abi;
