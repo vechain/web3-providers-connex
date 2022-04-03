@@ -1,11 +1,7 @@
 'use strict';
 
-import { ConnexProvider } from './provider';
-import { Err } from './error';
-import { RetBlock, RetHeader, RetLog, RetReceipt, RetTransaction } from './types';
-
-export {
-	ConnexProvider,
-	Err,
-	RetBlock, RetHeader, RetLog, RetTransaction, RetReceipt
-};
+export { ConnexProvider } from './provider';
+export { Err } from './error';
+export * as types from './types';
+export * as utils from './utils';
+export * as ethers from './ethers';
