@@ -141,3 +141,15 @@ export const signTransaction = async (ethTx: Web3TxObj, wallet: Wallet, provider
 
 	return '0x' + tx.encode().toString('hex');
 }
+
+export function decodeRevertReason(data: string): string {
+    const errorSig = '0x08c379a0';
+	try {
+        if (data.startsWith(errorSig)) {
+            return abi.decodeParameter('string', '0x' + data.slice(errorSig.length)) as string
+        }
+        return ''
+    } catch {
+        return ''
+    }
+}
