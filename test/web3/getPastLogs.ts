@@ -37,6 +37,18 @@ describe('Testing getPastLogs', () => {
 	const setter1 = wallet.list[0].address;
 	const setter2 = wallet.list[0].address;
 
+	const test = (ret: types.RetLog, addr: string, args: any[]) => {
+		expect(ret.address).to.eql(contractAddress);
+		expect(ret.topics[1]).to.eql(web3.eth.abi.encodeParameter('address', addr));
+		expect(ret.data).to.eql(web3.eth.abi.encodeParameters(['uint', 'string'], args));
+	}
+
+	const tests = (ret: types.RetLog[], accs: string[], args: any[][]) => {
+		ret.forEach((ret, i) => {
+			test(ret, accs[i], args[i]);
+		})
+	}
+
 	it('single query', async () => {
 		let contract = new web3.eth.Contract(abi);
 		const args = [100, 'test contract deploy'];
@@ -51,18 +63,29 @@ describe('Testing getPastLogs', () => {
 				})
 
 			contractAddress = c.options.address;
-			const best = await web3.eth.getBlockNumber();
-
+			
 			const topic0 = web3.utils.sha3('Deploy(address,uint256,string)');
-			const ret: types.RetLog[] = await web3.eth.getPastLogs({
-				fromBlock: 'earliest',
-				toBlock: best,
+			let ret: types.RetLog[];
+
+			// With address & topics
+			ret = await web3.eth.getPastLogs({
 				address: contractAddress,
 				topics: [topic0],
 			});
-			expect(ret[0].address).to.eql(contractAddress);
-			expect(ret[0].topics[1]).to.eql(web3.eth.abi.encodeParameter('address', deployer));
-			expect(ret[0].data).to.eql(web3.eth.abi.encodeParameters(['uint', 'string'], args));
+			test(ret[0], deployer, args);
+
+			// with only address
+			ret = await web3.eth.getPastLogs({
+				address: contractAddress,
+			});
+			// skip event $Master(address) emitted when creating the contract
+			test(ret[1], deployer, args);
+
+			// with only topics
+			ret = await web3.eth.getPastLogs({
+				topics: [topic0],
+			});
+			test(ret[0], deployer, args);
 		} catch (err: any) {
 			assert.fail(err);
 		}
@@ -78,29 +101,32 @@ describe('Testing getPastLogs', () => {
 			await contract.methods.set(args1[0], args1[1]).send({ from: setter1 });
 			await contract.methods.set(args2[0], args2[1]).send({ from: setter2 });
 
-			const best = await web3.eth.getBlockNumber();
-
-			const ret: types.RetLog[] = await web3.eth.getPastLogs({
+			let ret: types.RetLog[];
+			ret = await web3.eth.getPastLogs({
 				fromBlock: 'earliest',
-				toBlock: best,
 				address: [contractAddress, contractAddress],
 				topics: [
 					[web3.utils.sha3('Deploy(address,uint256,string)')],
 					[web3.utils.sha3('Set(address,uint256,string)')],
 				],
 			});
+			tests(ret, [deployer, setter1, setter2], [args0, args1, args2]);
 
-			expect(ret[0].address).to.eql(contractAddress);
-			expect(ret[0].topics[1]).to.eql(web3.eth.abi.encodeParameter('address', deployer));
-			expect(ret[0].data).to.eql(web3.eth.abi.encodeParameters(['uint', 'string'], args0));
-
-			expect(ret[1].address).to.eql(contractAddress);
-			expect(ret[1].topics[1]).to.eql(web3.eth.abi.encodeParameter('address', setter1));
-			expect(ret[1].data).to.eql(web3.eth.abi.encodeParameters(['uint', 'string'], args1));
-
-			expect(ret[2].address).to.eql(contractAddress);
-			expect(ret[2].topics[1]).to.eql(web3.eth.abi.encodeParameter('address', setter2));
-			expect(ret[2].data).to.eql(web3.eth.abi.encodeParameters(['uint', 'string'], args2));
+			// with only topics
+			ret = await web3.eth.getPastLogs({
+				fromBlock: 'earliest',
+				topics: [
+					[web3.utils.sha3('Deploy(address,uint256,string)')],
+					[web3.utils.sha3('Set(address,uint256,string)')],
+				],
+			});
+			// extract the latest three logs emitted when creating the contract
+			const last = ret.length - 1;
+			tests(
+				[ret[last - 2], ret[last - 1], ret[last]],
+				[deployer, setter1, setter2],
+				[args0, args1, args2]
+			);
 		} catch (err: any) {
 			assert.fail(err);
 		}

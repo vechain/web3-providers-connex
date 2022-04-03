@@ -91,10 +91,10 @@ export interface ConnexTxObj extends Omit<Web3TxObj, 'gas'> {
 }
 
 export type FilterOpts = {
-	address: string | string[];
-	fromBlock: string;
-	toBlock: string;
-	topics: any;
+	address?: string | string[];
+	fromBlock?: string;
+	toBlock?: string;
+	topics?: string[] | string[][];
 }
 
 export type ConvertedFilterOpts = {

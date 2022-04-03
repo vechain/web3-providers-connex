@@ -10,7 +10,7 @@ import { FilterOpts, Eip1193SubResp } from './types';
 import { Web3TxObj } from './types';
 import { ConnexProvider } from './provider';
 
-export const toEip1193SubResp = function(ret: any, id: string): Eip1193SubResp {
+export const toEip1193SubResp = function (ret: any, id: string): Eip1193SubResp {
 	return {
 		jsonrpc: '2.0',
 		type: 'eth_subscription',
@@ -26,18 +26,18 @@ export const toEip1193SubResp = function(ret: any, id: string): Eip1193SubResp {
  * @param {hex | 'earliest' | 'latest' } input
  * @returns {string | number | null | undefined} Return null not recognized and undefined if input === 'latest'
  */
-export function parseBlockNumber(input: string): string | number | null | undefined {
+export function parseBlockNumber(input: string): string | number | undefined | null {
 	// Return block id;
 	if (web3Utils.isHexStrict(input) && input.length == 66) {
 		return input;
 	}
 
 	// Convert block number;
-	let num: number | null | undefined = null;
-	if (web3Utils.isHexStrict(input)) { num = web3Utils.hexToNumber(input); }
-	else if (input === 'earliest') { num = 0; }
-	else if (input === 'latest') { num = undefined; }
-	return num;
+	if (web3Utils.isHexStrict(input)) { return web3Utils.hexToNumber(input); }
+	else if (input === 'earliest') { return 0; }
+	else if (input === 'latest') { return undefined; }
+
+	return null;
 }
 
 export function toBytes32(hex: string): string {
@@ -69,23 +69,38 @@ export function getErrMsg(output: Connex.VM.Output): string {
 }
 
 export function toFilterCriteria(args: FilterOpts): Connex.Thor.Filter.Criteria<"event">[] {
-	const setCriteria = (address: string, topics: any) => {
+	const setCriteria = (address?: string, topics?: any) => {
 		const c: Connex.Thor.Filter.Criteria<"event"> = {};
 
-		c.address = address;
-		if (topics[0]) { c.topic0 = topics[0]; }
-		if (topics[1]) { c.topic1 = topics[1]; }
-		if (topics[2]) { c.topic2 = topics[2]; }
-		if (topics[3]) { c.topic3 = topics[3]; }
+		if (address) { c.address = address };
+		if (topics) {
+			if (topics[0]) { c.topic0 = topics[0]; }
+			if (topics[1]) { c.topic1 = topics[1]; }
+			if (topics[2]) { c.topic2 = topics[2]; }
+			if (topics[3]) { c.topic3 = topics[3]; }
+		}
 
 		return c;
 	}
 
-	return !Array.isArray(args.address) ?
-		[setCriteria(args.address, args.topics)] :
-		args.address.map((addr, i) => {
-			return setCriteria(addr, args.topics[i]);
-		});
+	let ret: Connex.Thor.Filter.Criteria<"event">[] = [];
+	if (!(args.address && Array.isArray(args.address))
+		&& !(args.topics && args.topics[0] && Array.isArray(args.topics[0]))
+	) {
+		ret = [setCriteria(args.address, args.topics)];
+	} else if (Array.isArray(args.address) || Array.isArray(args.topics)) {
+		let len = 0;
+		if (args.address) { len = args.address.length; }
+		if (args.topics) { len = args.topics.length; }
+
+		for (let i = 0; i < len; i++) {
+			const addr = args.address ? args.address[i] : undefined;
+			const topics = args.topics ? args.topics[i] : undefined;
+			ret.push(setCriteria(addr, topics));
+		}
+	}
+
+	return ret;
 }
 
 export const wait = (ms: number) => {
@@ -143,13 +158,13 @@ export const signTransaction = async (ethTx: Web3TxObj, wallet: Wallet, provider
 }
 
 export function decodeRevertReason(data: string): string {
-    const errorSig = '0x08c379a0';
+	const errorSig = '0x08c379a0';
 	try {
-        if (data.startsWith(errorSig)) {
-            return abi.decodeParameter('string', '0x' + data.slice(errorSig.length)) as string
-        }
-        return ''
-    } catch {
-        return ''
-    }
+		if (data.startsWith(errorSig)) {
+			return abi.decodeParameter('string', '0x' + data.slice(errorSig.length)) as string
+		}
+		return ''
+	} catch {
+		return ''
+	}
 }
