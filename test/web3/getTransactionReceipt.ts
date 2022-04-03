@@ -63,8 +63,8 @@ describe('Testing getTransactionReceipt', () => {
 
 		expect(receipt.contractAddress).to.be.undefined;
 
-		expect(receipt.transactionIndex).to.be.null;
-		expect(receipt.cumulativeGasUsed).to.be.null;
+		expect(receipt.transactionIndex).to.eql(-1);
+		expect(receipt.cumulativeGasUsed).to.eql(-1);
 		expect(receipt.from).to.be.null;
 		expect(receipt.to).to.be.null;
 	})
@@ -92,7 +92,7 @@ describe('Testing getTransactionReceipt', () => {
 			expect(log.topics).to.eql(receipt.thor.outputs[0].events[index].topics);
 			expect(log.data).to.eql(receipt.thor.outputs[0].events[index].data);
 
-			expect(log.transactionIndex).to.be.null;
+			expect(log.transactionIndex).to.eql(-1);
 		})
 	})
 })
