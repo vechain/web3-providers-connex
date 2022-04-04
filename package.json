@@ -9,7 +9,8 @@
 	],
 	"scripts": {
 		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
-		"test-web3": "mocha --no-timeouts --colors -r ts-node/register test/web3/*.ts"
+		"test-web3": "mocha --no-timeouts --colors -r ts-node/register test/web3/*.ts",
+		"test-ethers": "mocha --no-timeouts --colors -r ts-node/register test/ethers/*.ts"
 	},
 	"repository": {
 		"type": "git",
