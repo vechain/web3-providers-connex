@@ -33,6 +33,7 @@ describe('Testing getPastLogs', () => {
 	})
 
 	let contractAddress: string;
+	let fromBlock: number;
 	const deployer = wallet.list[0].address;
 	const setter1 = wallet.list[0].address;
 	const setter2 = wallet.list[0].address;
@@ -54,6 +55,8 @@ describe('Testing getPastLogs', () => {
 		const args = [100, 'test contract deploy'];
 
 		try {
+			fromBlock = await web3.eth.getBlockNumber();
+
 			const c = await contract.deploy({
 				data: bin,
 				arguments: args,
@@ -63,12 +66,13 @@ describe('Testing getPastLogs', () => {
 				})
 
 			contractAddress = c.options.address;
-			
+
 			const topic0 = web3.utils.sha3('Deploy(address,uint256,string)');
 			let ret: types.RetLog[];
 
 			// With address & topics
 			ret = await web3.eth.getPastLogs({
+				fromBlock: fromBlock,
 				address: contractAddress,
 				topics: [topic0],
 			});
@@ -76,6 +80,7 @@ describe('Testing getPastLogs', () => {
 
 			// with only address
 			ret = await web3.eth.getPastLogs({
+				fromBlock: fromBlock,
 				address: contractAddress,
 			});
 			// skip event $Master(address) emitted when creating the contract
@@ -83,6 +88,7 @@ describe('Testing getPastLogs', () => {
 
 			// with only topics
 			ret = await web3.eth.getPastLogs({
+				fromBlock: fromBlock,
 				topics: [topic0],
 			});
 			test(ret[0], deployer, args);
@@ -103,7 +109,7 @@ describe('Testing getPastLogs', () => {
 
 			let ret: types.RetLog[];
 			ret = await web3.eth.getPastLogs({
-				fromBlock: 'earliest',
+				fromBlock: fromBlock,
 				address: [contractAddress, contractAddress],
 				topics: [
 					[web3.utils.sha3('Deploy(address,uint256,string)')],
@@ -114,19 +120,14 @@ describe('Testing getPastLogs', () => {
 
 			// with only topics
 			ret = await web3.eth.getPastLogs({
-				fromBlock: 'earliest',
+				fromBlock: fromBlock,
 				topics: [
 					[web3.utils.sha3('Deploy(address,uint256,string)')],
 					[web3.utils.sha3('Set(address,uint256,string)')],
 				],
 			});
 			// extract the latest three logs emitted when creating the contract
-			const last = ret.length - 1;
-			tests(
-				[ret[last - 2], ret[last - 1], ret[last]],
-				[deployer, setter1, setter2],
-				[args0, args1, args2]
-			);
+			tests(ret, [deployer, setter1, setter2], [args0, args1, args2]);
 		} catch (err: any) {
 			assert.fail(err);
 		}

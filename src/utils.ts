@@ -94,7 +94,8 @@ export function toFilterCriteria(args: FilterOpts): Connex.Thor.Filter.Criteria<
 		if (args.topics) { len = args.topics.length; }
 
 		for (let i = 0; i < len; i++) {
-			const addr = args.address ? args.address[i] : undefined;
+			const addr = args.address ?
+				(Array.isArray(args.address) ? args.address[i] : args.address) : undefined;
 			const topics = args.topics ? args.topics[i] : undefined;
 			ret.push(setCriteria(addr, topics));
 		}
