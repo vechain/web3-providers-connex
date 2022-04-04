@@ -6,8 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers, BigNumber } from 'ethers';
 
-import { ConnexProvider, modifyProvider } from '../../src/index';
-import { randAddr } from '../../src/utils';
+import { ConnexProvider, ethers as es, utils } from '../../src/index';
 import { urls, soloAccounts } from '../settings'
 
 describe('Testing sendTransaction', () => {
@@ -24,8 +23,8 @@ describe('Testing sendTransaction', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			cp = new ConnexProvider({ connex: new Framework(driver), wallet: wallet, net: net });
-			provider = modifyProvider(new ethers.providers.Web3Provider(cp));
+			cp = new ConnexProvider({ connex: new Framework(driver) });
+			provider = es.modifyProvider(new ethers.providers.Web3Provider(cp));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -37,14 +36,19 @@ describe('Testing sendTransaction', () => {
 
 	it('transfer value', async () => {
 		const from = wallet.list[0].address;
+		const signer = provider.getSigner(from);
+
+		let txResp: ethers.providers.TransactionResponse;
 		try {
-			const r1 = await provider.getSigner(from).sendTransaction({
+			txResp = await signer.sendTransaction({
 				from: wallet.list[0].address,
-				to: randAddr(),
+				to: utils.randAddr(),
 				value: BigNumber.from('1' + '0'.repeat(18)).toHexString()
 			});
-			const r2 = await provider.getTransactionReceipt(r1.hash);
-			expect(r1).to.eql(r2);
+			const actual = await txResp.wait();
+			const expected = await provider.getTransactionReceipt(actual.transactionHash);
+
+			expect(actual).to.eql(expected);
 		} catch (err: any) {
 			assert.fail(err);
 		}

@@ -4,10 +4,10 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import { ethers } from 'ethers';
-import { ConnexProvider } from '../../src/index';
+import { BigNumber, ethers } from 'ethers';
+import { abi as ABI } from 'thor-devkit';
+import * as thor from '../../src/index';
 import { urls, soloAccounts, abi, bin } from '../settings';
-
 
 describe('Testing contract', () => {
 	const net = new SimpleNet(urls.solo);
@@ -17,12 +17,16 @@ describe('Testing contract', () => {
 	});
 
 	let driver: Driver;
-	let provider: ethers.providers.Web3Provider;
+	let provider: ethers.providers.JsonRpcProvider;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ethers.providers.Web3Provider(new ConnexProvider({connex: new Framework(driver)}));
+			provider = thor.ethers.modifyProvider(
+				new ethers.providers.Web3Provider(
+					new thor.ConnexProvider({ connex: new Framework(driver) })
+				)
+			);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -32,58 +36,69 @@ describe('Testing contract', () => {
 		driver.close();
 	})
 
-	let contractAddress: string;
 	const from = wallet.list[0].address;
+	let contractAddress: string;
 
 	it('deploy', async () => {
-		
-
-		const factory = new ethers.ContractFactory(abi, bin);
+		const factory = thor.ethers.modifyFactory(
+			new ethers.ContractFactory(abi, bin, provider.getSigner(from))
+		);
 		const args = [100, 'test contract deploy'];
 
 		try {
 			const contract = await factory.deploy(...args);
+			await contract.deployTransaction.wait();
 
-			contractAddress = contract.options.address;
+			contractAddress = contract.address;
 
-			const ret: string[] = await contract.methods.get().call();
-			args.forEach((val, i) => {
-				expect(ret[i]).to.eql('' + val);
-			})
+			const filter = contract.filters.Deploy();
+			const logs = await contract.queryFilter(filter);
+
+			const topic0 = ethers.utils.keccak256(Buffer.from('Deploy(address,uint256,string)'));
+			expect(logs.length).to.eql(1);
+
+			const log = logs[0];
+			if (!!log.address) {
+				expect(log.address.toLowerCase()).to.eql(contractAddress.toLowerCase());
+			}
+			if (!!log.topics) {
+				expect(log.topics[0]).to.eql(topic0);
+				expect(log.topics[1]).to.eql(ABI.encodeParameter('address', from));
+			}
+
+			const ret = await contract.get();
+			expect(<BigNumber>ret[0].toNumber()).to.eql(args[0]);
+			expect(<string>ret[1]).to.eql(args[1]);
 		} catch (err: any) {
 			assert.fail(err);
 		}
 	})
 
-	// it('send', async () => {
-	// 	const from = wallet.list[0].address;
+	it('send', async () => {
+		let contract = new ethers.Contract(contractAddress, abi, provider.getSigner(from));
+		const args = [200, 'test contract send'];
 
-	// 	let contract = new web3.eth.Contract(abi, contractAddress);
-	// 	const args = [200, 'test contract send'];
+		try {
+			await contract.set(args[0], args[1]);
 
-	// 	try {
-	// 		await contract.methods.set(args[0], args[1]).send({ from: from });
+			let ret = await contract.get();
+			expect(<BigNumber>ret[0].toNumber()).to.eql(args[0]);
+			expect(<string>ret[1]).to.eql(args[1]);
+		} catch (err: any) {
+			assert.fail(err);
+		}
+	})
 
-	// 		let ret: string[] = await contract.methods.get().call();
-	// 		args.forEach((val, i) => {
-	// 			expect(ret[i]).to.eql('' + val);
-	// 		})
-	// 	} catch (err: any) {
-	// 		assert.fail(err);
-	// 	}
-	// })
+	it('call with error', async () => {
+		const contract = new ethers.Contract(contractAddress, abi, provider.getSigner(from));
+		const errMsg = 'Test error message in contract call';
 
-	// it('call with error', async () => {
-	// 	const contract = new web3.eth.Contract(abi, contractAddress);
-	// 	contract.handleRevert = true;
-	// 	const errMsg = 'Test error message in contract call';
-
-	// 	try {
-	// 		await contract.methods.set(10, 'hello').send({from: from})
-	// 		await contract.methods.get().call();
-	// 	} catch (err: any) {
-	// 		const msg: string = err.reason;
-	// 		expect(msg).to.eql(errMsg);
-	// 	}
-	// })
+		try {
+			const ret = await contract.set(10, 'hello');
+			await contract.get();
+		} catch (err: any) {
+			const msg: string = thor.utils.decodeRevertReason(err.error.data);
+			expect(msg).to.eql(errMsg);
+		}
+	})
 })

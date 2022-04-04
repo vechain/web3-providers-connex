@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers } from 'ethers';
 
-import { ConnexProvider, Err } from '../../src/index';
+import * as thor from '../../src/index';
 import { urls } from '../settings'
 
 describe('Testing getBlock', () => {
@@ -14,13 +14,14 @@ describe('Testing getBlock', () => {
 	const wallet = new SimpleWallet();
 
 	let driver: Driver;
+	let cp: thor.ConnexProvider;
 	let provider: ethers.providers.Web3Provider;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ethers.providers.Web3Provider(
-				new ConnexProvider({ connex: new Framework(driver) }));
+			cp = new thor.ConnexProvider({ connex: new Framework(driver) });
+			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -51,7 +52,7 @@ describe('Testing getBlock', () => {
 	})
 
 	it('pending', async () => {
-		const expectedErr = Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
+		const expectedErr = thor.Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
 		try {
 			await provider.getBlock('pending');
 			assert.fail();
@@ -65,14 +66,21 @@ describe('Testing getBlock', () => {
 		const num = 11473393;
 
 		let blk: ethers.providers.Block;
+		let expected: thor.types.RetBlock;
 		try {
 			blk = await provider.getBlock(hash);
+			expected = await cp.request({ method: 'eth_getBlockByHash', params: [hash] });
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
 		expect(blk.hash).to.eql(hash);
 		expect(blk.number).to.eql(num);
+
+		if (!!expected.thor) {
+			expect(blk.hash).to.eql(expected.thor.id);
+			expect(blk.parentHash).to.eql(expected.thor.parentID);
+		}
 	})
 
 	it('existing number', async () => {
@@ -92,7 +100,8 @@ describe('Testing getBlock', () => {
 
 	it('latest', async () => {
 		try {
-			await provider.getBlock('latest');
+			const blk = await provider.getBlock('latest');
+			expect(!!blk.hash).to.be.true;
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}

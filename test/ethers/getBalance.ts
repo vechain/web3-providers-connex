@@ -6,13 +6,12 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { BigNumber, ethers } from 'ethers';
 
-import { ConnexProvider, Err } from '../../src/index';
+import * as thor from '../../src/index';
 import { urls } from '../settings'
 
 describe('Testing getBalance', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
 
 	let driver: Driver;
 	let provider: ethers.providers.Web3Provider;
@@ -20,7 +19,9 @@ describe('Testing getBalance', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ethers.providers.Web3Provider(new ConnexProvider({connex: new Framework(driver)}));
+			provider = new ethers.providers.Web3Provider(
+				new thor.ConnexProvider({connex: new Framework(driver)})
+			);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -34,7 +35,7 @@ describe('Testing getBalance', () => {
 
 	it('option not supported', async () => {
 		const opt = 'earliest';
-		const expectedErr = Err.MethodParamNotSupported('eth_getBalance', 2);
+		const expectedErr = thor.Err.MethodParamNotSupported('eth_getBalance', 2);
 		try {
 			await provider.getBalance(addr, opt);
 			assert.fail();

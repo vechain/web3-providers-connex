@@ -5,13 +5,12 @@ import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers } from 'ethers';
-import { ConnexProvider } from '../../src/index';
+import * as thor from '../../src/index';
 import { urls } from '../settings';
 
 describe('Testing getBlockNumber', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
 
 	let driver: Driver;
 	let provider: ethers.providers.Web3Provider;
@@ -19,7 +18,9 @@ describe('Testing getBlockNumber', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ethers.providers.Web3Provider(new ConnexProvider({connex: new Framework(driver)}));
+			provider = new ethers.providers.Web3Provider(
+				new thor.ConnexProvider({connex: new Framework(driver)})
+			);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}

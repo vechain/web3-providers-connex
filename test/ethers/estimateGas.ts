@@ -5,8 +5,7 @@ import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers } from 'ethers';
-
-import { ConnexProvider } from '../../src/index';
+import * as thor from '../../src/index';
 import { urls, soloAccounts } from '../settings';
 
 describe('Testing estimateGas', () => {
@@ -20,7 +19,9 @@ describe('Testing estimateGas', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ethers.providers.Web3Provider(new ConnexProvider({connex: new Framework(driver)}));
+			provider = new ethers.providers.Web3Provider(
+				new thor.ConnexProvider({connex: new Framework(driver)})
+			);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
