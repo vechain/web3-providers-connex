@@ -1,6 +1,7 @@
+/// <reference types="@vechain/connex-types">
+
 'use strict';
 
-import Connex from '@vechain/connex';
 import {
 	ConnexTxObj,
 	ConvertedFilterOpts
