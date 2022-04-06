@@ -117,17 +117,6 @@ describe('Testing getPastLogs', () => {
 				],
 			});
 			tests(ret, [deployer, setter1, setter2], [args0, args1, args2]);
-
-			// with only topics
-			ret = await web3.eth.getPastLogs({
-				fromBlock: fromBlock,
-				topics: [
-					[web3.utils.sha3('Deploy(address,uint256,string)')],
-					[web3.utils.sha3('Set(address,uint256,string)')],
-				],
-			});
-			// extract the latest three logs emitted when creating the contract
-			tests(ret, [deployer, setter1, setter2], [args0, args1, args2]);
 		} catch (err: any) {
 			assert.fail(err);
 		}
