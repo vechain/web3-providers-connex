@@ -5,7 +5,7 @@ Web3.js provider implemented using Connex.js. It makes it possible to use [web3.
 npm i web3-providers-connex
 ```
 ## Usage
-### web3.js
+To create a web3 object:
 ```ts
 import * as thor from 'web3-providers-connex';
 
@@ -13,7 +13,7 @@ import * as thor from 'web3-providers-connex';
 const provider = new thor.ConnexProvider({ connex: connex });
 const web3 = new Web3(provider);
 ```
-### ethers.js
+To create an ethers JsonRpcProvider:
 ```ts
 import * as thor from 'web3-providers-connex';
 
@@ -23,11 +23,19 @@ const provider = thor.ethers.modifyProvider(
 		new thor.ConnexProvider({ connex: connex })
 	)
 );
-
-const factory = thor.ethers.modifyFactory(
-	new ethers.ContractFactory(abi, bin, provider.getSigner(from))
-);
 ```
+To create an ethers JsonRpcSigner:
+```ts
+const signer = provider.getSigner(addressOrIndexOrUndefined);
+```
+To deploy a contract
+```ts
+const factory = thor.ethers.modifyFactory(
+	new ethers.ContractFactory(abi, bin, signer)
+);
+const contract = await factory.deploy(...args);
+```
+Methods `modifyProvider` and `modifyFactory` are used to replace methods `jsonRpcProvider.sendTransaction` and `contractFactory.deploy` shipped with ethers.js to bypass the contract address computation that is incompatible with the Thor protocol.  
 ## APIs
 
 |Tested web3 API|Remark|
