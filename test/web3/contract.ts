@@ -85,6 +85,7 @@ describe('Testing contract', () => {
 		try {
 			await contract.methods.set(10, 'hello').send({ from: from })
 			await contract.methods.get().call();
+			assert.fail('Unexpected error');
 		} catch (err: any) {
 			const msg: string = err.reason;
 			expect(msg).to.eql(errMsg);
