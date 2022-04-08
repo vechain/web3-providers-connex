@@ -13,13 +13,14 @@ import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
 import { RequestArguments } from 'web3-core';
 import { Net, Wallet } from '@vechain/connex-driver';
+import { Restful } from './restful';
 
 type MethodHandler = (params: any[]) => Promise<any>;
 
 export class ConnexProvider extends EventEmitter {
 	readonly connex: Connex;
 	readonly chainTag: number;
-	readonly net?: Net;
+	readonly restful?: Restful;
 	readonly wallet?: Wallet;
 
 	private readonly _formatter: Formatter;
@@ -36,7 +37,7 @@ export class ConnexProvider extends EventEmitter {
 		const id = opt.connex.thor.genesis.id;
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
 
-		this._formatter = new Formatter(opt.connex);
+		this._formatter = new Formatter(opt.connex, !!opt.net);
 
 		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
 		this._methodMap['eth_getBlockByNumber'] = this._getBlockByNumber;
@@ -57,7 +58,7 @@ export class ConnexProvider extends EventEmitter {
 		this._methodMap['eth_unsubscribe'] = this._unsubscribe;
 
 		if (opt.net) {
-			this.net = opt.net;
+			this.restful = new Restful(opt.net, this.connex.thor.genesis.id);
 			this._methodMap['eth_sendRawTransaction'] = this._sendRawTransaction;
 		}
 
@@ -82,14 +83,6 @@ export class ConnexProvider extends EventEmitter {
 			return Promise.reject(Err.MethodNotFound(req.method));
 		}
 
-		// let paramsOrErr: any[] | Error = req.params || [];
-		// if (InputFormatter[req.method]) {
-		// 	paramsOrErr = InputFormatter[req.method]({
-		// 		id: req['id'],
-		// 		method: req.method,
-		// 		params: req.params || []
-		// 	});
-		// }
 		const paramsOrErr = this._formatter.formatInput({
 			id: req.id,
 			method: req.method,
@@ -117,27 +110,12 @@ export class ConnexProvider extends EventEmitter {
 		return this.wallet.list.map(key => key.address);
 	}
 
-	private get _headerValidator() {
-		return (headers: Record<string, string>) => {
-			const xgid = headers['x-genesis-id']
-			if (xgid && xgid !== this.connex.thor.genesis.id) {
-				throw new Error(`responded 'x-genesis-id' not matched`)
-			}
-		}
-	}
-
 	private _sendRawTransaction = async (params: any[]) => {
 		try {
-			const resp = await this.net!.http(
-				"POST",
-				"transactions",
-				{
-					body: { raw: params[0] },
-					validateResponseHeader: this._headerValidator
-				}
-			);
-			if (!resp.id) { return Promise.reject(`Invalid http response: ${resp}`); }
-			return resp.id;
+			if (this.restful) {
+				return this.restful.sendRawTransaction(params[0]);
+			}
+			return null;
 		} catch (err: any) {
 			return Promise.reject(err);
 		}
@@ -273,14 +251,34 @@ export class ConnexProvider extends EventEmitter {
 
 	private _call = async (params: any[]) => {
 		const txObj: ConnexTxObj = params[0];
-		let explainer = this.connex.thor.explain([txObj.clauses[0]]);
-		if (txObj.from) { explainer = explainer.caller(txObj.from); }
-		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
 		try {
+			if (this.restful) {
+				const callObj: Connex.Driver.ExplainArg = {
+					clauses: txObj.clauses.map(c => {
+						return {
+							to: c.to,
+							value: '' + c.value,
+							data: c.data || '0x'
+						}
+					})
+				}
+				if (txObj.gas) { callObj.gas = txObj.gas; }
+				if (txObj.from) { callObj.caller = txObj.from; }
+
+				return this.restful.call(callObj, params[1]);
+			}
+
+			let explainer = this.connex.thor.explain([txObj.clauses[0]]);
+			if (txObj.from) { explainer = explainer.caller(txObj.from); }
+			if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
+
 			const outputs = await explainer.execute();
 			const output = outputs[0];
 			if (output.reverted) {
-				return Promise.reject({ data: getErrMsg(output) });
+				return Promise.reject({
+					data: getErrMsg(output),
+					message: output?.revertReason || output.vmError
+				});
 			}
 			return output.data;
 		} catch (err: any) {
@@ -307,6 +305,9 @@ export class ConnexProvider extends EventEmitter {
 
 	private _getStorageAt = async (params: any[]) => {
 		try {
+			if (this.restful) {
+				return this.restful.getStorageAt(params[0], params[1], params[2]);
+			}
 			const storage = await this.connex.thor.account(params[0]).getStorage(params[1]);
 			return storage.value;
 		} catch (err: any) {
@@ -351,6 +352,9 @@ export class ConnexProvider extends EventEmitter {
 
 	private _getCode = async (params: any[]) => {
 		try {
+			if (this.restful) {
+				return this.restful.getCode(params[0], params[1]);
+			}
 			const code = await this.connex.thor.account(params[0]).getCode();
 			return code.code;
 		} catch (err: any) {
@@ -373,6 +377,9 @@ export class ConnexProvider extends EventEmitter {
 
 	private _getBalance = async (params: any[]) => {
 		try {
+			if (this.restful) {
+				return this.restful.getBalance(params[0], params[1]);
+			}
 			const acc = await this.connex.thor.account(params[0]).get();
 			return acc.balance;
 		} catch (err: any) {

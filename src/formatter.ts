@@ -17,11 +17,13 @@ import { Err } from './error';
 import web3Utils from 'web3-utils';
 
 export class Formatter {
-	readonly connex: Connex;
+	readonly _connex: Connex;
 	private readonly _inputFormatters: Record<string, (payload: JsonRpcPayload) => any[] | Error> = {};
+	private readonly _ifSetNet: boolean;
 
-	constructor(connex: Connex) {
-		this.connex = connex;
+	constructor(connex: Connex, ifSetNet: boolean) {
+		this._connex = connex;
+		this._ifSetNet = ifSetNet;
 
 		this._inputFormatters['eth_getBlockByNumber'] = this._getBlockByNumber;
 		this._inputFormatters['eth_getBalance'] = this._getBalance;
@@ -52,31 +54,59 @@ export class Formatter {
 	}
 
 	private _getBalance = (payload: JsonRpcPayload) => {
-		if (payload.params.length == 2 &&
-			!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
-		) {
-			return Err.MethodParamNotSupported('eth_getBalance', 2);
+		const params = payload.params.map(x => x);
+		if (!this._ifSetNet) {
+			if (params.length == 2 &&
+				!(typeof params[1] === 'string' && params[1] === 'latest')
+			) {
+				return Err.MethodParamNotSupported('eth_getBalance', 2);
+			}
+		} else if (typeof params[1] !== 'number') {
+			const revision = parseBlockNumber(params[1] || 'latest');
+			if (revision === null) {
+				return Err.ArgumentMissingOrInvalid('eth_getBalance', 'revision');
+			}
+			params[1] = revision;
 		}
-		return payload.params;
+
+		return params;
 	}
 
 	private _getCode = (payload: JsonRpcPayload) => {
-		if (payload.params.length >= 2 &&
-			!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
-		) {
-			return Err.MethodParamNotSupported('eth_getCode', 2);
+		const params = payload.params.map(x => x);
+		if (!this._ifSetNet) {
+			if (params.length >= 2 &&
+				!(typeof params[1] === 'string' && params[1] === 'latest')
+			) {
+				return Err.MethodParamNotSupported('eth_getCode', 2);
+			}
+		} else if (typeof params[1] !== 'number') {
+			const revision = parseBlockNumber(params[1] || 'latest');
+			if (revision === null) {
+				return Err.ArgumentMissingOrInvalid('eth_getCode', 'revision');
+			}
+			params[1] = revision;
 		}
-		return payload.params;
+
+		return params;
 	}
 
 	private _getStorageAt = (payload: JsonRpcPayload) => {
-		if (payload.params.length >= 3 &&
-			!(typeof payload.params[2] === 'string' && payload.params[2] === 'latest')
-		) {
-			return Err.MethodParamNotSupported('eth_getStorageAt', 3);
+		const params = payload.params.map(x => x);
+		if (!this._ifSetNet) {
+			if (params.length >= 3 &&
+				!(typeof params[2] === 'string' && params[2] === 'latest')
+			) {
+				return Err.MethodParamNotSupported('eth_getStorageAt', 3);
+			}
+		} else if (typeof params[1] !== 'number') {
+			const revision = parseBlockNumber(payload.params[2] || 'latest');
+			if (revision === null) {
+				return Err.ArgumentMissingOrInvalid('eth_getStorageAt', 'revision');
+			}
+			params[2] = revision;
 		}
 
-		let params = payload.params.map((x) => x);
 		params[1] = toBytes32(params[1]);
 		return params;
 	}
@@ -97,13 +127,28 @@ export class Formatter {
 	}
 
 	private _call = (payload: JsonRpcPayload) => {
-		if (payload.params.length >= 2 &&
-			!(typeof payload.params[1] === 'string' && payload.params[1] === 'latest')
-		) {
-			return Err.MethodParamNotSupported('eth_call', 2);
+		const params = payload.params.map(x => x);
+		if (!this._ifSetNet) {
+			if (params.length >= 2 &&
+				!(typeof params[1] === 'string' && params[1] === 'latest')
+			) {
+				return Err.MethodParamNotSupported('eth_call', 2);
+			}
+		} else if (typeof params[1] !== 'number') {
+			const revision = parseBlockNumber(params[1] || 'latest');
+			if (revision == null) {
+				return Err.ArgumentMissingOrInvalid('eth_call', 'revision');
+			}
+			params[1] = revision;
 		}
 
-		return this._sendTransaction(payload);
+		params[0] = this._sendTransaction({
+			id: payload.id,
+			method: payload.method,
+			params: params
+		})[0];
+
+		return params;
 	}
 
 	private _estimateGas = (payload: JsonRpcPayload) => {
@@ -116,11 +161,11 @@ export class Formatter {
 		let fromBlock: number, toBlock: number;
 
 		if (!args.fromBlock) {
-			fromBlock = this.connex.thor.status.head.number; // fromBlock default set to latest
+			fromBlock = this._connex.thor.status.head.number; // fromBlock default set to latest
 		} else {
 			let test = parseBlockNumber(args.fromBlock);
 			if (test === undefined) {
-				test = this.connex.thor.status.head.number;
+				test = this._connex.thor.status.head.number;
 			} else if (typeof test !== 'number') {
 				return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock');
 			}
@@ -128,11 +173,11 @@ export class Formatter {
 		}
 
 		if (!args.toBlock) {
-			toBlock = this.connex.thor.status.head.number; // toBlock default set to latest
+			toBlock = this._connex.thor.status.head.number; // toBlock default set to latest
 		} else {
 			let test = parseBlockNumber(args.toBlock);
 			if (test === undefined) {
-				test = this.connex.thor.status.head.number;
+				test = this._connex.thor.status.head.number;
 			} else if (typeof test !== 'number') {
 				return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock');
 			}

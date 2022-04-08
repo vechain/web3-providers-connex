@@ -48,6 +48,10 @@ export function hexToNumber(hex: string): number {
 	return web3Utils.hexToNumber(hex);
 }
 
+export function toHex(value: number | string): string {
+	return web3Utils.toHex(value);
+}
+
 export function randAddr(): string {
 	return '0x' + randomBytes(20).toString('hex');
 }
