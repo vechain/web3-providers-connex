@@ -70,7 +70,6 @@ export class ConnexProvider extends EventEmitter {
 		// dummy
 		this._methodMap['eth_gasPrice'] = this._gasPrice;
 
-		// console.log('Start subloop');
 		this._subLoop();
 
 		// Thor methods
@@ -230,7 +229,10 @@ export class ConnexProvider extends EventEmitter {
 
 			const output = outputs[0];
 			if (output.reverted) {
-				return Promise.reject({ data: getErrMsg(output) });
+				return Promise.reject({ 
+					data: getErrMsg(output),
+					message: output?.revertReason || output.vmError
+				});
 			}
 
 			const clause: Transaction.Clause = {
@@ -366,7 +368,7 @@ export class ConnexProvider extends EventEmitter {
 		try {
 			const blk = await this.connex.thor.block().get()
 			if (!blk) {
-				return null; //Promise.reject(Err.BlockNotFound('latest'));
+				return null;
 			} else {
 				return blk.number;
 			}
@@ -392,7 +394,7 @@ export class ConnexProvider extends EventEmitter {
 		try {
 			const tx = await this.connex.thor.transaction(hash).get();
 			if (!tx) {
-				return null; //Promise.reject(Err.TransactionNotFound(hash));
+				return null;
 			} else {
 				return this._formatter.outputTransactionFormatter(tx);
 			}
@@ -424,7 +426,7 @@ export class ConnexProvider extends EventEmitter {
 		try {
 			const blk = await this.connex.thor.block(hash).get();
 			if (!blk) {
-				return null; //Promise.reject(Err.BlockNotFound(hash));
+				return null;
 			} else {
 				return this._formatter.outputBlockFormatter(blk);
 			}
