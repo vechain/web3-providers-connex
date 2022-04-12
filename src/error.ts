@@ -1,18 +1,9 @@
 'use strict';
 
 export const Err = {
-	// BlockNotFound: (ref: string | number) => {
-	// 	const msg = typeof ref === 'string' && ref.indexOf('0x') == 0 ? 'id/hash=' : 'number';
-	// 	return new Error(`Block not found: ${msg}=${ref}`);
-	// },
-
 	MethodNotFound: (method: string) => {
-		return new Error(`Method [${method}] not supported`);
+		return new Error(`Method not supported: method=${method}`);
 	},
-
-	// TransactionNotFound: (hash: string) => {
-	// 	return new Error(`Transaction not found: id/hash=${hash}`);
-	// },
 
 	MethodParamNotSupported: (method: string, index: number) => {
 		return new Error(`Parameter not supported: method=${method}, index=${index}`);
