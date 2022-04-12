@@ -198,10 +198,6 @@ export class Formatter {
 
 	private _subscribe = (payload: JsonRpcPayload) => {
 		const name: string = payload.params[0];
-		if (!name) {
-			throw new Error('Subscription name undefined');
-		}
-
 		switch (name) {
 			case 'newHeads':
 				return ['newHeads'];

@@ -122,11 +122,7 @@ export class ConnexProvider extends EventEmitter {
 
 	private _subscribe = async (params: any[]) => {
 		const subId = this._getSubscriptionId(params);
-		const subName: string = params[0];
-
-		if (subName !== 'newHeads' && subName !== 'logs') {
-			return Promise.reject(Err.InvalidSubscriptionName(subName));
-		}
+		const subName: 'newHeads' | 'logs' = params[0];
 
 		if (this._subscriptions[subName][subId]) {
 			return Promise.reject(Err.SubscriptionAlreadyExist(subId));
