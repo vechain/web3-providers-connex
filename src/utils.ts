@@ -56,6 +56,10 @@ export function randAddr(): string {
 	return '0x' + randomBytes(20).toString('hex');
 }
 
+export function isHexStrict(hex: string) {
+	return web3Utils.isHexStrict(hex);
+}
+
 export function getErrMsg(output: Connex.VM.Output): string {
 	const errorSig = '0x08c379a0';
 	let errMsg = output?.revertReason || output.vmError || output.data;

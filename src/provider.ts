@@ -6,7 +6,7 @@ import {
 	ConnexTxObj,
 	ConvertedFilterOpts
 } from './types';
-import { hexToNumber, getErrMsg, toEip1193SubResp } from './utils';
+import { hexToNumber, getErrMsg, toEip1193SubResp, toHex } from './utils';
 import { Err } from './error';
 import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
@@ -225,7 +225,7 @@ export class ConnexProvider extends EventEmitter {
 
 			const output = outputs[0];
 			if (output.reverted) {
-				return Promise.reject({ 
+				return Promise.reject({
 					data: getErrMsg(output),
 					message: output?.revertReason || output.vmError
 				});
@@ -241,7 +241,7 @@ export class ConnexProvider extends EventEmitter {
 			const intrinsicGas = Transaction.intrinsicGas([clause]);
 			const estimatedGas = intrinsicGas + (execGas ? (execGas + 15000) : 0);
 
-			return estimatedGas;
+			return toHex(estimatedGas);
 		} catch (err: any) {
 			return Promise.reject(err);
 		}
@@ -255,7 +255,7 @@ export class ConnexProvider extends EventEmitter {
 					clauses: txObj.clauses.map(c => {
 						return {
 							to: c.to,
-							value: '' + c.value,
+							value: toHex(c.value),
 							data: c.data || '0x'
 						}
 					})
@@ -338,8 +338,8 @@ export class ConnexProvider extends EventEmitter {
 				);
 				return {
 					startingBlock: null,
-					currentBlock: this.connex.thor.status.head.number,
-					highestBlock: highestBlock,
+					currentBlock: toHex(this.connex.thor.status.head.number),
+					highestBlock: toHex(highestBlock),
 					thor: this.connex.thor.status,
 				};
 			}
@@ -366,7 +366,7 @@ export class ConnexProvider extends EventEmitter {
 			if (!blk) {
 				return null;
 			} else {
-				return blk.number;
+				return toHex(blk.number);
 			}
 		} catch (err: any) {
 			return Promise.reject(err);
@@ -400,7 +400,7 @@ export class ConnexProvider extends EventEmitter {
 	}
 
 	private _getChainId = async (params: any[]) => {
-		return this.chainTag;
+		return toHex(this.chainTag);
 	}
 
 	private _getBlockByNumber = async (params: any[]) => {

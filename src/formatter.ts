@@ -12,9 +12,15 @@ import {
 	ConvertedFilterOpts,
 	RetHeader,
 } from './types';
-import { hexToNumber, parseBlockNumber, toBytes32, toFilterCriteria } from './utils';
+import { 
+	hexToNumber, 
+	parseBlockNumber, 
+	toBytes32, 
+	toFilterCriteria, 
+	toHex, 
+	isHexStrict,
+} from './utils';
 import { Err } from './error';
-import web3Utils from 'web3-utils';
 
 export class Formatter {
 	readonly _connex: Connex;
@@ -210,7 +216,7 @@ export class Formatter {
 
 	private _sendRawTransaction = function (payload: JsonRpcPayload) {
 		const raw: string = payload.params[0];
-		if (!web3Utils.isHexStrict(raw)) {
+		if (!isHexStrict(raw)) {
 			return Err.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
 		}
 		return [raw];
@@ -221,7 +227,7 @@ export class Formatter {
 			receipt.outputs[0].events.map(event => {
 				return {
 					blockHash: receipt.meta.blockID,
-					blockNumber: receipt.meta.blockNumber,
+					blockNumber: toHex(receipt.meta.blockNumber),
 					transactionHash: receipt.meta.txID,
 					address: event.address,
 					topics: event.topics.map((x) => x),
@@ -236,9 +242,9 @@ export class Formatter {
 			status: !receipt.reverted ? '0x1' : '0x0',
 
 			blockHash: receipt.meta.blockID,
-			blockNumber: receipt.meta.blockNumber,
+			blockNumber: toHex(receipt.meta.blockNumber),
 			transactionHash: receipt.meta.txID,
-			gasUsed: receipt.gasUsed,
+			gasUsed: toHex(receipt.gasUsed),
 
 			transactionIndex: -1,
 			cumulativeGasUsed: -1,
@@ -258,17 +264,16 @@ export class Formatter {
 		return {
 			hash: b.id,
 			parentHash: b.parentID,
-			number: b.number,
-			size: b.size,
+			number: toHex(b.number),
+			size: toHex(b.size),
 			stateRoot: b.stateRoot,
 			receiptsRoot: b.receiptsRoot,
 			transactionRoot: b.txsRoot,
-			timestamp: b.timestamp,
-			gasLimit: b.gasLimit,
-			gasUsed: b.gasUsed,
+			timestamp: toHex(b.timestamp),
+			gasLimit: toHex(b.gasLimit),
+			gasUsed: toHex(b.gasUsed),
 			transactions: b.transactions,
 			miner: b.signer,
-			extraData: '0x',
 
 			// incompatible fields
 			difficulty: null,
@@ -277,6 +282,7 @@ export class Formatter {
 			sha3Uncles: null,
 			nonce: null,
 			logsBloom: null,
+			extraData: '0x',
 
 			// original block returned by connex
 			thor: b,
@@ -286,16 +292,16 @@ export class Formatter {
 	outputTransactionFormatter(tx: Connex.Thor.Transaction): RetTransaction {
 		return {
 			hash: tx.id,
-			blockNumber: tx.meta.blockNumber,
+			blockNumber: toHex(tx.meta.blockNumber),
 			blockHash: tx.meta.blockID,
 			from: tx.origin,
 			to: tx.clauses[0].to,
 			input: tx.clauses[0].data,
 			value: tx.clauses[0].value,
 			gas: tx.gas,
-			transactionIndex: null,
 
 			// incompatible fields
+			transactionIndex: -1,
 			nonce: -1,
 			gasPrice: null,
 
@@ -310,7 +316,7 @@ export class Formatter {
 				topics: ret.topics,
 				data: ret.data,
 				blockHash: ret.meta.blockID,
-				blockNumber: ret.meta.blockNumber,
+				blockNumber: toHex(ret.meta.blockNumber),
 				transactionHash: ret.meta.txID,
 
 				transactionIndex: -1,
@@ -323,20 +329,20 @@ export class Formatter {
 		return {
 			hash: b.id,
 			parentHash: b.parentID,
-			number: b.number,
+			number: toHex(b.number),
 			stateRoot: b.stateRoot,
 			receiptsRoot: b.receiptsRoot,
 			transactionRoot: b.txsRoot,
-			timestamp: b.timestamp,
-			gasLimit: b.gasLimit,
-			gasUsed: b.gasUsed,
+			timestamp: toHex(b.timestamp),
+			gasLimit: toHex(b.gasLimit),
+			gasUsed: toHex(b.gasUsed),
 			miner: b.signer,
 
 			// unsupported
 			nonce: null,
 			sha3Uncles: null,
 			logsBloom: null,
-			extraData: null,
+			extraData: '0x',
 		}
 	}
 }

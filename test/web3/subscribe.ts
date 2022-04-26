@@ -7,7 +7,7 @@ import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const Web3 = require('web3');
 
 import { ConnexProvider, types } from '../../src/index';
-import { wait } from '../../src/utils';
+import { wait, hexToNumber } from '../../src/utils';
 import { urls, soloAccounts, bin, abi } from '../settings'
 
 describe('Testing subscribe', () => {
@@ -118,7 +118,7 @@ describe('Testing subscribe', () => {
 		let blockNumber: number;
 		const sub = web3.eth.subscribe('newBlockHeaders', (err: any, result: types.RetBlock) => {
 			if (err) { assert.fail(err); }
-			if (!blockNumber) { blockNumber = result.number; }
+			if (!blockNumber) { blockNumber = hexToNumber(result.number); }
 			else {
 				expect(result.number).to.eql(blockNumber + 1);
 				blockNumber++;

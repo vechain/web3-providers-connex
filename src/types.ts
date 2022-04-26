@@ -1,8 +1,5 @@
 'use strict';
 
-import { Block, Transaction, TransactionReceipt, BlockHeader } from 'web3-eth';
-import { Log } from 'web3-core';
-
 export type JsonRpcPayload = {
 	id: number;
 	jsonrpc?: string;
@@ -12,14 +9,12 @@ export type JsonRpcPayload = {
 
 export type Callback = (err: any, result?: any) => void;
 
-export interface RetBlock extends Omit<Block,
-	'difficulty' |
-	'totalDifficulty' |
-	'uncles' |
-	'sha3Uncles' |
-	'nonce' |
-	'logsBloom'
-> {
+export type hex = string;
+
+export interface RetBlock extends RetHeader {
+	size: hex;
+	transactions: string[];
+
 	// incompatible fields
 	difficulty: null;
 	totalDifficulty: null;
@@ -31,34 +26,49 @@ export interface RetBlock extends Omit<Block,
 	thor?: Connex.Thor.Block;
 }
 
-export interface RetHeader extends Omit<BlockHeader,
-	'nonce' |
-	'sha3Uncles' |
-	'logsBloom' |
-	'extraData'
-> {
+export interface RetHeader {
+	number: hex;
+	hash: string;
+	parentHash: string;
+	transactionRoot: string;
+	stateRoot: string;
+	receiptsRoot: string;
+	miner: string;
+	gasLimit: hex;
+	gasUsed: hex;
+	timestamp: hex;
+
 	nonce: null;
 	sha3Uncles: null;
 	logsBloom: null;
-	extraData: null;
+	extraData: '0x';
 }
 
-export interface RetTransaction extends Omit<Transaction, 'gasPrice'> {
+export interface RetTransaction {
+	hash: string;
+	blockHash: string | null;
+	blockNumber: hex | null;
+	from: string;
+	to: string | null;
+	value: string;
+	gas: number;
+	input: string;
+
 	// incompatible fields
-	// nonce: null;
+	transactionIndex: -1;
+	nonce: -1;
 	gasPrice: null;
 
 	thor?: Connex.Thor.Transaction;
 }
 
-export interface RetReceipt extends Omit<TransactionReceipt,
-	'status' |
-	'effectiveGasPrice' |
-	'logsBloom' |
-	'from' |
-	'to' |
-	'logs'
-> {
+export interface RetReceipt {
+	transactionHash: string;
+    blockHash: string;
+    blockNumber: hex;
+    contractAddress?: string;
+    gasUsed: hex;
+   
 	// To account for web3.utils.formatters.outputTransactionReceiptFormatter
 	// that format status using 
 	// 		receipt.status = Boolean(parseInt(receipt.status));
@@ -69,13 +79,25 @@ export interface RetReceipt extends Omit<TransactionReceipt,
 	logsBloom: null;
 	from: null;
 	to: null;
+	transactionIndex: -1;
+	cumulativeGasUsed: -1;
 
 	logs: RetLog[];
 
 	thor?: Connex.Thor.Transaction.Receipt;
 }
 
-export interface RetLog extends Log { }
+export interface RetLog {
+	address: string;
+	data: string;
+	topics: string[];
+	transactionHash: string;
+	blockHash: string;
+	blockNumber: hex;
+
+	logIndex: -1;
+	transactionIndex: -1;
+}
 
 export type Web3TxObj = {
 	to?: string;
