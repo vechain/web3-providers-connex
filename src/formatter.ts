@@ -23,13 +23,19 @@ import {
 import { Err } from './error';
 
 export class Formatter {
-	readonly _connex: Connex;
+	private readonly _connex: Connex;
 	private readonly _inputFormatters: Record<string, (payload: JsonRpcPayload) => any[] | Error> = {};
 	private readonly _ifSetNet: boolean;
+	private readonly _ifReturnThorObj: boolean;
 
-	constructor(connex: Connex, ifSetNet: boolean) {
+	constructor(connex: Connex, ifSetNet: boolean, ifReturnThorObj?: boolean) {
 		this._connex = connex;
 		this._ifSetNet = ifSetNet;
+		if(ifReturnThorObj) {
+			this._ifReturnThorObj = ifReturnThorObj;
+		} else {
+			this._ifReturnThorObj = false;
+		}
 
 		this._inputFormatters['eth_getBlockByNumber'] = this._getBlockByNumber;
 		this._inputFormatters['eth_getBalance'] = this._getBalance;
@@ -214,7 +220,7 @@ export class Formatter {
 		}
 	}
 
-	private _sendRawTransaction = function (payload: JsonRpcPayload) {
+	private _sendRawTransaction = (payload: JsonRpcPayload) => {
 		const raw: string = payload.params[0];
 		if (!isHexStrict(raw)) {
 			return Err.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
@@ -222,7 +228,7 @@ export class Formatter {
 		return [raw];
 	}
 
-	outputReceiptFormatter = function toRetReceipt(receipt: Connex.Thor.Transaction.Receipt): RetReceipt {
+	outputReceiptFormatter = (receipt: Connex.Thor.Transaction.Receipt): RetReceipt => {
 		const logs: RetLog[] = (receipt.outputs.length > 0 && receipt.outputs[0].events.length > 0) ?
 			receipt.outputs[0].events.map(event => {
 				return {
@@ -256,11 +262,12 @@ export class Formatter {
 			contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : undefined,
 			logs: logs,
 
-			thor: receipt,
+			
+			thor: (this._ifReturnThorObj) ? receipt : undefined,
 		};
 	}
 
-	outputBlockFormatter = function (b: Connex.Thor.Block): RetBlock {
+	outputBlockFormatter = (b: Connex.Thor.Block): RetBlock => {
 		return {
 			hash: b.id,
 			parentHash: b.parentID,
@@ -284,12 +291,11 @@ export class Formatter {
 			logsBloom: null,
 			extraData: '0x',
 
-			// original block returned by connex
-			thor: b,
+			thor: (this._ifReturnThorObj) ? b : undefined,
 		};
 	}
 
-	outputTransactionFormatter(tx: Connex.Thor.Transaction): RetTransaction {
+	outputTransactionFormatter = (tx: Connex.Thor.Transaction): RetTransaction => {
 		return {
 			hash: tx.id,
 			blockNumber: toHex(tx.meta.blockNumber),
@@ -305,11 +311,11 @@ export class Formatter {
 			nonce: -1,
 			gasPrice: null,
 
-			thor: tx,
+			thor: (this._ifReturnThorObj) ? tx : undefined,
 		};
 	}
 
-	outputLogsFormatter(ret: Connex.Thor.Filter.Row<'event'>[]): RetLog[] {
+	outputLogsFormatter = (ret: Connex.Thor.Filter.Row<'event'>[]): RetLog[] => {
 		return ret.map((ret) => {
 			return {
 				address: ret.address,

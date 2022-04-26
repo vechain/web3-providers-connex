@@ -19,7 +19,10 @@ describe('Testing getTransactionReceipt', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
+			web3 = new Web3(new ConnexProvider({ 
+				connex: new Framework(driver),
+				ifReturnThorObj: true,
+			}));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}

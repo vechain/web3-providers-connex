@@ -30,14 +30,19 @@ export class ConnexProvider extends EventEmitter {
 		logs: {},
 	};
 
-	constructor(opt: { connex: Connex, wallet?: Wallet, net?: Net }) {
+	constructor(opt: { 
+		connex: Connex, 
+		wallet?: Wallet, 
+		net?: Net, 
+		ifReturnThorObj?: boolean 
+	}) {
 		super();
 
 		this.connex = opt.connex;
 		const id = opt.connex.thor.genesis.id;
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
 
-		this._formatter = new Formatter(opt.connex, !!opt.net);
+		this._formatter = new Formatter(opt.connex, !!opt.net, opt.ifReturnThorObj);
 
 		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
 		this._methodMap['eth_getBlockByNumber'] = this._getBlockByNumber;
@@ -76,7 +81,7 @@ export class ConnexProvider extends EventEmitter {
 		this._methodMap['thor_next'] = this._next;
 	}
 
-	public async request(req: RequestArguments) {
+	request = async (req: RequestArguments) => {
 		const exec = this._methodMap[req.method];
 		if (!exec) {
 			return Promise.reject(Err.MethodNotFound(req.method));
