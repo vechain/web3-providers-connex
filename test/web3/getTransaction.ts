@@ -68,29 +68,31 @@ describe('Testing getTransaction', () => {
 		expect(tx.blockNumber).to.eql(tx.thor.meta.blockNumber);
 		expect(tx.blockHash).to.eql(tx.thor.meta.blockID);
 		expect(tx.from).to.eql(web3.utils.toChecksumAddress(tx.thor.origin));
-		expect(tx.nonce).to.eql(-1);
-
-		expect(tx.to).to.eql(expected.to);
-		expect(tx.input).to.eql(expected.data);
 		expect(tx.value).to.eql(expected.value);
 		expect(tx.gas).to.eql(expected.gas);
+		expect(tx.to).to.eql(expected.to);
+
+		// Unsupported fields
+		expect(tx.nonce).to.eql(0);
+		expect(tx.input).to.eql(expected.data);
+		expect(tx.transactionIndex).to.eql(0);
 	})
 
-	// it('existing hash/id of a VET transfer', async () => {
-	// 	const hash = '0xc5e0da1aedd7e194b49e8e72977affb3737c335a1d2c385c49a7510cc2fc4928';
-	// 	const expected = {
-	// 		value: web3.utils.hexToNumberString('0x12dd785c378bf00000'),
-	// 		data: '0x'
-	// 	}
+	it('existing hash/id of a VET transfer', async () => {
+		const hash = '0xc5e0da1aedd7e194b49e8e72977affb3737c335a1d2c385c49a7510cc2fc4928';
+		const expected = {
+			value: web3.utils.hexToNumberString('0x12dd785c378bf00000'),
+			data: '0x'
+		}
 
-	// 	let tx: types.RetTransaction;
-	// 	try {
-	// 		tx = await web3.eth.getTransaction(hash);
-	// 	} catch (err: any) {
-	// 		assert.fail(`Unexpected error: ${err}`);
-	// 	}
+		let tx: types.RetTransaction;
+		try {
+			tx = await web3.eth.getTransaction(hash);
+		} catch (err: any) {
+			assert.fail(`Unexpected error: ${err}`);
+		}
 
-	// 	expect(tx.input).to.eql(expected.data);
-	// 	expect(tx.value).to.eql(expected.value);
-	// })
+		expect(tx.input).to.eql(expected.data);
+		expect(tx.value).to.eql(expected.value);
+	})
 })

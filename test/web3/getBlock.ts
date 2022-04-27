@@ -8,6 +8,7 @@ const Web3 = require('web3');
 
 import { ConnexProvider, Err, types } from '../../src/index';
 import { urls } from '../settings';
+import { CONST } from '../../src/types';
 
 describe('Testing getBlock', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -82,6 +83,15 @@ describe('Testing getBlock', () => {
 		expect(blk.number).to.eql(num);
 		expect(blk.hash).to.eql(blk.thor.id);
 		expect(blk.parentHash).to.eql(blk.thor.parentID);
+
+		// Unsupported fields
+		expect(blk.difficulty).to.eql('0');
+		expect(blk.totalDifficulty).to.eql('0');
+		expect(blk.extraData).to.eql('0x');
+		expect(blk.logsBloom).to.eql(CONST.zeroBytes256);
+		expect(blk.sha3Uncles).to.eql(CONST.zeroBytes32);
+		expect(blk.nonce).to.eql(CONST.zeroBytes8);
+		expect(blk.uncles).to.eql([]);
 	})
 
 	it('existing number', async () => {

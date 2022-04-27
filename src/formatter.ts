@@ -11,13 +11,14 @@ import {
 	FilterOpts,
 	ConvertedFilterOpts,
 	RetHeader,
+	CONST,
 } from './types';
-import { 
-	hexToNumber, 
-	parseBlockNumber, 
-	toBytes32, 
-	toFilterCriteria, 
-	toHex, 
+import {
+	hexToNumber,
+	parseBlockNumber,
+	toBytes32,
+	toFilterCriteria,
+	toHex,
 	isHexStrict,
 } from './utils';
 import { Err } from './error';
@@ -31,7 +32,7 @@ export class Formatter {
 	constructor(connex: Connex, ifSetNet: boolean, ifReturnThorObj?: boolean) {
 		this._connex = connex;
 		this._ifSetNet = ifSetNet;
-		if(ifReturnThorObj) {
+		if (ifReturnThorObj) {
 			this._ifReturnThorObj = ifReturnThorObj;
 		} else {
 			this._ifReturnThorObj = false;
@@ -239,8 +240,10 @@ export class Formatter {
 					topics: event.topics.map((x) => x),
 					data: event.data,
 
-					transactionIndex: -1,
-					logIndex: -1,
+					removed: false,
+
+					transactionIndex: '0x0',
+					logIndex: '0x0',
 				}
 			}) : [];
 
@@ -252,17 +255,15 @@ export class Formatter {
 			transactionHash: receipt.meta.txID,
 			gasUsed: toHex(receipt.gasUsed),
 
-			transactionIndex: -1,
-			cumulativeGasUsed: -1,
-			effectiveGasPrice: null,
-			logsBloom: null,
-			from: null,
-			to: null,
+			transactionIndex: '0x0',
+			cumulativeGasUsed: '0x0',
+			logsBloom: CONST.zeroBytes256,
+			from: CONST.zeroAddress,
+			to: CONST.zeroAddress,
 
-			contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : undefined,
+			contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : null,
 			logs: logs,
 
-			
 			thor: (this._ifReturnThorObj) ? receipt : undefined,
 		};
 	}
@@ -275,7 +276,7 @@ export class Formatter {
 			size: toHex(b.size),
 			stateRoot: b.stateRoot,
 			receiptsRoot: b.receiptsRoot,
-			transactionRoot: b.txsRoot,
+			transactionsRoot: b.txsRoot,
 			timestamp: toHex(b.timestamp),
 			gasLimit: toHex(b.gasLimit),
 			gasUsed: toHex(b.gasUsed),
@@ -283,12 +284,12 @@ export class Formatter {
 			miner: b.signer,
 
 			// incompatible fields
-			difficulty: null,
-			totalDifficulty: null,
-			uncles: null,
-			sha3Uncles: null,
-			nonce: null,
-			logsBloom: null,
+			difficulty: '0x0',
+			totalDifficulty: '0x0',
+			uncles: [],
+			sha3Uncles: CONST.zeroBytes32,
+			nonce: CONST.zeroBytes8,
+			logsBloom: CONST.zeroBytes256,
 			extraData: '0x',
 
 			thor: (this._ifReturnThorObj) ? b : undefined,
@@ -304,12 +305,12 @@ export class Formatter {
 			to: tx.clauses[0].to,
 			input: tx.clauses[0].data,
 			value: tx.clauses[0].value,
-			gas: tx.gas,
+			gas: toHex(tx.gas),
 
 			// incompatible fields
-			transactionIndex: -1,
-			nonce: -1,
-			gasPrice: null,
+			transactionIndex: '0x0',
+			nonce: '0x0',
+			gasPrice: '0x0',
 
 			thor: (this._ifReturnThorObj) ? tx : undefined,
 		};
@@ -325,8 +326,10 @@ export class Formatter {
 				blockNumber: toHex(ret.meta.blockNumber),
 				transactionHash: ret.meta.txID,
 
-				transactionIndex: -1,
-				logIndex: -1,
+				removed: false,
+
+				transactionIndex: '0x0',
+				logIndex: '0x0',
 			};
 		});
 	}
@@ -338,17 +341,11 @@ export class Formatter {
 			number: toHex(b.number),
 			stateRoot: b.stateRoot,
 			receiptsRoot: b.receiptsRoot,
-			transactionRoot: b.txsRoot,
+			transactionsRoot: b.txsRoot,
 			timestamp: toHex(b.timestamp),
 			gasLimit: toHex(b.gasLimit),
 			gasUsed: toHex(b.gasUsed),
 			miner: b.signer,
-
-			// unsupported
-			nonce: null,
-			sha3Uncles: null,
-			logsBloom: null,
-			extraData: '0x',
 		}
 	}
 }

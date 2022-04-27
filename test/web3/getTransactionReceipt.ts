@@ -8,6 +8,7 @@ const Web3 = require('web3');
 
 import { ConnexProvider, types } from '../../src/index';
 import { urls } from '../settings';
+import { CONST } from '../../src/types';
 
 describe('Testing getTransactionReceipt', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -64,12 +65,14 @@ describe('Testing getTransactionReceipt', () => {
 		expect(receipt.logs.length).to.eql(0);
 		expect(receipt.status).to.eql(!receipt.thor.reverted);
 
-		expect(receipt.contractAddress).to.be.undefined;
+		expect(receipt.contractAddress).to.be.null;
 
-		expect(receipt.transactionIndex).to.eql(-1);
-		expect(receipt.cumulativeGasUsed).to.eql(-1);
-		expect(receipt.from).to.be.null;
-		expect(receipt.to).to.be.null;
+		// Unsupported fields
+		expect(receipt.transactionIndex).to.eql(0);
+		expect(receipt.cumulativeGasUsed).to.eql(0);
+		expect(receipt.from).to.eql(CONST.zeroAddress);
+		expect(receipt.to).to.eql(CONST.zeroAddress);
+		expect(receipt.logsBloom).to.eql(CONST.zeroBytes256);
 	})
 
 	it('with log', async () => {
@@ -95,7 +98,9 @@ describe('Testing getTransactionReceipt', () => {
 			expect(log.topics).to.eql(receipt.thor.outputs[0].events[index].topics);
 			expect(log.data).to.eql(receipt.thor.outputs[0].events[index].data);
 
-			expect(log.transactionIndex).to.eql(-1);
+			// Unsupported fields
+			expect(log.transactionIndex).to.eql(0);
+			expect(log.logIndex).to.eql(0);
 		})
 	})
 })
