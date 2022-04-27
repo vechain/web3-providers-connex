@@ -22,14 +22,10 @@ export interface RetBlock extends RetHeader {
 	size: hex;					// number	
 	transactions: string[];		// bytes32 array
 
-	// incompatible fields
+	// Unsupported fields
 	difficulty: '0x0';			
 	totalDifficulty: '0x0';		
 	uncles: [];					
-	sha3Uncles: string;			// zero bytes32
-	nonce: string;				// zero bytes8
-	logsBloom: string;			// zero bytes256
-	extraData: '0x';
 
 	thor?: Connex.Thor.Block;
 }
@@ -45,6 +41,13 @@ export interface RetHeader {
 	gasLimit: hex;				// number			
 	gasUsed: hex;				// number
 	timestamp: hex;				// number
+
+
+	// Unsupported fields
+	sha3Uncles: string;			// zero bytes32
+	nonce: string;				// zero bytes8
+	logsBloom: string;			// zero bytes256
+	extraData: '0x';
 }
 
 export interface RetTransaction {

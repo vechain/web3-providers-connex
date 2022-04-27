@@ -346,6 +346,12 @@ export class Formatter {
 			gasLimit: toHex(b.gasLimit),
 			gasUsed: toHex(b.gasUsed),
 			miner: b.signer,
+
+			// incompatible fields
+			sha3Uncles: CONST.zeroBytes32,
+			nonce: CONST.zeroBytes8,
+			logsBloom: CONST.zeroBytes256,
+			extraData: '0x',
 		}
 	}
 }
