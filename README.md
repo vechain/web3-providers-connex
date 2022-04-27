@@ -82,14 +82,10 @@ import * as thor from 'web3-providers-connex';
 // url: thor node address (e.g., https://sync-mainnet.veblocks.net/)
 const net = new SimpleNet(url);
 // connex: a Connex instance
-const provider = thor.ethers.modifyProvider(
-	new ethers.providers.Web3Provider(
-		new thor.ConnexProvider({ 
-			connex: connex,
-			net: net
-		})
-	)
-);
+const provider = new thor.ConnexProvider({ 
+	connex: connex,
+	net: net
+});
 ```
 For the default block number options [1], only `latest` and `earliest` are supported. The followings are the affected APIs: `lib.getBalance`, `lib.getCode`, `lib.getStorageAt` and `lib.call` where `lib` is either `web3.eth` or `jsonRpcProvider`. 
 ### Get a Connex instance in the Node.js environment
