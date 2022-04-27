@@ -30,11 +30,11 @@ export class ConnexProvider extends EventEmitter {
 		logs: {},
 	};
 
-	constructor(opt: { 
-		connex: Connex, 
-		wallet?: Wallet, 
-		net?: Net, 
-		ifReturnThorObj?: boolean 
+	constructor(opt: {
+		connex: Connex,
+		wallet?: Wallet,
+		net?: Net,
+		ifReturnThorObj?: boolean
 	}) {
 		super();
 
@@ -42,7 +42,7 @@ export class ConnexProvider extends EventEmitter {
 		const id = opt.connex.thor.genesis.id;
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
 
-		this._formatter = new Formatter(opt.connex, !!opt.net, opt.ifReturnThorObj);
+		this._formatter = new Formatter(opt.connex, !!opt.net, !!opt.ifReturnThorObj);
 
 		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
 		this._methodMap['eth_getBlockByNumber'] = this._getBlockByNumber;
@@ -73,7 +73,9 @@ export class ConnexProvider extends EventEmitter {
 		}
 
 		// dummy
-		this._methodMap['eth_gasPrice'] = this._gasPrice;
+		this._methodMap['eth_gasPrice'] = async () => { return '0x0'; };
+		this._methodMap['eth_getTransactionCount'] = async () => { return '0x0'; };
+		this._methodMap['net_version'] = async () => { return '0x0'; };
 
 		this._subLoop();
 
@@ -287,10 +289,6 @@ export class ConnexProvider extends EventEmitter {
 		} catch (err: any) {
 			return Promise.reject(err);
 		}
-	}
-
-	private _gasPrice = async (params: any[]) => {
-		return 0;
 	}
 
 	private _sendTransaction = async (params: any[]) => {
