@@ -1,5 +1,5 @@
 # web3-providers-connex
-Web3.js provider implemented using Connex.js. It makes it possible to use [web3.js](https://github.com/ChainSafe/web3.js) and [ethers.js](https://github.com/ethers-io/ethers.js/) to interact with [VeChain Thor protocol](https://github.com/vechain/thor).
+Web3.js provider implemented using Connex.js and Thor restful APIs. It makes it possible to use [web3.js](https://github.com/ChainSafe/web3.js) and [ethers.js](https://github.com/ethers-io/ethers.js/) to interact with [VeChain Thor protocol](https://github.com/vechain/thor).
 ## Installation
 ```
 npm i web3-providers-connex
@@ -36,43 +36,8 @@ const factory = thor.ethers.modifyFactory(
 const contract = await factory.deploy(...args);
 ```
 Methods `modifyProvider` and `modifyFactory` are used to replace methods `jsonRpcProvider.sendTransaction` and `contractFactory.deploy` shipped with ethers.js to bypass the contract address computation that is incompatible with the Thor protocol.  
-## APIs
-The two tables below list all the supported APIs:
-|web3.js API|Remark|
-|:--|:--|
-|`web3.eth.estimateGas(callObject [, callback])`|Args:<ul><li>`callObject` includes properties: `from`, `to`, `value`, `data`, `gas`</li></ul>|
-|`web3.eth.getBlockNumber([callback])`||
-|`web3.eth.getBalance(address [, callback])`||
-|`web3.eth.getBlock(hashOrNumber [, callback])`|Args:<ul><li>`hashOrNumber` cannot be "pending"</li></ul>Returned block object:<ul><li>`hash` [32 bytes] - Thor block ID</li><li>`transactions` [`Array<string>`] - always return transaction hashes</li><li>`null` properties `difficulty`, `totalDifficulty`, `uncles`, `sha3Uncles`, `nonce`, `logsBloom`, `extraData`, `baseFeePerGas` [`null | undefined`]</li><li>`thor` [[`Connex.Thor.Block`](https://docs.vechain.org/connex/api.html#thor-block)]</li></ul>|
-|`jsonRpcProvider.getChainId()`||
-|`jsonRpcProvider.getCode(address [, callback])`||
-|`web3.eth.getPastLogs(options [, callback])`|Returned log object:<ul><li>1. `transactionIndex = -1`</li><li>2. `logIndex = -1`</li></ul>|
-|`web3.eth.getStorageAt(address, position [, callback])`||
-|`web3.eth.getTransaction(txHash [, callback])`|Returned transaction object:<ul><li>`hash` - Thor transaction ID<li>`nonce = -1`<li>`null` properties: `gasPrice`, `transactionIndex`<li>`undefined` properties: `maxPriorityFeePerGas`, `maxFeePerGas`<li>`thor` [[`Connex.Thor.Transaction`](https://docs.vechain.org/connex/api.html#thor-transaction)]|
-|`web3.eth.getTransactionReceipt(hash [, callback])`|Returned transaction receipt object:<ul><li>`transactionIndex = -1`</li><li>`cumulativeGasUsed = -1`</li><li>`null` properties: `from`, `to`, `cumulativeGasUsed`, `effectiveGasPrice`</li><li>`undefined` properties: `logsBloom`, `events`</li><li>`thor` [[`Connex.Thor.Transaction.Receipt`](https://docs.vechain.org/connex/api.html#thor-receipt)]</li></ul>Returned log object:<ul><li>`transactionIndex = -1`</li><li>`logIndex = -1`</li></ul>|
-|`web3.eth.isSyncing([callback])`|If under syncing, returned object:<br>1. `currentBlock` [`Number`]<br>2. `highestBlock` [`Number`]<br>3. `thor` [[`Connex.Thor.Status`](https://docs.vechain.org/connex/api.html#thor-status)]|
-|`web3.eth.sendTransaction(txObject [, callback])`|Args:<ul><li>`txObject` includes properties: `from`, `to`, `value`, `data`, `gas`</li></ul>|
-|`web3.eth.call(callObject [, callback])`|Args:<ul><li>`callObject` includes properties: `from`, `to`, `value`, `data`, `gas`</li></ul>|
-|`web3.eth.subscribe(type [, options] [, callback])`|Args:<ul><li>`type = "newBlockHeaders | logs"`</li></ul>|
-|`web3.eth.Contract`||
 
-|ethers.js API|Remark|
-|:--|:--|
-|`jsonRpcProvider.estimateGas(transaction)`||
-|`jsonRpcProvider.getBlockNumber()`||
-|`jsonRpcProvider.getBalance(address)`||
-|`jsonRpcProvider.getBlock(block)`||
-|`jsonRpcProvider.getCode(address)`||
-|`jsonRpcProvider.getLogs(filter)`||
-|`jsonRpcProvider.getStorageAt(address, pos)`||
-|`jsonRpcProvider.getTransaction(hash)`||
-|`jsonRpcProvider.getTransactionReceipt(hash)`||
-|`jsonRpcProvider.getSigner(address)`||
-|`jsonRpcProvider.sendTransaction(transaction)`|This method is re-implemented via calling `modifyProvider`|
-|`jsonRpcProvider.call(transaction)`||
-|`ethers.Contract`||
-|`ethers.ContractFactory`|Method `contractFactory.deploy` is re-implemented via calling `modifyFactory`|
-## FAQs
+## Guides
 ### Request at a Particular Block Hight
 There are a few Eth JSON-RPC APIs where users can specify a particular block height when requesting information [1]. To enable this feature, you need to provide a `Net` object when creating a `ConnexProvider` object as illustrated as follows:
 ```ts
@@ -82,12 +47,12 @@ import * as thor from 'web3-providers-connex';
 // url: thor node address (e.g., https://sync-mainnet.veblocks.net/)
 const net = new SimpleNet(url);
 // connex: a Connex instance
-const provider = new thor.ConnexProvider({ 
+const cp = new thor.ConnexProvider({ 
 	connex: connex,
 	net: net
 });
 ```
-For the default block number options [1], only `latest` and `earliest` are supported. The followings are the affected APIs: `lib.getBalance`, `lib.getCode`, `lib.getStorageAt` and `lib.call` where `lib` is either `web3.eth` or `jsonRpcProvider`. 
+For the default block number options [1], only `latest` and `earliest` are supported. The followings are the affected ETH JSON-RPC APIs: `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call`. 
 ### Get a Connex instance in the Node.js environment
 ```ts
 import { Framework } from '@vechain/connex-framework';
@@ -104,6 +69,28 @@ const connex = new Framework(driver);
 ### Examples
 You can check [https://github.com/zzGHzz/web3-providers-connex/tree/main/test](https://github.com/zzGHzz/web3-providers-connex/tree/main/test) for more examples.
 
+## Implemented ETH JSON-RPC APIs
+The table below lists all the implemented JSON-RPC APIs. All the web3/ethers APIs that invoke the APIs are therefore available.
+
+|ETH JSON-RPC API|Remark|
+|:--|:--|
+|`eth_estimateGas`|Args:<ul><li>`gasPrice` can be omitted</li></ul>|
+|`eth_blockNumber`||
+|`eth_getBalance`| Args:<ul><li>Default block parameter `pending` not supported |
+|`eth_getBlockByNumber`<br>`eth_getBlockByHash`|Args:<ul><li>Default block parameter `pending` not supported</li></ul>Returned block object:<ul><li>`hash` [32 bytes] - Thor block ID</li><li>`transactions` [`Array<string>`] - always return transaction hashes</li><li>Unsupported fields: `difficulty`, `totalDifficulty`, `uncles`, `sha3Uncles`, `nonce`, `logsBloom`, `extraData`</li></ul>|
+|`eth_chainId`||
+|`eth_getCode`||
+|`eth_getLogs`|Returned log object:<ul><li>Unsupported fields: `transactionIndex`, `logIndex`</li></ul>|
+|`eth_getStorageAt`||
+|`eth_getTransaction`|Returned transaction object:<ul><li>`hash` [32 bytes] - Thor transaction ID</li><li>Unsupported fields: `nonce`, `gasPrice`, `transactionIndex`, `maxPriorityFeePerGas`, `maxFeePerGas`</li></ul>|
+|`eth_getTransactionReceipt`|Returned transaction receipt object:<ul><li> Unsupported fields: `transactionIndex`, `cumulativeGasUsed`, `from`, `to`, `logsBloom`</li></ul>|
+|`eth_isSyncing`|If under syncing, returned object:<ul><li> `currentBlock` [`Number`]</li><li>`highestBlock` [`Number`]</li></ul>|
+|`eth_sendTransaction`|Args:<ul><li>`txObj` includes fields: `from`, `to`, `value`, `data`, `gas`</li></ul>|
+|`eth_call`|Args:<ul><li>`gasPrice` can be omitted</li></ul>|
+|`eth_subscribe`<br>`eth_unsubscribe`|Args:<ul><li>Supported subscription type: `newHeads`, `logs`</li></ul>|
+|`eth_gasPrice` (dummy)|Return 0|
+|`eth_getTransactionCount` (dummy)| Return 0|
+|`net_version` (dummy)|Return 0|
 ## License
 This software is licensed under the
 [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.html), also included
