@@ -343,7 +343,7 @@ export class ConnexProvider extends EventEmitter {
 					startingBlock: null,
 					currentBlock: toHex(this.connex.thor.status.head.number),
 					highestBlock: toHex(highestBlock),
-					thor: this.connex.thor.status,
+					//thor: this.connex.thor.status,
 				};
 			}
 		} catch (err: any) {
