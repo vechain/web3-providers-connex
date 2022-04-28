@@ -20,7 +20,10 @@ describe('Testing getTransaction', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			cp = new thor.ConnexProvider({ connex: new Framework(driver) });
+			cp = new thor.ConnexProvider({
+				connex: new Framework(driver),
+				ifReturnThorObj: true,
+			});
 			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -66,12 +69,14 @@ describe('Testing getTransaction', () => {
 		expect(actual.from.toLowerCase()).to.eql(
 			expected.thor.origin.toLowerCase()
 		);
-		expect(actual.nonce).to.eql(-1);
 
 		expect(actual.to!.toLowerCase()).to.eql(expected.to!.toLowerCase());
 		expect(actual.data).to.eql(expected.input);
 		expect(actual.value.toNumber()).to.eql(parseInt(expected.value));
-		expect(actual.gasLimit.toNumber()).to.eql(expected.gas);
+		expect(actual.gasLimit.toNumber()).to.eql(parseInt(expected.gas, 16));
+
+		// Unsupported fields
+		expect(actual.nonce).to.eql(0);
 	})
 
 	it('existing hash/id of a VET transfer', async () => {

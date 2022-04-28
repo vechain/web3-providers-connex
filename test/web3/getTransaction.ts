@@ -71,10 +71,10 @@ describe('Testing getTransaction', () => {
 		expect(tx.value).to.eql(expected.value);
 		expect(tx.gas).to.eql(expected.gas);
 		expect(tx.to).to.eql(expected.to);
+		expect(tx.input).to.eql(expected.data);
 
 		// Unsupported fields
 		expect(tx.nonce).to.eql(0);
-		expect(tx.input).to.eql(expected.data);
 		expect(tx.transactionIndex).to.eql(0);
 	})
 

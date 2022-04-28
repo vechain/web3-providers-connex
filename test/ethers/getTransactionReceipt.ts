@@ -7,6 +7,7 @@ import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers } from 'ethers';
 import { ConnexProvider, types } from '../../src';
 import { urls } from '../settings';
+import { CONST } from '../../src/types';
 
 describe('Testing getTransactionReceipt', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -19,7 +20,10 @@ describe('Testing getTransactionReceipt', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			cp = new ConnexProvider({ connex: new Framework(driver) })
+			cp = new ConnexProvider({ 
+				connex: new Framework(driver),
+				ifReturnThorObj: true,
+			});
 			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -66,10 +70,12 @@ describe('Testing getTransactionReceipt', () => {
 		expect(!!receipt.status).to.eql(!expected.thor.reverted);
 
 		expect(receipt.contractAddress).to.be.null;
-		expect(receipt.transactionIndex).to.eql(-1);
-		expect(receipt.cumulativeGasUsed.toNumber()).to.eql(-1);
-		expect(receipt.from).to.be.null;
-		expect(receipt.to).to.be.null;
+
+		// Unsupported fields
+		expect(receipt.transactionIndex).to.eql(0);
+		expect(receipt.cumulativeGasUsed.toNumber()).to.eql(0);
+		expect(receipt.from).to.eql(CONST.zeroAddress);
+		expect(receipt.to).to.eql(CONST.zeroAddress);
 	})
 
 	it('with log', async () => {
@@ -101,8 +107,9 @@ describe('Testing getTransactionReceipt', () => {
 			expect(log.topics).to.eql(expected.thor.outputs[0].events[index].topics);
 			expect(log.data).to.eql(expected.thor.outputs[0].events[index].data);
 
-			expect(log.transactionIndex).to.eql(-1);
-			expect(log.logIndex).to.eql(-1);
+			// Unsupported fields
+			expect(log.transactionIndex).to.eql(0);
+			expect(log.logIndex).to.eql(0);
 		})
 	})
 })
