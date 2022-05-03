@@ -16,6 +16,10 @@ import { Net, Wallet } from '@vechain/connex-driver';
 import { Restful } from './restful';
 
 type MethodHandler = (params: any[]) => Promise<any>;
+type DelegateOpt = {
+	url: string;
+	payer?: string;
+}
 
 export class ConnexProvider extends EventEmitter {
 	readonly connex: Connex;
@@ -30,11 +34,14 @@ export class ConnexProvider extends EventEmitter {
 		logs: {},
 	};
 
+	private _delegate: DelegateOpt | null;
+
 	constructor(opt: {
 		connex: Connex,
 		wallet?: Wallet,
 		net?: Net,
-		ifReturnThorObj?: boolean
+		ifReturnThorObj?: boolean,
+		delegate?: DelegateOpt,
 	}) {
 		super();
 
@@ -43,6 +50,7 @@ export class ConnexProvider extends EventEmitter {
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
 
 		this._formatter = new Formatter(opt.connex, !!opt.net, !!opt.ifReturnThorObj);
+		this._delegate = opt.delegate || null;
 
 		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
 		this._methodMap['eth_getBlockByNumber'] = this._getBlockByNumber;
@@ -81,6 +89,14 @@ export class ConnexProvider extends EventEmitter {
 
 		// Thor methods
 		this._methodMap['thor_next'] = this._next;
+	}
+
+	enableDelegate = (opt: DelegateOpt) => {
+		this._delegate = opt;
+	}
+
+	disableDelegate = () => {
+		this._delegate = null;
 	}
 
 	request = async (req: RequestArguments) => {
@@ -295,7 +311,15 @@ export class ConnexProvider extends EventEmitter {
 		const txObj: ConnexTxObj = params[0];
 		let ss = this.connex.vendor.sign('tx', [txObj.clauses[0]]);
 		if (txObj.from) { ss = ss.signer(txObj.from); }
+		if (this._delegate) {
+			if (!this._delegate.payer) {
+				ss = ss.delegate(this._delegate.url);
+			} else {
+				ss = ss.delegate(this._delegate.url, this._delegate.payer);
+			}
+		}
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
+		
 		try {
 			const ret = await ss.request()
 			return ret.txid;
