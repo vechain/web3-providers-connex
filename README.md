@@ -9,8 +9,8 @@ To get a web3 object:
 ```ts
 import * as thor from 'web3-providers-connex';
 
-// connex is an object of Connex
-const provider = new thor.ConnexProvider({ connex: connex });
+// connexObj is an instance of Connex
+const provider = new thor.ConnexProvider({ connex: connexObj });
 const web3 = new Web3(provider);
 ```
 To get an ethers JsonRpcProvider:
@@ -19,9 +19,9 @@ import * as thor from 'web3-providers-connex';
 
 // connex is an instance of Connex
 const provider = thor.ethers.modifyProvider(
-	new ethers.providers.Web3Provider(
-		new thor.ConnexProvider({ connex: connex })
-	)
+  new ethers.providers.Web3Provider(
+    new thor.ConnexProvider({ connex: connex })
+  )
 );
 ```
 To get an ethers JsonRpcSigner:
@@ -31,7 +31,7 @@ const signer = provider.getSigner(address);
 To deploy a contract
 ```ts
 const factory = thor.ethers.modifyFactory(
-	new ethers.ContractFactory(abi, bin, signer)
+  new ethers.ContractFactory(abi, bin, signer)
 );
 const contract = await factory.deploy(...args);
 ```
@@ -46,13 +46,35 @@ import * as thor from 'web3-providers-connex';
 
 // url: thor node address (e.g., https://sync-mainnet.veblocks.net/)
 const net = new SimpleNet(url);
-// connex: a Connex instance
 const cp = new thor.ConnexProvider({ 
-	connex: connex,
-	net: net
+  connex: connexObj,
+  net: net
 });
 ```
 For the default block number options [1], only `latest` and `earliest` are supported. The followings are the affected ETH JSON-RPC APIs: `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call`. 
+### Fee delegation
+Fee delegation can be enabled by passing the delegator URL to the `ConnexProvider` constructor:
+```ts
+import * as thor from 'web3-providers-connex';
+
+const cp = new thor.ConnexProvider({
+  connex: Obj,
+  delegate: {
+    url: 'https://delegator.url'
+  }
+})
+```
+or calling `enableDelegate`:
+```ts
+cp.enableDelegate({ url: 'https://delegator.url' });
+```
+You can also disable fee delegation by
+```ts
+cp.disableDelegate();
+```
+A delegator is a web service that co-signs and returns a signature for transactions it accepts. The gas fee would then be deducted from the delegator's account rather than the transaction sender's account. 
+
+You can build your own delegator by implementing [VIP201](https://github.com/vechain/VIPs/blob/master/vips/VIP-201.md). Alternatively, you can use public fee delegation services (e.g., provided by [vechain.energy](https://vechain.energy)).
 ### Get a Connex instance in the Node.js environment
 ```ts
 import { Framework } from '@vechain/connex-framework';
