@@ -1,6 +1,6 @@
 {
 	"name": "web3-providers-connex",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Web3.js provider built upon Connex.js to allow Web3.js to be compatible with the Thor protocol",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
