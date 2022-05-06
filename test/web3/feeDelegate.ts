@@ -7,7 +7,7 @@ import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 
 import { ConnexProvider } from '../../src/index';
 import { urls, soloAccounts, abi, bin } from '../settings';
-const Web3 = require('web3');
+import Web3 from 'web3';
 
 describe('Testing fee delegate', () => {
 	const net = new SimpleNet("https://sync-mainnet.veblocks.net");
@@ -31,7 +31,7 @@ describe('Testing fee delegate', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	let contractAddress: string;

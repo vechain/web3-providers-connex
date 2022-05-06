@@ -28,7 +28,7 @@ describe('Testing estimateGas', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('estimate gas of deploying test contract', async () => {

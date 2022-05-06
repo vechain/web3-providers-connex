@@ -28,7 +28,7 @@ describe('Testing getBalance', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	const addr = '0x69Cba4e17FEB8DA7Bd24EA36aabafE53a0f76439';

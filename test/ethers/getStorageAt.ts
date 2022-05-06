@@ -27,7 +27,7 @@ describe('Testing getStorageAt', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	const addr = '0xBe7a61b0405FDfbAaE28c1355cD53c8affC1C4b0';

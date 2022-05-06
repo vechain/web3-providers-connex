@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-const Web3 = require('web3');
+import Web3 from 'web3';
 
 import { ConnexProvider, Err } from '../../src/index';
 import { urls } from '../settings';
@@ -26,7 +26,7 @@ describe('Testing getStorageAt', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	const addr = '0xBe7a61b0405FDfbAaE28c1355cD53c8affC1C4b0';

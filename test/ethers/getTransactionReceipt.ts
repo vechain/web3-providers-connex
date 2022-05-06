@@ -31,7 +31,7 @@ describe('Testing getTransactionReceipt', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('non-existing', async () => {

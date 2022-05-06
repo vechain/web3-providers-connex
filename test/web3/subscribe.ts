@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-const Web3 = require('web3');
+import Web3 from 'web3';
 
 import { ConnexProvider, types } from '../../src/index';
 import { wait, hexToNumber } from '../../src/utils';
@@ -30,7 +30,7 @@ describe('Testing subscribe', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('subscribe logs', async () => {

@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-const Web3 = require('web3');
+import Web3 from 'web3';
 
 import { ConnexProvider } from '../../src/index';
 import { urls } from '../settings';
@@ -26,7 +26,7 @@ describe('Testing getChainId', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('get mainnet chainTag', async () => {

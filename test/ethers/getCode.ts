@@ -28,7 +28,7 @@ describe('Testing getCode', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	const addr = '0x9e68D6c7daf2e010D8B8Ee157D81DE143a7C68EF';

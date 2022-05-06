@@ -34,7 +34,7 @@ describe('Testing getLogs', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	const deployer = wallet.list[0].address;

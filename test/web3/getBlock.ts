@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-const Web3 = require('web3');
+import Web3 from 'web3';
 
 import { ConnexProvider, Err, types } from '../../src/index';
 import { urls } from '../settings';
@@ -31,7 +31,7 @@ describe('Testing getBlock', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('non-existing hash', async () => {

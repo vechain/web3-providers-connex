@@ -31,7 +31,7 @@ describe('Testing sendTransaction', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('transfer value', async () => {

@@ -27,7 +27,7 @@ describe('Testing getBlockNumber', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('get the latest block number', async () => {

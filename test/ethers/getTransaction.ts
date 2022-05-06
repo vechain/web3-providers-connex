@@ -31,7 +31,7 @@ describe('Testing getTransaction', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('non-existing hash/id', async () => {

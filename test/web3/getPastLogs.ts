@@ -7,7 +7,7 @@ import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 
 import { ConnexProvider, types } from '../../src/index';
 import { urls, soloAccounts, abi, bin } from '../settings';
-const Web3 = require('web3');
+import Web3 from 'web3';
 
 describe('Testing getPastLogs', () => {
 	const net = new SimpleNet(urls.solo);
@@ -29,7 +29,7 @@ describe('Testing getPastLogs', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	let contractAddress: string;

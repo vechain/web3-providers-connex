@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { randomBytes } from 'crypto';
 import { energyAddr, energyABI } from 'thor-builtin';
-const Web3 = require('web3');
+import Web3 from 'web3';
 
 import { ConnexProvider } from '../../src/index';
 import { urls, soloAccounts } from '../settings';
@@ -37,7 +37,7 @@ describe('Testing call', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	it('test revision', async () => {

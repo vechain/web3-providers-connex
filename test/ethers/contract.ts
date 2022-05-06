@@ -33,7 +33,7 @@ describe('Testing contract', () => {
 	})
 
 	after(() => {
-		driver.close();
+		driver?.close();
 	})
 
 	const from = wallet.list[0].address;
