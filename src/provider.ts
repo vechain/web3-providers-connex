@@ -11,9 +11,10 @@ import { Err } from './error';
 import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
-import { RequestArguments } from 'web3-core';
+import { RequestArguments, AbstractProvider } from 'web3-core';
 import { Net, Wallet } from '@vechain/connex-driver';
 import { Restful } from './restful';
+import { JsonRpcPayload, JsonRpcResponse } from 'web3-core-helpers';
 
 type MethodHandler = (params: any[]) => Promise<any>;
 type DelegateOpt = {
@@ -21,7 +22,7 @@ type DelegateOpt = {
 	payer?: string;
 }
 
-export class ConnexProvider extends EventEmitter {
+export class ConnexProvider extends EventEmitter implements AbstractProvider {
 	readonly connex: Connex;
 	readonly chainTag: number;
 	readonly restful?: Restful;
@@ -89,6 +90,19 @@ export class ConnexProvider extends EventEmitter {
 
 		// Thor methods
 		this._methodMap['thor_next'] = this._next;
+	}
+
+	sendAsync = (payload: {id?: number | string, jsonrpc?: string; method: string, params?:Array<any>}, callback: (error: Error | null, result?: JsonRpcResponse) => void): void => {
+		this.request(payload)
+			.then(ret => {
+				const id = typeof payload.id === 'number'? payload.id : 0;
+				callback(null, {
+					id: id,
+					jsonrpc: '2.0',
+					result: ret
+				});
+			})
+			.catch(err => callback(err));
 	}
 
 	enableDelegate = (opt: DelegateOpt) => {
@@ -319,7 +333,7 @@ export class ConnexProvider extends EventEmitter {
 			}
 		}
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
-		
+
 		try {
 			const ret = await ss.request()
 			return ret.txid;
