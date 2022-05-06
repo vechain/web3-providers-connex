@@ -9,8 +9,10 @@ export const Err = {
 		return new Error(`Parameter not supported: method=${method}, index=${index}`);
 	},
 
-	ArgumentMissingOrInvalid: (method: string, arg: string) => {
-		return new Error(`Argument missing or invalid: method=${method}, arg=${arg}`);
+	ArgumentMissingOrInvalid: (method: string, arg?: string) => {
+		let err = `Argument missing or invalid: method=${method}`;
+		if (arg) { err += `, arg=${arg}` };
+		return new Error(err);
 	},
 
 	SubscriptionIdNotFound: (id: string) => {
