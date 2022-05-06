@@ -4,7 +4,8 @@
 
 import {
 	ConnexTxObj,
-	ConvertedFilterOpts
+	ConvertedFilterOpts,
+	JsonRpcPayload
 } from './types';
 import { hexToNumber, getErrMsg, toEip1193SubResp, toHex } from './utils';
 import { Err } from './error';
@@ -14,7 +15,6 @@ import EventEmitter from 'eventemitter3';
 import { RequestArguments, AbstractProvider } from 'web3-core';
 import { Net, Wallet } from '@vechain/connex-driver';
 import { Restful } from './restful';
-import { JsonRpcPayload, JsonRpcResponse } from 'web3-core-helpers';
 
 type MethodHandler = (params: any[]) => Promise<any>;
 type DelegateOpt = {
@@ -92,10 +92,14 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		this._methodMap['thor_next'] = this._next;
 	}
 
-	sendAsync = (payload: {id?: number | string, jsonrpc?: string; method: string, params?:Array<any>}, callback: (error: Error | null, result?: JsonRpcResponse) => void): void => {
+	sendAsync = (
+		payload: JsonRpcPayload,
+		callback: (error: any, result?: {id: number, jsonrpc: string, result: any}) => void
+	): void => {
 		this.request(payload)
 			.then(ret => {
-				const id = typeof payload.id === 'number'? payload.id : 0;
+				// compatible with web3.js
+				const id = typeof payload.id === 'number' ? payload.id : 0;
 				callback(null, {
 					id: id,
 					jsonrpc: '2.0',
@@ -120,9 +124,8 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		}
 
 		const paramsOrErr = this._formatter.formatInput({
-			id: req.id,
 			method: req.method,
-			params: req.params || [],
+			params: req.params,
 		})
 
 		if (paramsOrErr instanceof Error) {

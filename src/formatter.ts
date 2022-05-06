@@ -25,7 +25,7 @@ import { Err } from './error';
 
 export class Formatter {
 	private readonly _connex: Connex;
-	private readonly _inputFormatters: Record<string, (payload: JsonRpcPayload) => any[] | Error> = {};
+	private readonly _inputFormatters: Record<string, (params: any[]) => any[] | Error> = {};
 	private readonly _ifSetNet: boolean;
 	private readonly _ifReturnThorObj: boolean;
 
@@ -50,15 +50,15 @@ export class Formatter {
 		this._inputFormatters['eth_sendRawTransaction'] = this._sendRawTransaction;
 	}
 
-	formatInput = (payload: JsonRpcPayload) => {
+	formatInput = (payload: JsonRpcPayload): any[] | Error => {
 		const inputFormatter = this._inputFormatters[payload.method];
-		if (!inputFormatter) { return payload.params; }
-
-		return inputFormatter(payload);
+		if (!inputFormatter) { return payload.params || []; }
+		if (!payload.params) { throw Err.ArgumentMissingOrInvalid(payload.method); }
+		return inputFormatter(payload.params);
 	}
 
-	private _getBlockByNumber = (payload: JsonRpcPayload) => {
-		const num = parseBlockNumber(payload.params[0]);
+	private _getBlockByNumber = (params: any[]) => {
+		const num = parseBlockNumber(params[0]);
 		if (num === null) {
 			return Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
 		}
@@ -66,8 +66,7 @@ export class Formatter {
 		return [num];
 	}
 
-	private _getBalance = (payload: JsonRpcPayload) => {
-		const params = payload.params.map(x => x);
+	private _getBalance = (params: any[]) => {
 		if (!this._ifSetNet) {
 			if (params.length == 2 &&
 				!(typeof params[1] === 'string' && params[1] === 'latest')
@@ -85,8 +84,7 @@ export class Formatter {
 		return params;
 	}
 
-	private _getCode = (payload: JsonRpcPayload) => {
-		const params = payload.params.map(x => x);
+	private _getCode = (params: any[]) => {
 		if (!this._ifSetNet) {
 			if (params.length >= 2 &&
 				!(typeof params[1] === 'string' && params[1] === 'latest')
@@ -104,8 +102,7 @@ export class Formatter {
 		return params;
 	}
 
-	private _getStorageAt = (payload: JsonRpcPayload) => {
-		const params = payload.params.map(x => x);
+	private _getStorageAt = (params: any[]) => {
 		if (!this._ifSetNet) {
 			if (params.length >= 3 &&
 				!(typeof params[2] === 'string' && params[2] === 'latest')
@@ -113,7 +110,7 @@ export class Formatter {
 				return Err.MethodParamNotSupported('eth_getStorageAt', 3);
 			}
 		} else if (typeof params[1] !== 'number') {
-			const revision = parseBlockNumber(payload.params[2] || 'latest');
+			const revision = parseBlockNumber(params[2] || 'latest');
 			if (revision === null) {
 				return Err.ArgumentMissingOrInvalid('eth_getStorageAt', 'revision');
 			}
@@ -124,8 +121,8 @@ export class Formatter {
 		return params;
 	}
 
-	private _sendTransaction = (payload: JsonRpcPayload) => {
-		const o1: Web3TxObj = payload.params[0];
+	private _sendTransaction = (params: any[]) => {
+		const o1: Web3TxObj = params[0];
 		const o2: ConnexTxObj = {
 			clauses: [{
 				to: !!o1.to ? o1.to : null,
@@ -139,8 +136,7 @@ export class Formatter {
 		return [o2];
 	}
 
-	private _call = (payload: JsonRpcPayload) => {
-		const params = payload.params.map(x => x);
+	private _call = (params: any[]) => {
 		if (!this._ifSetNet) {
 			if (params.length >= 2 &&
 				!(typeof params[1] === 'string' && params[1] === 'latest')
@@ -155,21 +151,16 @@ export class Formatter {
 			params[1] = revision;
 		}
 
-		params[0] = this._sendTransaction({
-			id: payload.id,
-			method: payload.method,
-			params: params
-		})[0];
-
+		params[0] = this._sendTransaction(params)[0];
 		return params;
 	}
 
-	private _estimateGas = (payload: JsonRpcPayload) => {
-		return this._sendTransaction(payload);
+	private _estimateGas = (params: any[]) => {
+		return this._sendTransaction(params);
 	}
 
-	private _getLogs = (payload: JsonRpcPayload) => {
-		const args: FilterOpts = payload.params[0];
+	private _getLogs = (params: any[]) => {
+		const args: FilterOpts = params[0];
 
 		let fromBlock: number, toBlock: number;
 
@@ -209,20 +200,20 @@ export class Formatter {
 		return [out];
 	}
 
-	private _subscribe = (payload: JsonRpcPayload) => {
-		const name: string = payload.params[0];
+	private _subscribe = (params: any[]) => {
+		const name: string = params[0];
 		switch (name) {
 			case 'newHeads':
 				return ['newHeads'];
 			case 'logs':
-				return ['logs', toFilterCriteria(payload.params[1])];
+				return ['logs', toFilterCriteria(params[1])];
 			default:
 				return Err.InvalidSubscriptionName(name);
 		}
 	}
 
-	private _sendRawTransaction = (payload: JsonRpcPayload) => {
-		const raw: string = payload.params[0];
+	private _sendRawTransaction = (params: any[]) => {
+		const raw: string = params[0];
 		if (!isHexStrict(raw)) {
 			return Err.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
 		}
