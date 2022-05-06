@@ -9,9 +9,10 @@
 	],
 	"scripts": {
 		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
-		"test-web3": "mocha --no-timeouts --colors -r ts-node/register test/web3/*.ts",
-		"test-ethers": "mocha --no-timeouts --colors -r ts-node/register test/ethers/*.ts",
-		"test-restful": "mocha --no-timeouts --colors -r ts-node/register test/restful/*.ts"
+		"test": "npm run test-web3 && npm run test-ethers && npm run test-restful",
+		"test-web3": "mocha --no-timeouts test/web3/*.ts",
+		"test-ethers": "mocha --no-timeouts test/ethers/*.ts",
+		"test-restful": "mocha --no-timeouts test/restful/*.ts"
 	},
 	"repository": {
 		"type": "git",
