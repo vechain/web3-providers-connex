@@ -1,15 +1,11 @@
 'use strict';
 
 export type JsonRpcPayload = {
-	id: number;
+	id?: number | string;
 	jsonrpc?: string;
 	method: string;
-	params: any[];
+	params?: any[];
 }
-
-export type Callback = (err: any, result?: any) => void;
-
-export type hex = string;
 
 export const CONST = {
 	zeroBytes8: '0x' + '0'.repeat(16),
@@ -19,7 +15,7 @@ export const CONST = {
 }
 
 export interface RetBlock extends RetHeader {
-	size: hex;					// number	
+	size: string;				// number in hex string	
 	transactions: string[];		// bytes32 array
 
 	// Unsupported fields
@@ -31,16 +27,16 @@ export interface RetBlock extends RetHeader {
 }
 
 export interface RetHeader {
-	number: hex; 				// number
+	number: string; 			// number in hex string
 	hash: string; 				// bytes32
 	parentHash: string; 		// bytes32
 	transactionsRoot: string;	// bytes32
 	stateRoot: string;			// bytes32
 	receiptsRoot: string;		// bytes32
 	miner: string;				// bytes20			
-	gasLimit: hex;				// number			
-	gasUsed: hex;				// number
-	timestamp: hex;				// number
+	gasLimit: string;			// number in hex string			
+	gasUsed: string;			// number in hex string
+	timestamp: string;			// number in hex string
 
 
 	// Unsupported fields
@@ -53,11 +49,11 @@ export interface RetHeader {
 export interface RetTransaction {
 	hash: string;				// bytes32
 	blockHash: string;			// bytes32 
-	blockNumber: hex;			// number
+	blockNumber: string;		// number in hex string
 	from: string;				// bytes20
 	to: string | null;			// bytes20 | null
-	value: hex;					// number
-	gas: hex;					// number
+	value: string;				// number in hex string
+	gas: string;				// number in hex string
 	input: string;
 
 	// incompatible fields
@@ -71,9 +67,9 @@ export interface RetTransaction {
 export interface RetReceipt {
 	transactionHash: string;		// bytes32
     blockHash: string;				// bytes32
-    blockNumber: hex;				// number
+    blockNumber: string;			// number in hex string
     contractAddress: string | null;	// bytes20 | null 
-    gasUsed: hex;					// number
+    gasUsed: string;				// number in hex string
 
 	status: '0x0' | '0x1';
 
@@ -95,7 +91,7 @@ export interface RetLog {
 	topics: string[];			// bytes32 array
 	transactionHash: string;	// bytes32	
 	blockHash: string;			// bytes32
-	blockNumber: hex;			// number
+	blockNumber: string;		// number in hex string
 
 	removed: false;
 
