@@ -16,7 +16,6 @@
 				"-r",
 				"ts-node/register"
 			],
-			"protocol": "inspector",
 			"internalConsoleOptions": "openOnSessionStart",
 			"console": "integratedTerminal",
 			"sourceMaps": true
@@ -27,13 +26,8 @@
 			"request": "launch",
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
 			"args": [
-				"--no-timeouts",
-				"--colors",
-				"${file}",
-				"-r",
-				"ts-node/register"
+				"${file}"
 			],
-			"protocol": "inspector",
 			"internalConsoleOptions": "openOnSessionStart",
 			"console": "integratedTerminal",
 			"sourceMaps": true
