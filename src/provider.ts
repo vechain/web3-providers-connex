@@ -1,19 +1,19 @@
-/// <reference types="@vechain/connex-types">
+/// <reference types='@vechain/connex-types'/>
 
 'use strict';
 
 import {
-	ConnexTxObj,
 	ConvertedFilterOpts,
-	JsonRpcPayload
+	JsonRpcPayload,
+	RequestArguments,
+	AbstractProvider,
+	Net, Wallet, ExplainArg
 } from './types';
 import { hexToNumber, getErrMsg, toEip1193SubResp, toHex } from './utils';
 import { Err } from './error';
 import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
-import { RequestArguments, AbstractProvider } from 'web3-core';
-import { Net, Wallet } from '@vechain/connex-driver';
 import { Restful } from './restful';
 
 type MethodHandler = (params: any[]) => Promise<any>;
@@ -256,9 +256,9 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 	}
 
 	private _estimateGas = async (params: any[]) => {
-		const txObj: ConnexTxObj = params[0];
+		const txObj: ExplainArg = params[0];
 		let explainer = this.connex.thor.explain([txObj.clauses[0]]);
-		if (txObj.from) { explainer = explainer.caller(txObj.from); }
+		if (txObj.caller) { explainer = explainer.caller(txObj.caller); }
 		if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
 		try {
 			const outputs = await explainer.execute();
@@ -288,26 +288,14 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 	}
 
 	private _call = async (params: any[]) => {
-		const txObj: ConnexTxObj = params[0];
+		const txObj: ExplainArg = params[0];
 		try {
 			if (this.restful) {
-				const callObj: Connex.Driver.ExplainArg = {
-					clauses: txObj.clauses.map(c => {
-						return {
-							to: c.to,
-							value: toHex(c.value),
-							data: c.data || '0x'
-						}
-					})
-				}
-				if (txObj.gas) { callObj.gas = txObj.gas; }
-				if (txObj.from) { callObj.caller = txObj.from; }
-
-				return this.restful.call(callObj, params[1]);
+				return this.restful.call(txObj, params[1]);
 			}
 
 			let explainer = this.connex.thor.explain([txObj.clauses[0]]);
-			if (txObj.from) { explainer = explainer.caller(txObj.from); }
+			if (txObj.caller) { explainer = explainer.caller(txObj.caller); }
 			if (txObj.gas) { explainer = explainer.gas(txObj.gas); }
 
 			const outputs = await explainer.execute();
@@ -325,9 +313,9 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 	}
 
 	private _sendTransaction = async (params: any[]) => {
-		const txObj: ConnexTxObj = params[0];
+		const txObj: ExplainArg = params[0];
 		let ss = this.connex.vendor.sign('tx', [txObj.clauses[0]]);
-		if (txObj.from) { ss = ss.signer(txObj.from); }
+		if (txObj.caller) { ss = ss.signer(txObj.caller); }
 		if (this._delegate) {
 			if (!this._delegate.payer) {
 				ss = ss.delegate(this._delegate.url);

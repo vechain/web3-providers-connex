@@ -1,8 +1,6 @@
-/// <reference types="@vechain/connex-types">
-
 'use strict';
 
-import { Net } from "@vechain/connex-driver";
+import { Net, ExplainArg } from './types';
 import { getErrMsg } from './utils';
 
 export class Restful {
@@ -99,7 +97,7 @@ export class Restful {
 		}
 	}
 
-	call = async (callObj: Connex.Driver.ExplainArg, revision?: string) => {
+	call = async (callObj: ExplainArg, revision?: string) => {
 		try {
 			const httpParams: Net.Params = {
 				body: callObj,

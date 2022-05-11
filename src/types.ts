@@ -7,6 +7,93 @@ export type JsonRpcPayload = {
 	params?: any[];
 }
 
+export type JsonRpcResponse = {
+	id?: number | string;
+	jsonrpc: string;
+	result?: any;
+	error?: any;
+}
+
+/**
+ * Defined in @vechain/connex-driver
+ */
+export interface Net {
+    /** base URL */
+    readonly baseURL: string;
+    /**
+     * perform http request
+     * @param method 'GET' or 'POST'
+     * @param path path to access
+     * @param params additional params
+     * @returns response body, JSON decoded
+     */
+    http(method: 'GET' | 'POST', path: string, params?: Net.Params): Promise<any>;
+    /**
+     * open websocket reader on path
+     * @param path
+     */
+    openWebSocketReader(path: string): Net.WebSocketReader;
+}
+export declare namespace Net {
+    /** http request params */
+    interface Params {
+        query?: Record<string, string>;
+        body?: any;
+        headers?: Record<string, string>;
+        validateResponseHeader?: (headers: Record<string, string>) => void;
+    }
+    /** websocket reader */
+    interface WebSocketReader {
+        /** read data */
+        read(): Promise<any>;
+        close(): void;
+    }
+}
+/** Wallet interface manages private keys */
+export interface Wallet {
+    /** list all keys */
+    readonly list: Wallet.Key[];
+}
+export declare namespace Wallet {
+    /** describes an operational key */
+    interface Key {
+        /** address derived from key */
+        address: string;
+        /**
+         * sign message hash
+         * @param msgHash message hash
+         * @returns signature
+         */
+        sign(msgHash: Buffer): Promise<Buffer>;
+    }
+}
+
+export type ExplainArg = {
+	clauses: Array<{
+		to: string | null
+		value: string
+		data: string
+	}>;
+	caller?: string;
+	gas?: number;
+	gasPrice?: string;
+};
+
+/**
+ * Defined in web3-core
+ */
+export interface AbstractProvider {
+	sendAsync(payload: JsonRpcPayload, callback: (error: Error | null, result?: JsonRpcResponse) => void): void;
+	send?(payload: JsonRpcPayload, callback: (error: Error | null, result?: JsonRpcResponse) => void): void;
+	request?(args: RequestArguments): Promise<any>;
+	connected?: boolean;
+}
+export interface RequestArguments {
+	method: string;
+	params?: any;
+	[key: string]: any;
+}
+
 export const CONST = {
 	zeroBytes8: '0x' + '0'.repeat(16),
 	zeroBytes32: '0x' + '0'.repeat(64),
@@ -19,9 +106,9 @@ export interface RetBlock extends RetHeader {
 	transactions: string[];		// bytes32 array
 
 	// Unsupported fields
-	difficulty: '0x0';			
-	totalDifficulty: '0x0';		
-	uncles: [];					
+	difficulty: '0x0';
+	totalDifficulty: '0x0';
+	uncles: [];
 
 	thor?: Connex.Thor.Block;
 }
@@ -66,19 +153,19 @@ export interface RetTransaction {
 
 export interface RetReceipt {
 	transactionHash: string;		// bytes32
-    blockHash: string;				// bytes32
-    blockNumber: string;			// number in hex string
-    contractAddress: string | null;	// bytes20 | null 
-    gasUsed: string;				// number in hex string
+	blockHash: string;				// bytes32
+	blockNumber: string;			// number in hex string
+	contractAddress: string | null;	// bytes20 | null 
+	gasUsed: string;				// number in hex string
 
 	status: '0x0' | '0x1';
 
 	// incompatible fields
 	from: string;					// zero bytes20	
 	to: string;						// zero bytes20
-	transactionIndex: '0x0';		
+	transactionIndex: '0x0';
 	logsBloom: string;				// zero bytes256						
-	cumulativeGasUsed: '0x0';	
+	cumulativeGasUsed: '0x0';
 
 	logs: RetLog[];
 
@@ -105,11 +192,6 @@ export type Web3TxObj = {
 	value?: string;
 	data?: string;
 	gas?: string;
-}
-
-export interface ConnexTxObj extends Omit<Web3TxObj, 'gas'> {
-	clauses: [Connex.VM.Clause];
-	gas?: number;
 }
 
 export type FilterOpts = {

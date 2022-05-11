@@ -3,7 +3,6 @@
 import {
 	JsonRpcPayload,
 	Web3TxObj,
-	ConnexTxObj,
 	RetLog,
 	RetReceipt,
 	RetBlock,
@@ -12,6 +11,7 @@ import {
 	ConvertedFilterOpts,
 	RetHeader,
 	CONST,
+	ExplainArg,
 } from './types';
 import {
 	hexToNumber,
@@ -123,14 +123,14 @@ export class Formatter {
 
 	private _sendTransaction = (params: any[]) => {
 		const o1: Web3TxObj = params[0];
-		const o2: ConnexTxObj = {
+		const o2: ExplainArg = {
 			clauses: [{
 				to: !!o1.to ? o1.to : null,
-				value: !!o1.value ? o1.value : 0,
+				value: !!o1.value ? toHex(o1.value) : '0x0',
 				data: !!o1.data ? o1.data : '0x',
 			}],
 			gas: !!o1.gas ? hexToNumber(o1.gas) : undefined,
-			from: o1.from,
+			caller: o1.from,
 		}
 
 		return [o2];

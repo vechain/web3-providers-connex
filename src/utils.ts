@@ -1,12 +1,10 @@
 'use strict';
 
-// import { JsonRpcResponse } from 'web3-core-helpers'
 import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
 import { abi } from 'thor-devkit';
-import { Wallet } from '@vechain/connex-driver';
 import { Transaction } from 'thor-devkit';
-import { FilterOpts, Eip1193SubResp } from './types';
+import { FilterOpts, Eip1193SubResp, Wallet } from './types';
 import { Web3TxObj } from './types';
 import { ConnexProvider } from './provider';
 
