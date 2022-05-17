@@ -70,15 +70,11 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 
 		this._methodMap['eth_subscribe'] = this._subscribe;
 		this._methodMap['eth_unsubscribe'] = this._unsubscribe;
+		this._methodMap['eth_accounts'] = this._accounts;
 
 		if (opt.net) {
 			this.restful = new Restful(opt.net, this.connex.thor.genesis.id);
 			this._methodMap['eth_sendRawTransaction'] = this._sendRawTransaction;
-		}
-
-		if (opt.wallet) {
-			this.wallet = opt.wallet,
-				this._methodMap['eth_accounts'] = this._accounts;
 		}
 
 		// dummy
@@ -150,7 +146,7 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 	}
 
 	private _accounts = async (params: any) => {
-		if (!this.wallet) {
+		if (!this.wallet || this.wallet.list.length === 0) {
 			return [];
 		}
 
