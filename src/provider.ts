@@ -90,6 +90,9 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 
 		// Thor methods
 		this._methodMap['thor_next'] = this._next;
+
+		// Ganache methods
+		this._methodMap['evm_mine'] = this._mine;
 	}
 
 	sendAsync = (
@@ -133,6 +136,11 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		}
 
 		return exec(paramsOrErr);
+	}
+
+	private _mine = async (params: any) => {
+		await this.connex.thor.ticker().next()
+		return 
 	}
 
 	private _next = async (params: any) => {
