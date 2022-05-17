@@ -77,6 +77,10 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 			this._methodMap['eth_sendRawTransaction'] = this._sendRawTransaction;
 		}
 
+		if (opt.wallet) {
+			this.wallet = opt.wallet
+		}
+
 		// dummy
 		this._methodMap['eth_gasPrice'] = async () => { return '0x0'; };
 		this._methodMap['eth_getTransactionCount'] = async () => { return '0x0'; };
