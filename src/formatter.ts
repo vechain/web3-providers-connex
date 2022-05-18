@@ -145,7 +145,7 @@ export class Formatter {
 			}
 		} else if (typeof params[1] !== 'number') {
 			const revision = parseBlockNumber(params[1] || 'latest');
-			if (revision == null) {
+			if (revision === null) {
 				return Err.ArgumentMissingOrInvalid('eth_call', 'revision');
 			}
 			params[1] = revision;
