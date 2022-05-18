@@ -15,7 +15,7 @@ import { randAddr, toBytes32 } from '../../src/utils';
 describe('Testing call', () => {
 	const net = new SimpleNet(urls.solo);
 	const wallet = new SimpleWallet();
-	wallet.import(soloAccounts[0]);
+	wallet.import(soloAccounts[0])
 	const randPk = '0x' + randomBytes(32).toString('hex');
 	wallet.import(randPk);
 
@@ -40,7 +40,29 @@ describe('Testing call', () => {
 		driver?.close();
 	})
 
-	it('test revision', async () => {
+	it('call without revision', async () => {
+		const callObj = {
+			from: wallet.list[0].address,
+			to: randAddr(),
+			value: '1' + '0'.repeat(18)
+		}
+		try {
+			await provider.request({
+				method: 'eth_call',
+				params: [callObj]
+			})
+
+			await provider.request({
+				method: 'eth_call',
+				params: [callObj, 'latest']
+			})
+		} catch (err: any) {
+			assert.fail(err.message || err)
+		}
+	})
+
+	it('call with revision', async () => {
+		// Transfer vethor to wallet[1] to make it have sufficient energy balance
 		const energy = new web3.eth.Contract(energyABI, energyAddr);
 		await energy.methods.transfer(wallet.list[1].address, '100' + '0'.repeat(18))
 			.send({ from: wallet.list[0].address });
@@ -50,6 +72,7 @@ describe('Testing call', () => {
 			value: '1' + '0'.repeat(18)
 		});
 
+		// record the block number when wallet[1] has sufficient energy balance
 		const n = await web3.eth.getBlockNumber();
 
 		const callObj = {
@@ -65,10 +88,11 @@ describe('Testing call', () => {
 				params: [callObj, Math.floor(n / 2)]
 			});
 			assert.fail('Unexpected error');
-		} catch(err: any) {
+		} catch (err: any) {
 			expect(<string>(err.message).toLowerCase()).to.eql('insufficient balance for transfer');
 		}
 
+		// call at the previous block when wallet[1] doesn't have sufficient energy balance
 		try {
 			ret = await web3.eth.call(callObj, n);
 			expect(ret).to.eql('0x');
