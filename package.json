@@ -27,7 +27,7 @@
 		"web3-utils": "^1.7.3"
 	},
 	"peerDependencies": {
-		"ethers": "^5.6.2"
+		"ethers": "^5.0.0"
 	},
 	"devDependencies": {
 		"@types/chai": "^4.3.0",
