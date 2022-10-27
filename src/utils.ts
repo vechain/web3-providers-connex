@@ -2,10 +2,8 @@
 
 import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
-import { abi } from 'thor-devkit';
-import { Transaction } from 'thor-devkit';
-import { FilterOpts, Eip1193SubResp, Wallet } from './types';
-import { Web3TxObj } from './types';
+import { abi, Transaction } from 'thor-devkit';
+import { FilterOpts, Eip1193SubResp, Wallet, Web3TxObj } from './types';
 import { ConnexProvider } from './provider';
 
 export const toEip1193SubResp = function (ret: any, id: string): Eip1193SubResp {

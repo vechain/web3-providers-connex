@@ -1,6 +1,12 @@
 'use strict';
 
-import { TransactionResponse, JsonRpcProvider, TransactionReceipt, Provider } from '@ethersproject/providers';
+import { 
+	TransactionResponse, 
+	JsonRpcProvider, 
+	TransactionReceipt, 
+	Provider, 
+	Formatter
+} from '@ethersproject/providers';
 import { poll } from '@ethersproject/web';
 import {
 	BigNumber,
@@ -11,7 +17,6 @@ import {
 	Signer,
 	Event
 } from 'ethers';
-import { Formatter } from '@ethersproject/providers';
 import {
 	isHexString,
 	ParamType,
