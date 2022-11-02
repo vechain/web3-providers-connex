@@ -81,6 +81,8 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 			this.wallet = opt.wallet
 		}
 
+		this._methodMap['web3_clientVersion'] = async () => { return "@ethereumjs/vm" };
+
 		// dummy
 		this._methodMap['eth_gasPrice'] = async () => { return '0x0'; };
 		this._methodMap['eth_getTransactionCount'] = async () => { return '0x0'; };
