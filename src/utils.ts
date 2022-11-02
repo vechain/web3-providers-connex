@@ -2,7 +2,7 @@
 
 import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
-import { abi, Transaction } from 'thor-devkit';
+import { abi, keccak256, Transaction } from 'thor-devkit';
 import { FilterOpts, Eip1193SubResp, Wallet, Web3TxObj } from './types';
 import { ConnexProvider } from './provider';
 
@@ -172,4 +172,18 @@ export function decodeRevertReason(data: string): string {
 	} catch {
 		return ''
 	}
+}
+
+export function bufferToHex(buf: Buffer) : string {
+	return '0x' + buf.toString('hex');
+}
+
+export function hashEthMessage(data: string) : string {
+	const messageHex = web3Utils.isHexStrict(data) ? data : web3Utils.utf8ToHex(data);
+	const messageBytes = web3Utils.hexToBytes(messageHex);
+	const messageBuffer = Buffer.from(messageBytes);
+	const preamble = '\x19Ethereum Signed Message:\n' + messageBytes.length;
+	const preambleBuffer = Buffer.from(preamble);
+	const ethMessage = Buffer.concat([preambleBuffer, messageBuffer]);
+	return bufferToHex(keccak256(ethMessage));
 }

@@ -9,7 +9,7 @@ import {
 	AbstractProvider,
 	Net, Wallet, ExplainArg
 } from './types';
-import { hexToNumber, getErrMsg, toEip1193SubResp, toHex } from './utils';
+import { hexToNumber, getErrMsg, toEip1193SubResp, toHex, hashEthMessage, bufferToHex } from './utils';
 import { Err } from './error';
 import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
@@ -67,6 +67,7 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		this._methodMap['eth_call'] = this._call;
 		this._methodMap['eth_estimateGas'] = this._estimateGas;
 		this._methodMap['eth_getLogs'] = this._getLogs;
+		this._methodMap['eth_sign'] = this._sign;
 
 		this._methodMap['eth_subscribe'] = this._subscribe;
 		this._methodMap['eth_unsubscribe'] = this._unsubscribe;
@@ -261,6 +262,35 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		} catch (err: any) {
 			return Promise.reject(err);
 		}
+	}
+	
+	private _sign = async (params: any) => {
+		if (!this.wallet || this.wallet.list.length === 0) {
+			throw new Error("no wallet specified");
+		}
+
+		const address = params[0];
+		const message = params[1];
+
+		const key = this.wallet.list.find((key) => key.address == address);
+
+		if (key === undefined) {
+			throw new Error(`key undefined for address ${address}`)
+		}
+	
+		const hash = hashEthMessage(message);
+
+		if (hash === undefined) {
+			throw new Error("undefined hash");
+		}
+
+		const hashStriped = hash?.substring(2);
+		const buf = Buffer.from(hashStriped!, 'hex');
+
+		const signature = await key.sign(buf);
+		signature[64] += 27;
+		
+		return bufferToHex(signature);
 	}
 
 	private _estimateGas = async (params: any[]) => {
