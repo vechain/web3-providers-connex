@@ -7,7 +7,7 @@ import {
 	JsonRpcPayload,
 	RequestArguments,
 	AbstractProvider,
-	Net, Wallet, ExplainArg
+	Net, Wallet, ExplainArg, JsonRpcResponse
 } from './types';
 import { hexToNumber, getErrMsg, toEip1193SubResp, toHex } from './utils';
 import { Err } from './error';
@@ -97,19 +97,26 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 
 	sendAsync = (
 		payload: JsonRpcPayload,
-		callback: (error: any, result?: {id: number, jsonrpc: string, result: any}) => void
+		callback: (error: Error | null, result?: JsonRpcResponse) => void
 	): void => {
 		this.request(payload)
 			.then(ret => {
 				// compatible with web3.js
 				const id = typeof payload.id === 'number' ? payload.id : 0;
 				callback(null, {
-					id: id,
+					id: id as number,
 					jsonrpc: '2.0',
 					result: ret
 				});
 			})
-			.catch(err => callback(err));
+			.catch(err => {
+				const id = typeof payload.id === 'number' ? payload.id : 0;				
+				callback(err, {
+					id: id,
+					jsonrpc: '2.0',
+					error: err,
+				});
+			});
 	}
 
 	enableDelegate = (opt: DelegateOpt) => {
