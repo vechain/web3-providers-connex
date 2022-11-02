@@ -8,7 +8,7 @@ export type JsonRpcPayload = {
 }
 
 export type JsonRpcResponse = {
-	id?: number | string;
+	id: number | string;
 	jsonrpc: string;
 	result?: any;
 	error?: any;
