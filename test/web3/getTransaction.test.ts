@@ -16,13 +16,14 @@ describe('Testing getTransaction', () => {
 
 	let driver: Driver;
 	let web3: any;
+	let connex: Connex;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
+			connex = new Framework(driver);
 			web3 = new Web3(new ConnexProvider({
-				connex: new Framework(driver),
-				ifReturnThorObj: true,
+				connex: connex,
 			}));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -60,10 +61,15 @@ describe('Testing getTransaction', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		expect(tx.hash).to.eql(tx.thor.id);
-		expect(tx.blockNumber).to.eql(tx.thor.meta.blockNumber);
-		expect(tx.blockHash).to.eql(tx.thor.meta.blockID);
-		expect(tx.from).to.eql(web3.utils.toChecksumAddress(tx.thor.origin));
+		const expectedReceipt = await connex.thor.transaction(hash).get();
+		if(expectedReceipt === null) {
+			assert.fail('Transaction not found');
+		}
+
+		expect(tx.hash).to.eql(expectedReceipt.id);
+		expect(tx.blockNumber).to.eql(expectedReceipt.meta.blockNumber);
+		expect(tx.blockHash).to.eql(expectedReceipt.meta.blockID);
+		expect(tx.from).to.eql(web3.utils.toChecksumAddress(expectedReceipt.origin));
 		expect(tx.value).to.eql(expected.value);
 		expect(tx.gas).to.eql(expected.gas);
 		expect(tx.to).to.eql(expected.to);

@@ -10,7 +10,7 @@ import { urls, soloAccounts, abi, bin } from '../settings';
 import Web3 from 'web3';
 
 describe('Testing fee delegate', () => {
-	const net = new SimpleNet("https://sync-mainnet.veblocks.net");
+	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
 	soloAccounts.forEach(key => {
 		wallet.import(key);

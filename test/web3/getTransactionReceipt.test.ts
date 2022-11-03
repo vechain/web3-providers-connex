@@ -8,7 +8,7 @@ import Web3 from 'web3';
 
 import { ConnexProvider, types } from '../../src/index';
 import { urls } from '../settings';
-import { CONST } from '../../src/types';
+import { zeroBytes20, zeroBytes256 } from '../../src/common';
 
 describe('Testing getTransactionReceipt', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -16,13 +16,14 @@ describe('Testing getTransactionReceipt', () => {
 
 	let driver: Driver;
 	let web3: any;
+	let connex: Connex;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider({ 
-				connex: new Framework(driver),
-				ifReturnThorObj: true,
+			connex = new Framework(driver);
+			web3 = new Web3(new ConnexProvider({
+				connex: connex,
 			}));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -55,24 +56,25 @@ describe('Testing getTransactionReceipt', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		if (!receipt.thor) {
-			assert.fail('thor undefined');
+		const expectedReceipt = await connex.thor.transaction(hash).getReceipt();
+		if (expectedReceipt === null) {
+			assert.fail('Receipt not found');
 		}
 
-		expect(receipt.blockHash).to.eql(receipt.thor.meta.blockID);
-		expect(receipt.blockNumber).to.eql(receipt.thor.meta.blockNumber);
-		expect(receipt.transactionHash).to.eql(receipt.thor.meta.txID);
+		expect(receipt.blockHash).to.eql(expectedReceipt.meta.blockID);
+		expect(receipt.blockNumber).to.eql(expectedReceipt.meta.blockNumber);
+		expect(receipt.transactionHash).to.eql(expectedReceipt.meta.txID);
 		expect(receipt.logs.length).to.eql(0);
-		expect(receipt.status).to.eql(!receipt.thor.reverted);
+		expect(receipt.status).to.eql(!expectedReceipt.reverted);
 
 		expect(receipt.contractAddress).to.be.null;
 
 		// Unsupported fields
 		expect(receipt.transactionIndex).to.eql(0);
 		expect(receipt.cumulativeGasUsed).to.eql(0);
-		expect(receipt.from).to.eql(CONST.zeroAddress);
-		expect(receipt.to).to.eql(CONST.zeroAddress);
-		expect(receipt.logsBloom).to.eql(CONST.zeroBytes256);
+		expect(receipt.from).to.eql(zeroBytes20);
+		expect(receipt.to).to.eql(zeroBytes20);
+		expect(receipt.logsBloom).to.eql(zeroBytes256);
 	})
 
 	it('with log', async () => {
@@ -85,18 +87,19 @@ describe('Testing getTransactionReceipt', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		receipt.logs.forEach((log, index) => {
-			if (!receipt.thor) {
-				assert.fail('thor undefined');
-			}
+		const expectedReceipt = await connex.thor.transaction(hash).getReceipt();
+		if (expectedReceipt === null) {
+			assert.fail('Receipt not found');
+		}
 
-			expect(log.blockHash).to.eql(receipt.thor.meta.blockID);
-			expect(log.blockNumber).to.eql(receipt.thor.meta.blockNumber);
-			expect(log.transactionHash).to.eql(receipt.thor.meta.txID);
+		receipt.logs.forEach((log, index) => {
+			expect(log.blockHash).to.eql(expectedReceipt.meta.blockID);
+			expect(log.blockNumber).to.eql(expectedReceipt.meta.blockNumber);
+			expect(log.transactionHash).to.eql(expectedReceipt.meta.txID);
 			expect(log.address).to.eql(web3.utils.toChecksumAddress(
-				receipt.thor.outputs[0].events[index].address));
-			expect(log.topics).to.eql(receipt.thor.outputs[0].events[index].topics);
-			expect(log.data).to.eql(receipt.thor.outputs[0].events[index].data);
+				expectedReceipt.outputs[0].events[index].address));
+			expect(log.topics).to.eql(expectedReceipt.outputs[0].events[index].topics);
+			expect(log.data).to.eql(expectedReceipt.outputs[0].events[index].data);
 
 			// Unsupported fields
 			expect(log.transactionIndex).to.eql(0);

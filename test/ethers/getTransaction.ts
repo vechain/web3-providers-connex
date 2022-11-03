@@ -14,16 +14,15 @@ describe('Testing getTransaction', () => {
 	const wallet = new SimpleWallet();
 
 	let driver: Driver;
+	let connex: Connex;
 	let cp: thor.ConnexProvider;
 	let provider: ethers.providers.JsonRpcProvider;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			cp = new thor.ConnexProvider({
-				connex: new Framework(driver),
-				ifReturnThorObj: true,
-			});
+			connex = new Framework(driver)
+			cp = new thor.ConnexProvider({ connex: connex });
 			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -59,15 +58,17 @@ describe('Testing getTransaction', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		if (!expected.thor) {
-			assert.fail('thor undefined');
+		const expectedTx = await connex.thor.transaction(hash).get();
+
+		if (expectedTx === null) {
+			assert.fail('Tx not found');
 		}
 
-		expect(actual.hash).to.eql(expected.thor.id);
-		expect(actual.blockNumber).to.eql(expected.thor.meta.blockNumber);
-		expect(actual.blockHash).to.eql(expected.thor.meta.blockID);
+		expect(actual.hash).to.eql(expectedTx.id);
+		expect(actual.blockNumber).to.eql(expectedTx.meta.blockNumber);
+		expect(actual.blockHash).to.eql(expectedTx.meta.blockID);
 		expect(actual.from.toLowerCase()).to.eql(
-			expected.thor.origin.toLowerCase()
+			expectedTx.origin.toLowerCase()
 		);
 
 		expect(actual.to!.toLowerCase()).to.eql(expected.to!.toLowerCase());

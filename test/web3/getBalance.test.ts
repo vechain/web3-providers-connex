@@ -8,6 +8,7 @@ import Web3 from 'web3';
 
 import { ConnexProvider, Err } from '../../src/index';
 import { urls } from '../settings';
+import { toHex } from '../../src/utils'
 
 describe('Testing getBalance', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -15,11 +16,13 @@ describe('Testing getBalance', () => {
 
 	let driver: Driver;
 	let web3: any;
+	let connex: Connex;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
+			connex = new Framework(driver);
+			web3 = new Web3(new ConnexProvider({ connex: connex }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -43,7 +46,6 @@ describe('Testing getBalance', () => {
 	})
 
 	it('valid call', async () => {
-		const expectedBalance = '156' + '0'.repeat(16);
 		let balance: string;
 		try {
 			balance = await web3.eth.getBalance(addr, 'latest');
@@ -51,13 +53,15 @@ describe('Testing getBalance', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		expect(balance).to.eql(expectedBalance);
+		const expectedBalance = (await connex.thor.account(addr).get()).balance;
+
+		expect(toHex(balance)).to.eql(expectedBalance);
 
 		try {
 			balance = await web3.eth.getBalance(addr);
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
-		expect(balance).to.eql(expectedBalance);
+		expect(toHex(balance)).to.eql(expectedBalance);
 	})
 })

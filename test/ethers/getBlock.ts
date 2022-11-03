@@ -15,12 +15,14 @@ describe('Testing getBlock', () => {
 
 	let driver: Driver;
 	let cp: thor.ConnexProvider;
+	let connex: Connex;
 	let provider: ethers.providers.Web3Provider;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			cp = new thor.ConnexProvider({ connex: new Framework(driver) });
+			connex = new Framework(driver);
+			cp = new thor.ConnexProvider({ connex: connex });
 			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -74,13 +76,16 @@ describe('Testing getBlock', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
+		const expectedBlock = await connex.thor.block(hash).get();
+		if (expectedBlock === null) {
+			assert.fail('Block not found');
+		}
+
 		expect(blk.hash).to.eql(hash);
 		expect(blk.number).to.eql(num);
 
-		if (!!expected.thor) {
-			expect(blk.hash).to.eql(expected.thor.id);
-			expect(blk.parentHash).to.eql(expected.thor.parentID);
-		}
+		expect(blk.hash).to.eql(expectedBlock.id);
+		expect(blk.parentHash).to.eql(expectedBlock.parentID);
 	})
 
 	it('existing number', async () => {

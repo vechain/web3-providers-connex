@@ -8,7 +8,7 @@ import Web3 from 'web3';
 
 import { ConnexProvider, Err, types } from '../../src/index';
 import { urls } from '../settings';
-import { CONST } from '../../src/types';
+import { zeroBytes8, zeroBytes32, zeroBytes256 } from '../../src/common';
 
 describe('Testing getBlock', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -17,13 +17,14 @@ describe('Testing getBlock', () => {
 
 	let driver: Driver;
 	let web3: any;
+	let connex: Connex;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
+			connex = new Framework(driver);
 			web3 = new Web3(new ConnexProvider({ 
-				connex: new Framework(driver),
-				ifReturnThorObj: true, 
+				connex: connex,
 			}));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -40,7 +41,7 @@ describe('Testing getBlock', () => {
 			const blk = await web3.eth.getBlock(hash);
 			expect(blk).to.be.null;
 		} catch (err: any) {
-			assert.fail(`Unexpected error: ${err}`);
+			assert.fail(`UnexpectedBlock error: ${err}`);
 		}
 	})
 
@@ -50,17 +51,17 @@ describe('Testing getBlock', () => {
 			const blk = await web3.eth.getBlock(num);
 			expect(blk).to.be.null;
 		} catch (err: any) {
-			assert.fail(`Unexpected error: ${err}`);
+			assert.fail(`UnexpectedBlock error: ${err}`);
 		}
 	})
 
 	it('pending', async () => {
-		const expectedErr = Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
+		const expectedBlockErr = Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
 		try {
 			await web3.eth.getBlock('pending');
 			assert.fail();
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedErr.message);
+			expect(err.message).to.eql(expectedBlockErr.message);
 		}
 	})
 
@@ -72,25 +73,26 @@ describe('Testing getBlock', () => {
 		try {
 			blk = await web3.eth.getBlock(hash);
 		} catch (err: any) {
-			assert.fail(`Unexpected error: ${err}`);
+			assert.fail(`UnexpectedBlock error: ${err}`);
 		}
 
-		if (!blk.thor) {
-			assert.fail('thor undefined');
+		const expectedBlock = await connex.thor.block(hash).get();
+		if (expectedBlock === null) {
+			assert.fail('Block not found');
 		}
 
 		expect(blk.hash).to.eql(hash);
 		expect(blk.number).to.eql(num);
-		expect(blk.hash).to.eql(blk.thor.id);
-		expect(blk.parentHash).to.eql(blk.thor.parentID);
+		expect(blk.hash).to.eql(expectedBlock.id);
+		expect(blk.parentHash).to.eql(expectedBlock.parentID);
 
 		// Unsupported fields
 		expect(blk.difficulty).to.eql('0');
 		expect(blk.totalDifficulty).to.eql('0');
 		expect(blk.extraData).to.eql('0x');
-		expect(blk.logsBloom).to.eql(CONST.zeroBytes256);
-		expect(blk.sha3Uncles).to.eql(CONST.zeroBytes32);
-		expect(blk.nonce).to.eql(CONST.zeroBytes8);
+		expect(blk.logsBloom).to.eql(zeroBytes256);
+		expect(blk.sha3Uncles).to.eql(zeroBytes32);
+		expect(blk.nonce).to.eql(zeroBytes8);
 		expect(blk.uncles).to.eql([]);
 	})
 
@@ -102,7 +104,7 @@ describe('Testing getBlock', () => {
 		try {
 			blk = await web3.eth.getBlock(num);
 		} catch (err: any) {
-			assert.fail(`Unexpected error: ${err}`);
+			assert.fail(`UnexpectedBlock error: ${err}`);
 		}
 
 		expect(blk.hash).to.eql(hash);
@@ -113,7 +115,7 @@ describe('Testing getBlock', () => {
 		try {
 			await web3.eth.getBlock('latest');
 		} catch (err: any) {
-			assert.fail(`Unexpected error: ${err}`);
+			assert.fail(`UnexpectedBlock error: ${err}`);
 		}
 	})
 
@@ -123,7 +125,7 @@ describe('Testing getBlock', () => {
 		try {
 			blk = await web3.eth.getBlock('earliest');
 		} catch (err: any) {
-			assert.fail(`Unexpected error: ${err}`);
+			assert.fail(`UnexpectedBlock error: ${err}`);
 		}
 		expect(blk.hash).to.eql(genesisId);
 		expect(blk.number).to.eql(0);
