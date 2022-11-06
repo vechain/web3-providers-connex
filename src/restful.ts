@@ -1,7 +1,8 @@
 'use strict';
 
+import { ErrCode } from './error';
 import { Net, ExplainArg } from './types';
-import { getErrMsg } from './utils';
+import { genRevertReason, getErrMsg, toInternalJsonRpcErr } from './utils';
 
 export class Restful {
 	private readonly _net: Net;
@@ -33,7 +34,10 @@ export class Restful {
 			);
 			return resp.id;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject({
+				code: ErrCode.TransactionRejected,
+				message: getErrMsg(err)
+			});
 		}
 	}
 
@@ -53,7 +57,7 @@ export class Restful {
 
 			return code.code;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -73,7 +77,7 @@ export class Restful {
 
 			return acc.balance;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -93,7 +97,7 @@ export class Restful {
 
 			return storage.value;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -114,15 +118,11 @@ export class Restful {
 
 			const output = outputs[0];
 			if (output.reverted) {
-				const err = {
-					data: getErrMsg(output),
-					message: output?.revertReason || output.vmError
-				}
-				return Promise.reject(err);
+				return genRevertReason(output);
 			}
 			return output.data;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 }

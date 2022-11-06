@@ -1,8 +1,7 @@
 'use strict';
 
 import {
-	JsonRpcPayload,
-	Web3TxObj,
+	TxObj,
 	RetLog,
 	RetReceipt,
 	RetBlock,
@@ -10,7 +9,6 @@ import {
 	FilterOpts,
 	ConvertedFilterOpts,
 	RetHeader,
-	CONST,
 	ExplainArg,
 } from './types';
 import {
@@ -20,23 +18,19 @@ import {
 	toFilterCriteria,
 	toHex,
 	isHexStrict,
+	toInvalidParamsErr,
 } from './utils';
-import { Err } from './error';
+import { ErrMsg } from './error';
+import { zeroBytes8, zeroBytes20, zeroBytes32, zeroBytes256 } from './common';
 
 export class Formatter {
 	private readonly _connex: Connex;
-	private readonly _inputFormatters: Record<string, (params: any[]) => any[] | Error> = {};
+	private readonly _inputFormatters: Record<string, (params: any[]) => any[]> = {};
 	private readonly _ifSetNet: boolean;
-	private readonly _ifReturnThorObj: boolean;
 
-	constructor(connex: Connex, ifSetNet: boolean, ifReturnThorObj?: boolean) {
+	constructor(connex: Connex, ifSetNet: boolean) {
 		this._connex = connex;
 		this._ifSetNet = ifSetNet;
-		if (ifReturnThorObj) {
-			this._ifReturnThorObj = ifReturnThorObj;
-		} else {
-			this._ifReturnThorObj = false;
-		}
 
 		this._inputFormatters['eth_getBlockByNumber'] = this._getBlockByNumber;
 		this._inputFormatters['eth_getBalance'] = this._getBalance;
@@ -50,79 +44,91 @@ export class Formatter {
 		this._inputFormatters['eth_sendRawTransaction'] = this._sendRawTransaction;
 	}
 
-	formatInput = (payload: JsonRpcPayload): any[] | Error => {
-		const inputFormatter = this._inputFormatters[payload.method];
-		if (!inputFormatter) { return payload.params || []; }
-		if (!payload.params) { throw Err.ArgumentMissingOrInvalid(payload.method); }
-		return inputFormatter(payload.params);
+	formatInput = (method: string, params?: any[]): any[] => {
+		const inputFormatter = this._inputFormatters[method];
+		if (!inputFormatter) { return params || []; }
+		if (!params) {
+			const msg = 'Parameters missing';
+			throw toInvalidParamsErr(msg);
+		}
+		return inputFormatter(params);
 	}
 
 	private _getBlockByNumber = (params: any[]) => {
 		const num = parseBlockNumber(params[0]);
 		if (num === null) {
-			return Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
+			const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
+			throw toInvalidParamsErr(msg);
 		}
-		// payload.params[0] = num;
 		return [num];
 	}
 
 	private _getBalance = (params: any[]) => {
+		let [addr, revision = 'latest'] = params;
+
 		if (!this._ifSetNet) {
 			if (params.length == 2 &&
-				!(typeof params[1] === 'string' && params[1] === 'latest')
+				!(typeof revision === 'string' && revision === 'latest')
 			) {
-				return Err.MethodParamNotSupported('eth_getBalance', 2);
+				const msg = ErrMsg.MethodParamNotSupported('eth_getBalance', 2);
+				throw toInvalidParamsErr(msg);
 			}
-		} else if (typeof params[1] !== 'number') {
-			const revision = parseBlockNumber(params[1] || 'latest');
+		} else if (typeof revision !== 'number') {
+			revision = parseBlockNumber(revision);
 			if (revision === null) {
-				return Err.ArgumentMissingOrInvalid('eth_getBalance', 'revision');
+				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getBalance', 'revision');
+				throw toInvalidParamsErr(msg);
 			}
-			params[1] = revision;
 		}
 
-		return params;
+		return revision ? [addr, revision] : [addr];
 	}
 
 	private _getCode = (params: any[]) => {
+		let [addr, revision = 'latest'] = params;
+
 		if (!this._ifSetNet) {
 			if (params.length >= 2 &&
-				!(typeof params[1] === 'string' && params[1] === 'latest')
+				!(typeof revision === 'string' && revision === 'latest')
 			) {
-				return Err.MethodParamNotSupported('eth_getCode', 2);
+				const msg = ErrMsg.MethodParamNotSupported('eth_getCode', 2);
+				throw toInvalidParamsErr(msg);
 			}
-		} else if (typeof params[1] !== 'number') {
-			const revision = parseBlockNumber(params[1] || 'latest');
+		} else if (typeof revision !== 'number') {
+			revision = parseBlockNumber(revision);``
 			if (revision === null) {
-				return Err.ArgumentMissingOrInvalid('eth_getCode', 'revision');
+				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getCode', 'revision');
+				throw toInvalidParamsErr(msg);
 			}
-			params[1] = revision;
 		}
 
-		return params;
+		return revision ? [addr, revision] : [addr];
 	}
 
 	private _getStorageAt = (params: any[]) => {
+		let [addr, key, revision = 'latest'] = params;
+
 		if (!this._ifSetNet) {
 			if (params.length >= 3 &&
-				!(typeof params[2] === 'string' && params[2] === 'latest')
+				!(typeof revision === 'string' && revision === 'latest')
 			) {
-				return Err.MethodParamNotSupported('eth_getStorageAt', 3);
+				const msg = ErrMsg.MethodParamNotSupported('eth_getStorageAt', 3);
+				throw toInvalidParamsErr(msg);
 			}
-		} else if (typeof params[1] !== 'number') {
-			const revision = parseBlockNumber(params[2] || 'latest');
+		} else if (typeof revision !== 'number') {
+			revision = parseBlockNumber(revision);
 			if (revision === null) {
-				return Err.ArgumentMissingOrInvalid('eth_getStorageAt', 'revision');
+				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getStorageAt', 'revision');
+				throw toInvalidParamsErr(msg);
 			}
-			params[2] = revision;
 		}
 
-		params[1] = toBytes32(params[1]);
-		return params;
+		key = toBytes32(key);
+		return revision ? [addr, key, revision] : [addr, key];
 	}
 
 	private _sendTransaction = (params: any[]) => {
-		const o1: Web3TxObj = params[0];
+		const o1: TxObj = params[0];
 		const o2: ExplainArg = {
 			clauses: [{
 				to: !!o1.to ? o1.to : null,
@@ -133,26 +139,29 @@ export class Formatter {
 			caller: o1.from,
 		}
 
-		return [o2];
+		return [o2, params[1]];
 	}
 
 	private _call = (params: any[]) => {
+		let [callObj, revision = 'latest'] = params;
+
 		if (!this._ifSetNet) {
 			if (params.length >= 2 &&
-				!(typeof params[1] === 'string' && params[1] === 'latest')
+				!(typeof revision === 'string' && revision === 'latest')
 			) {
-				return Err.MethodParamNotSupported('eth_call', 2);
+				const msg = ErrMsg.MethodParamNotSupported('eth_call', 2);
+				throw toInvalidParamsErr(msg);
 			}
-		} else if (typeof params[1] !== 'number') {
-			const revision = parseBlockNumber(params[1] || 'latest');
+		} else if (typeof revision !== 'number') {
+			revision = parseBlockNumber(revision);
 			if (revision === null) {
-				return Err.ArgumentMissingOrInvalid('eth_call', 'revision');
+				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_call', 'revision');
+				throw toInvalidParamsErr(msg);
 			}
-			params[1] = revision;
 		}
 
-		params[0] = this._sendTransaction(params)[0];
-		return params;
+		callObj = this._sendTransaction([callObj])[0];
+		return revision ? [callObj, revision] : [callObj];
 	}
 
 	private _estimateGas = (params: any[]) => {
@@ -171,7 +180,8 @@ export class Formatter {
 			if (test === undefined) {
 				test = this._connex.thor.status.head.number;
 			} else if (typeof test !== 'number') {
-				return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock');
+				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock');
+				throw toInvalidParamsErr(msg);
 			}
 			fromBlock = test;
 		}
@@ -183,7 +193,8 @@ export class Formatter {
 			if (test === undefined) {
 				test = this._connex.thor.status.head.number;
 			} else if (typeof test !== 'number') {
-				return Err.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock');
+				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock');
+				throw toInvalidParamsErr(msg);
 			}
 			toBlock = test;
 		}
@@ -208,14 +219,16 @@ export class Formatter {
 			case 'logs':
 				return ['logs', toFilterCriteria(params[1])];
 			default:
-				return Err.InvalidSubscriptionName(name);
+				const msg = ErrMsg.InvalidSubscriptionName(name);
+				throw toInvalidParamsErr(msg);
 		}
 	}
 
 	private _sendRawTransaction = (params: any[]) => {
 		const raw: string = params[0];
 		if (!isHexStrict(raw)) {
-			return Err.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
+			const msg = ErrMsg.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
+			throw toInvalidParamsErr(msg);
 		}
 		return [raw];
 	}
@@ -248,14 +261,12 @@ export class Formatter {
 
 			transactionIndex: '0x0',
 			cumulativeGasUsed: '0x0',
-			logsBloom: CONST.zeroBytes256,
-			from: CONST.zeroAddress,
-			to: CONST.zeroAddress,
+			logsBloom: zeroBytes256,
+			from: zeroBytes20,
+			to: zeroBytes20,
 
 			contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : null,
 			logs: logs,
-
-			thor: (this._ifReturnThorObj) ? receipt : undefined,
 		};
 	}
 
@@ -278,12 +289,10 @@ export class Formatter {
 			difficulty: '0x0',
 			totalDifficulty: '0x0',
 			uncles: [],
-			sha3Uncles: CONST.zeroBytes32,
-			nonce: CONST.zeroBytes8,
-			logsBloom: CONST.zeroBytes256,
+			sha3Uncles: zeroBytes32,
+			nonce: zeroBytes8,
+			logsBloom: zeroBytes256,
 			extraData: '0x',
-
-			thor: (this._ifReturnThorObj) ? b : undefined,
 		};
 	}
 
@@ -301,9 +310,7 @@ export class Formatter {
 			// incompatible fields
 			transactionIndex: '0x0',
 			nonce: '0x0',
-			gasPrice: '0x0',
-
-			thor: (this._ifReturnThorObj) ? tx : undefined,
+			gasPrice: '0x0'
 		};
 	}
 
@@ -339,9 +346,9 @@ export class Formatter {
 			miner: b.signer,
 
 			// incompatible fields
-			sha3Uncles: CONST.zeroBytes32,
-			nonce: CONST.zeroBytes8,
-			logsBloom: CONST.zeroBytes256,
+			sha3Uncles: zeroBytes32,
+			nonce: zeroBytes8,
+			logsBloom: zeroBytes256,
 			extraData: '0x',
 		}
 	}

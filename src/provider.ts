@@ -2,27 +2,19 @@
 
 'use strict';
 
-import {
-	ConvertedFilterOpts,
-	JsonRpcPayload,
-	RequestArguments,
-	AbstractProvider,
-	Net, Wallet, ExplainArg
-} from './types';
-import { hexToNumber, getErrMsg, toEip1193SubResp, toHex } from './utils';
-import { Err } from './error';
+import { ConvertedFilterOpts, Net, Wallet, ExplainArg, DelegateOpt } from './types';
+import { hexToNumber, getErrMsg, toSubscription, toHex, toInternalJsonRpcErr, genRevertReason } from './utils';
+import { ErrMsg, ErrCode } from './error';
 import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
 import EventEmitter from 'eventemitter3';
 import { Restful } from './restful';
+import { IProvider, ProviderRpcError, RequestArguments } from './eip1193';
+import { EthJsonRpcMethods } from './common';
 
 type MethodHandler = (params: any[]) => Promise<any>;
-type DelegateOpt = {
-	url: string;
-	payer?: string;
-}
 
-export class ConnexProvider extends EventEmitter implements AbstractProvider {
+export class Provider extends EventEmitter implements IProvider {
 	readonly connex: Connex;
 	readonly chainTag: number;
 	readonly restful?: Restful;
@@ -41,7 +33,6 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		connex: Connex,
 		wallet?: Wallet,
 		net?: Net,
-		ifReturnThorObj?: boolean,
 		delegate?: DelegateOpt,
 	}) {
 		super();
@@ -50,7 +41,7 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		const id = opt.connex.thor.genesis.id;
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
 
-		this._formatter = new Formatter(opt.connex, !!opt.net, !!opt.ifReturnThorObj);
+		this._formatter = new Formatter(opt.connex, !!opt.net);
 		this._delegate = opt.delegate || null;
 
 		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
@@ -67,10 +58,10 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		this._methodMap['eth_call'] = this._call;
 		this._methodMap['eth_estimateGas'] = this._estimateGas;
 		this._methodMap['eth_getLogs'] = this._getLogs;
-
 		this._methodMap['eth_subscribe'] = this._subscribe;
 		this._methodMap['eth_unsubscribe'] = this._unsubscribe;
 		this._methodMap['eth_accounts'] = this._accounts;
+		this._methodMap['net_version'] = this._getChainId;
 
 		if (opt.net) {
 			this.restful = new Restful(opt.net, this.connex.thor.genesis.id);
@@ -84,7 +75,6 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		// dummy
 		this._methodMap['eth_gasPrice'] = async () => { return '0x0'; };
 		this._methodMap['eth_getTransactionCount'] = async () => { return '0x0'; };
-		this._methodMap['net_version'] = async () => { return '0x0'; };
 
 		this._subLoop();
 
@@ -95,61 +85,57 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		this._methodMap['evm_mine'] = this._mine;
 	}
 
-	sendAsync = (
-		payload: JsonRpcPayload,
-		callback: (error: any, result?: {id: number, jsonrpc: string, result: any}) => void
-	): void => {
-		this.request(payload)
-			.then(ret => {
-				// compatible with web3.js
-				const id = typeof payload.id === 'number' ? payload.id : 0;
-				callback(null, {
-					id: id,
-					jsonrpc: '2.0',
-					result: ret
-				});
-			})
-			.catch(err => callback(err));
-	}
-
-	enableDelegate = (opt: DelegateOpt) => {
+	enableDelegate(opt: DelegateOpt): DelegateOpt | null {
+		const old = this._delegate;
 		this._delegate = opt;
+		return old;
 	}
 
-	disableDelegate = () => {
+	disableDelegate(): DelegateOpt | null {
+		const opt = this._delegate;
 		this._delegate = null;
+		return opt;
 	}
 
-	request = async (req: RequestArguments) => {
+	async request(req: RequestArguments): Promise<any> {
+		if (!EthJsonRpcMethods.includes(req.method)) {
+			const msg = `Method ${req.method} not found`;
+			return Promise.reject({
+				code: ErrCode.MethodNotFound,
+				message: msg,
+			} as ProviderRpcError);
+		}
+
 		const exec = this._methodMap[req.method];
 		if (!exec) {
-			return Promise.reject(Err.MethodNotFound(req.method));
+			const msg = `Method ${req.method} not implemented`;
+			return Promise.reject({
+				code: ErrCode.MethodNotSupported,
+				message: msg
+			} as ProviderRpcError);
 		}
 
-		const paramsOrErr = this._formatter.formatInput({
-			method: req.method,
-			params: req.params,
-		})
-
-		if (paramsOrErr instanceof Error) {
-			return Promise.reject(paramsOrErr);
+		let params: any[];
+		try {
+			params = this._formatter.formatInput(req.method, req.params);
+		} catch (err: any) {
+			return Promise.reject(err as ProviderRpcError);
 		}
 
-		return exec(paramsOrErr);
+		return exec(params);
 	}
 
-	private _mine = async (params: any) => {
-		await this.connex.thor.ticker().next()
-		return 
+	private _mine = async (_: any) => {
+		await this.connex.thor.ticker().next();
 	}
 
-	private _next = async (params: any) => {
+	private _next = async (_: any) => {
 		const ticker = this.connex.thor.ticker();
 		await ticker.next();
 		return true;
 	}
 
-	private _accounts = async (params: any) => {
+	private _accounts = async (_: any) => {
 		if (!this.wallet || this.wallet.list.length === 0) {
 			return [];
 		}
@@ -164,7 +150,10 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 			}
 			return null;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject({
+				code: ErrCode.TransactionRejected,
+				message: getErrMsg(err),
+			});
 		}
 	}
 
@@ -173,7 +162,9 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		const subName: 'newHeads' | 'logs' = params[0];
 
 		if (this._subscriptions[subName][subId]) {
-			return Promise.reject(Err.SubscriptionAlreadyExist(subId));
+			return Promise.reject(
+				toInternalJsonRpcErr(ErrMsg.SubscriptionAlreadyExist(subId))
+			);
 		}
 
 		this._subscriptions[subName][subId] = params[1] || {};
@@ -185,7 +176,7 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		const subId: string = params[0];
 
 		if (!this._subscriptions['newHeads'][subId] && !this._subscriptions['logs'][subId]) {
-			return Promise.reject(Err.SubscriptionIdNotFound);
+			return Promise.reject(toInternalJsonRpcErr(ErrMsg.SubscriptionIdNotFound(subId)));
 		}
 
 		this._subscriptions['newHeads'][subId] ?
@@ -204,18 +195,14 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 
 				const newHeadsKeys = Object.keys(this._subscriptions['newHeads']);
 				if (newHeadsKeys.length > 0) {
-					(async () => {
-						try {
-							const blk = await this.connex.thor.block().get();
-							if (blk) {
-								newHeadsKeys.forEach(key => {
-									this.emit('message', toEip1193SubResp(
-										this._formatter.outputHeaderFormatter(blk), key
-									));
-								})
-							}
-						} catch { }
-					})();
+					const blk = await this.connex.thor.block().get();
+					if (blk) {
+						newHeadsKeys.forEach(key => {
+							this.emit('message', toSubscription(
+								this._formatter.outputHeaderFormatter(blk), key
+							));
+						})
+					}
 				}
 
 				const logsKeys = Object.keys(this._subscriptions['logs']);
@@ -227,17 +214,16 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 							from: best.number,
 							to: best.number,
 						}
-						try {
-							const ret = await this.connex.thor.filter('event', this._subscriptions['logs'][key])
-								.range(range)
-								.apply(0, MAX_LIMIT);
 
-							if (ret) {
-								this.emit('message', toEip1193SubResp(
-									this._formatter.outputLogsFormatter(ret), key
-								));
-							}
-						} catch { }
+						const ret = await this.connex.thor.filter('event', this._subscriptions['logs'][key])
+							.range(range)
+							.apply(0, MAX_LIMIT);
+
+						if (ret) {
+							this.emit('message', toSubscription(
+								this._formatter.outputLogsFormatter(ret), key
+							));
+						}
 					});
 				}
 			}
@@ -259,7 +245,7 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 				.apply(0, MAX_LIMIT);
 			return this._formatter.outputLogsFormatter(ret);
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -291,7 +277,7 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 
 			return toHex(estimatedGas);
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -309,14 +295,11 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 			const outputs = await explainer.execute();
 			const output = outputs[0];
 			if (output.reverted) {
-				return Promise.reject({
-					data: getErrMsg(output),
-					message: output?.revertReason || output.vmError
-				});
+				return genRevertReason(output);
 			}
 			return output.data;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -325,10 +308,10 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 		let ss = this.connex.vendor.sign('tx', [txObj.clauses[0]]);
 		if (txObj.caller) { ss = ss.signer(txObj.caller); }
 		if (this._delegate) {
-			if (!this._delegate.payer) {
-				ss = ss.delegate(this._delegate.url);
+			if (this._delegate.signer){
+				ss = ss.delegate(this._delegate.url, this._delegate.signer);
 			} else {
-				ss = ss.delegate(this._delegate.url, this._delegate.payer);
+				ss = ss.delegate(this._delegate.url );
 			}
 		}
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
@@ -337,19 +320,24 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 			const ret = await ss.request()
 			return ret.txid;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject({
+				code: ErrCode.TransactionRejected,
+				message: getErrMsg(err),
+			});
 		};
 	}
 
 	private _getStorageAt = async (params: any[]) => {
+		const [addr, key, revision] = params
+
 		try {
 			if (this.restful) {
-				return this.restful.getStorageAt(params[0], params[1], params[2]);
+				return this.restful.getStorageAt(addr, key, revision);
 			}
-			const storage = await this.connex.thor.account(params[0]).getStorage(params[1]);
+			const storage = await this.connex.thor.account(addr).getStorage(key);
 			return storage.value;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -363,11 +351,11 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 				return this._formatter.outputReceiptFormatter(receipt);
 			}
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		};
 	}
 
-	private _isSyncing = async (params: any[]) => {
+	private _isSyncing = async (_: any[]) => {
 		try {
 			await this.connex.thor.ticker().next()
 			if (this.connex.thor.status.progress == 1) {
@@ -380,27 +368,28 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 					startingBlock: null,
 					currentBlock: toHex(this.connex.thor.status.head.number),
 					highestBlock: toHex(highestBlock),
-					//thor: this.connex.thor.status,
 				};
 			}
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
 	private _getCode = async (params: any[]) => {
+		const [addr, revision] = params
+
 		try {
 			if (this.restful) {
-				return this.restful.getCode(params[0], params[1]);
+				return this.restful.getCode(addr, revision);
 			}
-			const code = await this.connex.thor.account(params[0]).getCode();
+			const code = await this.connex.thor.account(addr).getCode();
 			return code.code;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
-	private _getBlockNumber = async (params: any[]) => {
+	private _getBlockNumber = async (_: any[]) => {
 		try {
 			const blk = await this.connex.thor.block().get()
 			if (!blk) {
@@ -409,19 +398,21 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 				return toHex(blk.number);
 			}
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
 	private _getBalance = async (params: any[]) => {
+		const [addr, revision] = params;
+
 		try {
 			if (this.restful) {
-				return this.restful.getBalance(params[0], params[1]);
+				return this.restful.getBalance(addr, revision);
 			}
-			const acc = await this.connex.thor.account(params[0]).get();
+			const acc = await this.connex.thor.account(addr).get();
 			return acc.balance;
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -435,25 +426,25 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 				return this._formatter.outputTransactionFormatter(tx);
 			}
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
-	private _getChainId = async (params: any[]) => {
+	private _getChainId = async (_: any[]) => {
 		return toHex(this.chainTag);
 	}
 
 	private _getBlockByNumber = async (params: any[]) => {
-		const num = params[0];
+		const num: number = params[0];
 		try {
 			const blk = await this.connex.thor.block(num).get();
 			if (!blk) {
-				return null; //Promise.reject(Err.BlockNotFound(num ? (num == 0 ? 'earliest' : num) : 'latest'));
+				return null;
 			} else {
 				return this._formatter.outputBlockFormatter(blk);
 			}
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 
@@ -467,7 +458,7 @@ export class ConnexProvider extends EventEmitter implements AbstractProvider {
 				return this._formatter.outputBlockFormatter(blk);
 			}
 		} catch (err: any) {
-			return Promise.reject(err);
+			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
 		}
 	}
 }
