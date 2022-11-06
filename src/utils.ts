@@ -3,12 +3,13 @@
 import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
 import { abi, Transaction } from 'thor-devkit';
-import { FilterOpts, Eip1193SubResp, Wallet, Web3TxObj } from './types';
-import { ConnexProvider } from './provider';
+import { FilterOpts, Wallet, TxObj } from './types';
+import { ProviderRpcError, Subscription } from './eip1193';
+import { Provider } from './provider';
+import { ErrCode } from './error';
 
-export const toEip1193SubResp = function (ret: any, id: string): Eip1193SubResp {
+export const toSubscription = function (ret: any, id: string): Subscription {
 	return {
-		jsonrpc: '2.0',
 		type: 'eth_subscription',
 		data: {
 			subscription: id,
@@ -56,9 +57,9 @@ export function isHexStrict(hex: string) {
 	return web3Utils.isHexStrict(hex);
 }
 
-export function getErrMsg(output: Connex.VM.Output): string {
+export function genRevertReason(output: Connex.VM.Output): string {
 	const errorSig = '0x08c379a0';
-	let errMsg = output?.revertReason || output.vmError || output.data;
+	let errMsg = output.revertReason || output.vmError || output.data;
 
 	if (!errMsg.startsWith('0x')) {
 		// encode error message to allow sendTxCallback to decode later
@@ -120,7 +121,7 @@ const txParams = {
 	gasPriceCoef: 0
 }
 
-export const signTransaction = async (ethTx: Web3TxObj, wallet: Wallet, provider: ConnexProvider): Promise<string> => {
+export const signTransaction = async (ethTx: TxObj, wallet: Wallet, provider: Provider): Promise<string> => {
 	if (wallet.list.length == 0) {
 		return Promise.reject('Empty wallet');
 	}
@@ -133,16 +134,14 @@ export const signTransaction = async (ethTx: Web3TxObj, wallet: Wallet, provider
 
 	const gas = ethTx.gas || await provider.request({
 		method: 'eth_estimateGas',
-		params: [ethTx],
-		jsonrpc: '2.0'
+		params: [ethTx]
 	});
 
 	const chainId = provider.chainTag;
 
 	const best = await provider.request({
 		method: 'eth_getBlockByNumber',
-		params: ['latest'],
-		jsonrpc: '2.0'
+		params: ['latest']
 	});
 
 	const txBody: Transaction.Body = {
@@ -163,13 +162,45 @@ export const signTransaction = async (ethTx: Web3TxObj, wallet: Wallet, provider
 }
 
 export function decodeRevertReason(data: string): string {
-	const errorSig = '0x08c379a0';
+	const errSig = '0x08c379a0'
 	try {
-		if (data.startsWith(errorSig)) {
-			return abi.decodeParameter('string', '0x' + data.slice(errorSig.length)) as string
+		if (data.startsWith(errSig)) {
+			return abi.decodeParameter('string', '0x' + data.slice(errSig.length)) as string
 		}
 		return ''
 	} catch {
 		return ''
 	}
+}
+
+// export function encodeRevertReason(msg: string): string {
+// 	const errorSig = '0x08c379a0'
+// 	try {
+// 		return errorSig + abi.encodeParameter('string', msg)
+// 	} catch { return '' }
+// }
+
+export function toInvalidParamsErr(msg: string): ProviderRpcError {
+	return {
+		code: ErrCode.InvalidParams,
+		message: msg
+	}
+}
+
+export function toInternalJsonRpcErr(msg: string): ProviderRpcError {
+	return {
+		code: ErrCode.InternalError,
+		message: msg
+	}
+}
+
+export function getErrMsg(err: any): string {
+	let msg: string = '';
+	if (typeof err === 'string') {
+		msg = err;
+	} else if (err.message) {
+		msg = err.message;
+	}
+
+	return msg;
 }
