@@ -14,7 +14,7 @@ describe('Testing getBlock', () => {
 	const wallet = new SimpleWallet();
 
 	let driver: Driver;
-	let cp: thor.ConnexProvider;
+	let cp: thor.ProviderEthers;
 	let connex: Connex;
 	let provider: ethers.providers.Web3Provider;
 
@@ -22,7 +22,7 @@ describe('Testing getBlock', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			connex = new Framework(driver);
-			cp = new thor.ConnexProvider({ connex: connex });
+			cp = new thor.ProviderEthers({ connex: connex });
 			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -54,12 +54,12 @@ describe('Testing getBlock', () => {
 	})
 
 	it('pending', async () => {
-		const expectedErr = thor.Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
+		const expectedErr = thor.ErrMsg.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
 		try {
 			await provider.getBlock('pending');
 			assert.fail();
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedErr.message);
+			expect(err.message).to.eql(expectedErr);
 		}
 	})
 

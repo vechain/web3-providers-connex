@@ -15,8 +15,8 @@ for (let i = 0; i < 10; i++) {
 export { soloAccounts }
 
 export const urls = {
-	testnet: 'http://sync-testnet.veblocks.net/',
-	mainnet: 'http://sync-mainnet.veblocks.net/',
+	testnet: 'http://testnet.veblocks.net/',
+	mainnet: 'http://mainnet.veblocks.net/',
 	solo: 'http://127.0.0.1:8669/'
 }
 

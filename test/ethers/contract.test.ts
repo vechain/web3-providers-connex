@@ -24,7 +24,7 @@ describe('Testing contract', () => {
 			driver = await Driver.connect(net, wallet);
 			provider = thor.ethers.modifyProvider(
 				new ethers.providers.Web3Provider(
-					new thor.ConnexProvider({ connex: new Framework(driver) })
+					new thor.ProviderEthers({ connex: new Framework(driver) })
 				)
 			);
 		} catch (err: any) {
@@ -94,7 +94,7 @@ describe('Testing contract', () => {
 		const errMsg = 'Test error message in contract call';
 
 		try {
-			const ret = await contract.set(10, 'hello');
+			await contract.set(10, 'hello');
 			await contract.get();
 		} catch (err: any) {
 			const msg: string = thor.utils.decodeRevertReason(err.error.data);

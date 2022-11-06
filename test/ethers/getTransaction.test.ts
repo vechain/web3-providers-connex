@@ -15,14 +15,14 @@ describe('Testing getTransaction', () => {
 
 	let driver: Driver;
 	let connex: Connex;
-	let cp: thor.ConnexProvider;
+	let cp: thor.ProviderEthers;
 	let provider: ethers.providers.JsonRpcProvider;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			connex = new Framework(driver)
-			cp = new thor.ConnexProvider({ connex: connex });
+			cp = new thor.ProviderEthers({ connex: connex });
 			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);

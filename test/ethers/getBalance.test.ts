@@ -20,7 +20,7 @@ describe('Testing getBalance', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			provider = new ethers.providers.Web3Provider(
-				new thor.ConnexProvider({connex: new Framework(driver)})
+				new thor.ProviderEthers({connex: new Framework(driver)})
 			);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -35,12 +35,12 @@ describe('Testing getBalance', () => {
 
 	it('option not supported', async () => {
 		const opt = 'earliest';
-		const expectedErr = thor.Err.MethodParamNotSupported('eth_getBalance', 2);
+		const expectedErr = thor.ErrMsg.MethodParamNotSupported('eth_getBalance', 2);
 		try {
 			await provider.getBalance(addr, opt);
 			assert.fail();
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedErr.message);
+			expect(err.message).to.eql(expectedErr);
 		}
 	})
 

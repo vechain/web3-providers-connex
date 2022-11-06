@@ -2,12 +2,12 @@ import 'mocha'
 import { expect, assert } from 'chai'
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver'
 import { urls, soloAccounts } from '../settings'
-import { ConnexProvider, ethers } from '../../src'
+import { Provider } from '../../src'
 import { Framework } from '@vechain/connex-framework'
 
 describe('Test custom JSON RPC methods', function () {
 	let driver: Driver
-	let provider: ConnexProvider
+	let provider: Provider
 
 	before(async function () {
 		const net = new SimpleNet(urls.solo)
@@ -19,7 +19,7 @@ describe('Test custom JSON RPC methods', function () {
 		try {
 			driver = await Driver.connect(net, wallet)
 			const connex = new Framework(driver)
-			provider = new ConnexProvider({
+			provider = new Provider({
 				connex: connex,
 				net: net,
 				wallet: wallet

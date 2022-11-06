@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import Web3 from 'web3';
 
-import { ConnexProvider, Err } from '../../src/index';
+import { ProviderWeb3, ErrMsg } from '../../src/index';
 import { urls } from '../settings';
 
 describe('Testing getStorageAt', () => {
@@ -19,7 +19,7 @@ describe('Testing getStorageAt', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider({ connex: new Framework(driver) }));
+			web3 = new Web3(new ProviderWeb3({ connex: new Framework(driver) }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -33,12 +33,12 @@ describe('Testing getStorageAt', () => {
 
 	it('option not supported', async () => {
 		const opt = 'earliest';
-		const expectedErr = Err.MethodParamNotSupported('eth_getStorageAt', 3);
+		const expectedErr = ErrMsg.MethodParamNotSupported('eth_getStorageAt', 3);
 		try {
 			await web3.eth.getStorageAt(addr, 0, opt);
 			assert.fail();
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedErr.message);
+			expect(err.message).to.eql(expectedErr);
 		}
 	})
 

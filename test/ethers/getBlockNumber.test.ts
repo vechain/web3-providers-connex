@@ -19,7 +19,7 @@ describe('Testing getBlockNumber', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			provider = new ethers.providers.Web3Provider(
-				new thor.ConnexProvider({connex: new Framework(driver)})
+				new thor.ProviderEthers({connex: new Framework(driver)})
 			);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);

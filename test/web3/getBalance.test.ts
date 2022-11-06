@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import Web3 from 'web3';
 
-import { ConnexProvider, Err } from '../../src/index';
+import { ProviderWeb3, ErrMsg } from '../../src/index';
 import { urls } from '../settings';
 import { toHex } from '../../src/utils'
 
@@ -22,7 +22,7 @@ describe('Testing getBalance', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			connex = new Framework(driver);
-			web3 = new Web3(new ConnexProvider({ connex: connex }));
+			web3 = new Web3(new ProviderWeb3({ connex: connex }));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -36,12 +36,12 @@ describe('Testing getBalance', () => {
 
 	it('option not supported', async () => {
 		const opt = 'earliest';
-		const expectedErr = Err.MethodParamNotSupported('eth_getBalance', 2);
+		const expectedErr = ErrMsg.MethodParamNotSupported('eth_getBalance', 2);
 		try {
 			await web3.eth.getBalance(addr, opt);
 			assert.fail();
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedErr.message);
+			expect(err.message).to.eql(expectedErr);
 		}
 	})
 

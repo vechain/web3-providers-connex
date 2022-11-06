@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import Web3 from 'web3';
 
-import { ConnexProvider, Err, types } from '../../src/index';
+import { ProviderWeb3, types } from '../../src/index';
 import { urls } from '../settings';
 
 describe('Testing getTransaction', () => {
@@ -22,7 +22,7 @@ describe('Testing getTransaction', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			connex = new Framework(driver);
-			web3 = new Web3(new ConnexProvider({
+			web3 = new Web3(new ProviderWeb3({
 				connex: connex,
 			}));
 		} catch (err: any) {

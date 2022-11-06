@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import Web3 from 'web3';
 
-import { ConnexProvider } from '../../src/index';
+import { ProviderWeb3 } from '../../src/index';
 import { urls, soloAccounts } from '../settings';
 import { randAddr } from '../../src/utils';
 
@@ -21,7 +21,7 @@ describe('Testing getBalance', () => {
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ConnexProvider({
+			web3 = new Web3(new ProviderWeb3({
 				connex: new Framework(driver),
 				net: net
 			}));

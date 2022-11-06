@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import Web3 from 'web3';
 
-import { ConnexProvider, Err, types } from '../../src/index';
+import { ProviderWeb3, ErrMsg, types } from '../../src/index';
 import { urls } from '../settings';
 import { zeroBytes8, zeroBytes32, zeroBytes256 } from '../../src/common';
 
@@ -23,7 +23,7 @@ describe('Testing getBlock', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			connex = new Framework(driver);
-			web3 = new Web3(new ConnexProvider({ 
+			web3 = new Web3(new ProviderWeb3({ 
 				connex: connex,
 			}));
 		} catch (err: any) {
@@ -56,12 +56,12 @@ describe('Testing getBlock', () => {
 	})
 
 	it('pending', async () => {
-		const expectedBlockErr = Err.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
+		const expectedBlockErr = ErrMsg.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
 		try {
 			await web3.eth.getBlock('pending');
 			assert.fail();
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedBlockErr.message);
+			expect(err.message).to.eql(expectedBlockErr);
 		}
 	})
 

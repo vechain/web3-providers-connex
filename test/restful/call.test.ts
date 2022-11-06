@@ -8,9 +8,9 @@ import { randomBytes } from 'crypto';
 import { energyAddr, energyABI } from 'thor-builtin';
 import Web3 from 'web3';
 
-import { ConnexProvider } from '../../src/index';
+import { ProviderWeb3 } from '../../src/index';
 import { urls, soloAccounts } from '../settings';
-import { randAddr, toBytes32 } from '../../src/utils';
+import { decodeRevertReason, randAddr } from '../../src/utils';
 
 describe('Testing call', () => {
 	const net = new SimpleNet(urls.solo);
@@ -20,13 +20,13 @@ describe('Testing call', () => {
 	wallet.import(randPk);
 
 	let driver: Driver;
-	let provider: ConnexProvider;
+	let provider: ProviderWeb3;
 	let web3: any;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ConnexProvider({
+			provider = new ProviderWeb3({
 				connex: new Framework(driver),
 				net: net
 			});
@@ -40,26 +40,26 @@ describe('Testing call', () => {
 		driver?.close();
 	})
 
-	it('call without revision', async () => {
-		const callObj = {
-			from: wallet.list[0].address,
-			to: randAddr(),
-			value: '1' + '0'.repeat(18)
-		}
-		try {
-			await provider.request({
-				method: 'eth_call',
-				params: [callObj]
-			})
+	// it('call without revision', async () => {
+	// 	const callObj = {
+	// 		from: wallet.list[0].address,
+	// 		to: randAddr(),
+	// 		value: '1' + '0'.repeat(18)
+	// 	}
+	// 	try {
+	// 		await provider.request({
+	// 			method: 'eth_call',
+	// 			params: [callObj]
+	// 		})
 
-			await provider.request({
-				method: 'eth_call',
-				params: [callObj, 'latest']
-			})
-		} catch (err: any) {
-			assert.fail(err.message || err)
-		}
-	})
+	// 		await provider.request({
+	// 			method: 'eth_call',
+	// 			params: [callObj, 'latest']
+	// 		})
+	// 	} catch (err: any) {
+	// 		assert.fail(err.message || err)
+	// 	}
+	// })
 
 	it('call with revision', async () => {
 		// Transfer vethor to wallet[1] to make it have sufficient energy balance
@@ -87,9 +87,9 @@ describe('Testing call', () => {
 				method: 'eth_call',
 				params: [callObj, Math.floor(n / 2)]
 			});
-			assert.fail('Unexpected error');
+			expect(decodeRevertReason(ret)).to.eql('insufficient balance for transfer');
 		} catch (err: any) {
-			expect(<string>(err.message).toLowerCase()).to.eql('insufficient balance for transfer');
+			assert.fail(err.message);
 		}
 
 		// call at the previous block when wallet[1] doesn't have sufficient energy balance

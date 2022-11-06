@@ -19,7 +19,7 @@ describe('Testing getStorageAt', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			provider = new ethers.providers.Web3Provider(
-				new thor.ConnexProvider({ connex: new Framework(driver) })
+				new thor.ProviderEthers({ connex: new Framework(driver) })
 			);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -34,12 +34,12 @@ describe('Testing getStorageAt', () => {
 
 	it('option not supported', async () => {
 		const opt = 'earliest';
-		const expectedErr = thor.Err.MethodParamNotSupported('eth_getStorageAt', 3);
+		const expectedErr = thor.ErrMsg.MethodParamNotSupported('eth_getStorageAt', 3);
 		try {
 			await provider.getStorageAt(addr, 0, opt);
 			assert.fail();
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedErr.message);
+			expect(err.message).to.eql(expectedErr);
 		}
 	})
 

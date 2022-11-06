@@ -5,9 +5,10 @@ import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 
-import { ConnexProvider } from '../../src/index';
+import { ProviderWeb3 } from '../../src/index';
 import { urls, soloAccounts, abi, bin } from '../settings';
 import Web3 from 'web3';
+import { DelegateOpt } from '../../src/types';
 
 describe('Testing fee delegate', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -17,13 +18,13 @@ describe('Testing fee delegate', () => {
 	});
 
 	let driver: Driver;
-	let provider: ConnexProvider;
+	let provider: ProviderWeb3;
 	let web3: any;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ConnexProvider({ connex: new Framework(driver) });
+			provider = new ProviderWeb3({ connex: new Framework(driver) });
 			web3 = new Web3(provider);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
@@ -34,13 +35,11 @@ describe('Testing fee delegate', () => {
 		driver?.close();
 	})
 
-	let contractAddress: string;
 	const from = wallet.list[0].address;
 
 	it('deploy contract', async () => {
-		const opt = {
-			url: 'https://sponsor.vechain.energy/by/16',
-			payer: '0x66cbb32b38e61b8f4df9b61d9244fb19805dd7ee'
+		const opt: DelegateOpt = {
+			url: 'https://sponsor.vechain.energy/by/16'
 		}
 		provider.enableDelegate(opt);
 
@@ -54,16 +53,14 @@ describe('Testing fee delegate', () => {
 			})
 				.send({
 					from: from,
-				})
-
-			contractAddress = contract.options.address;
+				});
 
 			const ret: string[] = await contract.methods.get().call();
 			args.forEach((val, i) => {
 				expect(ret[i]).to.eql('' + val);
 			})
 		} catch (err: any) {
-			assert.fail(err);
+			assert.fail(err.message);
 		}
 
 		provider.disableDelegate();

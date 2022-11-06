@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import { ConnexProvider, types, utils } from '../../src/index';
+import { ProviderWeb3, types, utils } from '../../src/index';
 import { urls, soloAccounts } from '../settings';
 import Web3 from 'web3';
 
@@ -14,13 +14,13 @@ describe('Testing sendRawTransaction', () => {
 	soloAccounts.forEach(pk => { wallet.import(pk); })
 
 	let driver: Driver;
-	let provider: ConnexProvider;
+	let provider: ProviderWeb3;
 	let web3: any;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ConnexProvider({ connex: new Framework(driver), net: net });
+			provider = new ProviderWeb3({ connex: new Framework(driver), net: net });
 			web3 = new Web3(provider);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);

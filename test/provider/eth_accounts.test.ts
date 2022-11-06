@@ -3,7 +3,7 @@ import { expect, assert } from 'chai'
 import { Driver, SimpleWallet, SimpleNet } from '@vechain/connex-driver'
 import { Framework } from '@vechain/connex-framework'
 import { secp256k1, address } from 'thor-devkit'
-import { ConnexProvider } from '../../src/index'
+import { Provider } from '../../src/index'
 import { soloAccounts, urls } from '../settings'
 
 describe('Test eth_accounts', function () {
@@ -16,7 +16,7 @@ describe('Test eth_accounts', function () {
 			driver = await Driver.connect(net, wallet)
 			const connex = new Framework(driver)
 
-			const provider = new ConnexProvider({ connex: connex })
+			const provider = new Provider({ connex: connex })
 
 			const accounts: string[] = await provider.request({ method: 'eth_accounts' })
 			expect(accounts).to.eql([])
@@ -35,7 +35,7 @@ describe('Test eth_accounts', function () {
 			driver = await Driver.connect(net, wallet)
 			const connex = new Framework(driver)
 
-			const provider = new ConnexProvider({ connex: connex, wallet: wallet })
+			const provider = new Provider({ connex: connex, wallet: wallet })
 
 			const accounts: string[] = await provider.request({ method: 'eth_accounts' })
 			expect(accounts).to.eql([])
@@ -60,7 +60,7 @@ describe('Test eth_accounts', function () {
 			driver = await Driver.connect(net, wallet)
 			const connex = new Framework(driver)
 
-			const provider = new ConnexProvider({ connex: connex, wallet: wallet })
+			const provider = new Provider({ connex: connex, wallet: wallet })
 
 			const accounts: string[] = await provider.request({ method: 'eth_accounts' })
 			
