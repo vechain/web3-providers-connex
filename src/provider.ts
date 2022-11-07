@@ -140,7 +140,7 @@ export class Provider extends EventEmitter implements IProvider {
 	private _sendRawTransaction = async (params: any[]) => {
 		try {
 			if (this.restful) {
-				return this.restful.sendRawTransaction(params[0]);
+				return await this.restful.sendRawTransaction(params[0]);
 			}
 			return null;
 		} catch (err: any) {
@@ -273,7 +273,7 @@ export class Provider extends EventEmitter implements IProvider {
 		const txObj: ExplainArg = params[0];
 		try {
 			if (this.restful) {
-				return this.restful.call(txObj, params[1]);
+				return await this.restful.call(txObj, params[1]);
 			}
 
 			let explainer = this.connex.thor.explain([txObj.clauses[0]]);
@@ -317,7 +317,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 		try {
 			if (this.restful) {
-				return this.restful.getStorageAt(addr, key, revision);
+				return await this.restful.getStorageAt(addr, key, revision);
 			}
 			const storage = await this.connex.thor.account(addr).getStorage(key);
 			return storage.value;
@@ -365,7 +365,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 		try {
 			if (this.restful) {
-				return this.restful.getCode(addr, revision);
+				return await this.restful.getCode(addr, revision);
 			}
 			const code = await this.connex.thor.account(addr).getCode();
 			return code.code;
@@ -392,7 +392,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 		try {
 			if (this.restful) {
-				return this.restful.getBalance(addr, revision);
+				return await this.restful.getBalance(addr, revision);
 			}
 			const acc = await this.connex.thor.account(addr).get();
 			return acc.balance;
