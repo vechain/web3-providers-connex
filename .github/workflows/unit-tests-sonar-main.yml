@@ -1,0 +1,33 @@
+name: Unit Testing and SonarCloud (Main)
+
+on: 
+  push: 
+    branches: 
+      - main
+
+jobs:
+  test-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Use Node v16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Run SonarCloud analysis
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.branch.name=main
