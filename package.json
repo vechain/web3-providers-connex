@@ -9,7 +9,7 @@
 	],
 	"scripts": {
 		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
-		"test": "nyc --reporter=lcov test/web3/*.ts test/ethers/*.ts test/restful/*.ts",
+		"test": "nyc --reporter=lcov mocha --no-timeouts test/web3/*.ts test/ethers/*.ts test/restful/*.ts",
 		"test-web3": "mocha --no-timeouts test/web3/*.ts",
 		"test-ethers": "mocha --no-timeouts test/ethers/*.ts",
 		"test-restful": "mocha --no-timeouts test/restful/*.ts"
