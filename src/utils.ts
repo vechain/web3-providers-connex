@@ -181,17 +181,11 @@ export function decodeRevertReason(data: string): string {
 // }
 
 export function toInvalidParamsErr(msg: string): ProviderRpcError {
-	return {
-		code: ErrCode.InvalidParams,
-		message: msg
-	}
+	return new ProviderRpcError(ErrCode.InvalidParams, msg);
 }
 
 export function toInternalJsonRpcErr(msg: string): ProviderRpcError {
-	return {
-		code: ErrCode.InternalError,
-		message: msg
-	}
+	return new ProviderRpcError(ErrCode.InternalError, msg);
 }
 
 export function getErrMsg(err: any): string {

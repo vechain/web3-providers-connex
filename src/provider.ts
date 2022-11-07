@@ -100,26 +100,20 @@ export class Provider extends EventEmitter implements IProvider {
 	async request(req: RequestArguments): Promise<any> {
 		if (!EthJsonRpcMethods.includes(req.method)) {
 			const msg = `Method ${req.method} not found`;
-			return Promise.reject({
-				code: ErrCode.MethodNotFound,
-				message: msg,
-			} as ProviderRpcError);
+			return Promise.reject(new ProviderRpcError(ErrCode.MethodNotFound,msg));
 		}
 
 		const exec = this._methodMap[req.method];
 		if (!exec) {
 			const msg = `Method ${req.method} not implemented`;
-			return Promise.reject({
-				code: ErrCode.MethodNotSupported,
-				message: msg
-			} as ProviderRpcError);
+			return Promise.reject(new ProviderRpcError(ErrCode.MethodNotSupported, msg));
 		}
 
 		let params: any[];
 		try {
 			params = this._formatter.formatInput(req.method, req.params);
 		} catch (err: any) {
-			return Promise.reject(err as ProviderRpcError);
+			return Promise.reject(err);
 		}
 
 		return exec(params);
@@ -150,10 +144,7 @@ export class Provider extends EventEmitter implements IProvider {
 			}
 			return null;
 		} catch (err: any) {
-			return Promise.reject({
-				code: ErrCode.TransactionRejected,
-				message: getErrMsg(err),
-			});
+			return Promise.reject(new ProviderRpcError(ErrCode.TransactionRejected, getErrMsg(err)));
 		}
 	}
 
@@ -259,10 +250,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 			const output = outputs[0];
 			if (output.reverted) {
-				return Promise.reject({
-					data: getErrMsg(output),
-					message: output?.revertReason || output.vmError
-				});
+				return genRevertReason(output);
 			}
 
 			const clause: Transaction.Clause = {
@@ -308,10 +296,10 @@ export class Provider extends EventEmitter implements IProvider {
 		let ss = this.connex.vendor.sign('tx', [txObj.clauses[0]]);
 		if (txObj.caller) { ss = ss.signer(txObj.caller); }
 		if (this._delegate) {
-			if (this._delegate.signer){
+			if (this._delegate.signer) {
 				ss = ss.delegate(this._delegate.url, this._delegate.signer);
 			} else {
-				ss = ss.delegate(this._delegate.url );
+				ss = ss.delegate(this._delegate.url);
 			}
 		}
 		if (txObj.gas) { ss = ss.gas(txObj.gas); }
@@ -320,11 +308,8 @@ export class Provider extends EventEmitter implements IProvider {
 			const ret = await ss.request()
 			return ret.txid;
 		} catch (err: any) {
-			return Promise.reject({
-				code: ErrCode.TransactionRejected,
-				message: getErrMsg(err),
-			});
-		};
+			return Promise.reject(new ProviderRpcError(ErrCode.TransactionRejected, getErrMsg(err)));
+		}
 	}
 
 	private _getStorageAt = async (params: any[]) => {

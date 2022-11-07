@@ -15,10 +15,15 @@ export interface Subscription {
 	};
 }
 
-export interface ProviderRpcError {
+export class ProviderRpcError extends Error {
 	code: number;
-	message: string;
 	data?: any;
+
+	constructor(code: number, message?:string, data?:any) {
+		super(message);
+		this.code = code;
+		this.data = data;
+	}
 }
 
 export interface ProviderConnectInfo {
