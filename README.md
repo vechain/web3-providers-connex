@@ -10,7 +10,7 @@ To get a web3 object:
 import * as thor from 'web3-providers-connex';
 
 // connexObj is an instance of Connex
-const provider = new thor.ConnexProvider({ connex: connexObj });
+const provider = new thor.ProviderWeb3({ connex: connexObj });
 const web3 = new Web3(provider);
 ```
 To get an ethers JsonRpcProvider:
@@ -20,7 +20,7 @@ import * as thor from 'web3-providers-connex';
 // connex is an instance of Connex
 const provider = thor.ethers.modifyProvider(
   new ethers.providers.Web3Provider(
-    new thor.ConnexProvider({ connex: connex })
+    new thor.ProviderEtheres({ connex: connex })
   )
 );
 ```
@@ -83,7 +83,7 @@ import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 const net = new SimpleNet(nodeUrl);
 const wallet = new SimpleWallet();
 // Import private key: 
-wallet.import(pk)
+wallet.import(privateKey)
 
 const driver = await Driver.connect(net, wallet);
 const connex = new Framework(driver);
@@ -110,9 +110,9 @@ The table below lists all the implemented JSON-RPC APIs. All the web3/ethers API
 |`eth_sendTransaction`|Args:<ul><li>`txObj` includes fields: `from`, `to`, `value`, `data`, `gas`</li></ul>|
 |`eth_call`|Args:<ul><li>`gasPrice` can be omitted</li></ul>|
 |`eth_subscribe`<br>`eth_unsubscribe`|Args:<ul><li>Supported subscription type: `newHeads`, `logs`</li></ul>|
+|`net_version` |Equivalent to `eth_chainId`|
 |`eth_gasPrice` (dummy)|Return 0|
 |`eth_getTransactionCount` (dummy)| Return 0|
-|`net_version` (dummy)|Return 0|
 ## License
 This software is licensed under the
 [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.html), also included
