@@ -2,7 +2,7 @@
 
 import { ProviderRpcError, RequestArguments } from "./eip1193";
 import { Provider } from "./provider";
-import { Net, Wallet, DelegateOpt, JsonRpcPayload, JsonRpcResponse } from './types';
+import { Net, Wallet, DelegateOpt, JsonRpcPayload } from './types';
 import { decodeRevertReason } from "./utils";
 
 export class ProviderWeb3 extends Provider {
@@ -21,7 +21,7 @@ export class ProviderWeb3 extends Provider {
 	) {
 		super.request(payload)
 			.then(ret => {
-				if (payload.method === 'eth_call') {
+				if (payload.method === 'eth_call' || payload.method === 'eth_esetimateGas') {
 					const errMsg = decodeRevertReason(ret);
 					if (errMsg) {
 						callback(null, {
@@ -58,7 +58,7 @@ export class ProviderEthers extends Provider {
 	async request(req: RequestArguments): Promise<any> {
 		try {
 			const ret = await super.request(req);
-			if (req.method === 'eth_call') {
+			if (req.method === 'eth_call' || req.method === 'eth_estimateGas') {
 				const errMsg = decodeRevertReason(ret);
 				if (errMsg) {
 					return Promise.reject({
