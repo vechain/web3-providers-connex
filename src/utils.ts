@@ -58,6 +58,8 @@ export function isHexStrict(hex: string) {
 }
 
 export function genRevertReason(output: Connex.VM.Output): string {
+	output.revertReason = decodeRevertReason(output.data);
+	
 	const errorSig = '0x08c379a0';
 	let errMsg = output.revertReason || output.vmError || output.data;
 
