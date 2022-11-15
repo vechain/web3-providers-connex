@@ -21,7 +21,7 @@ export class ProviderWeb3 extends Provider {
 	) {
 		super.request(payload)
 			.then(ret => {
-				if (payload.method === 'eth_call' || payload.method === 'eth_esetimateGas') {
+				if (payload.method === 'eth_call' || payload.method === 'eth_estimateGas') {
 					const errMsg = decodeRevertReason(ret);
 					if (errMsg) {
 						callback(null, {
