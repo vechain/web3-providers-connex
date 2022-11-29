@@ -83,13 +83,12 @@ describe('Testing call', () => {
 
 		let ret: string;
 		try {
-			ret = await provider.request({
+			await provider.request({
 				method: 'eth_call',
 				params: [callObj, Math.floor(n / 2)]
 			});
-			expect(decodeRevertReason(ret)).to.eql('insufficient balance for transfer');
 		} catch (err: any) {
-			assert.fail(err.message);
+			expect(err.message).to.eql('insufficient balance for transfer');
 		}
 
 		// call at the previous block when wallet[1] doesn't have sufficient energy balance

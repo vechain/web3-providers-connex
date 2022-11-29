@@ -74,6 +74,7 @@ describe('Testing contract', () => {
 		}
 	})
 
+
 	it('send', async () => {
 		let contract = new ethers.Contract(contractAddress, abi, provider.getSigner(from));
 		const args = [200, 'test contract send'];
@@ -97,8 +98,8 @@ describe('Testing contract', () => {
 			await contract.set(10, 'hello');
 			await contract.get();
 		} catch (err: any) {
-			const msg: string = thor.utils.decodeRevertReason(err.error.data);
-			expect(msg).to.eql(errMsg);
+			expect(err.reason).to.eql(errMsg);
 		}
 	})
+	
 })

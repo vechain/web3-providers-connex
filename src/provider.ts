@@ -3,7 +3,7 @@
 'use strict';
 
 import { ConvertedFilterOpts, Net, Wallet, ExplainArg, DelegateOpt } from './types';
-import { hexToNumber, getErrMsg, toSubscription, toHex, toInternalJsonRpcErr, genRevertReason } from './utils';
+import { hexToNumber, getErrMsg, toSubscription, toHex, toInternalJsonRpcErr } from './utils';
 import { ErrMsg, ErrCode } from './error';
 import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
@@ -250,7 +250,16 @@ export class Provider extends EventEmitter implements IProvider {
 
 			const output = outputs[0];
 			if (output.reverted) {
-				return genRevertReason(output);
+				if (output.vmError === 'execution reverted' && output.revertReason){
+					return Promise.reject({
+						data: output.data,
+						message: output.revertReason
+					});
+				} else {
+					return Promise.reject({
+						message: output.vmError
+					})
+				}
 			}
 
 			const clause: Transaction.Clause = {
@@ -283,7 +292,16 @@ export class Provider extends EventEmitter implements IProvider {
 			const outputs = await explainer.execute();
 			const output = outputs[0];
 			if (output.reverted) {
-				return genRevertReason(output);
+				if (output.vmError === 'execution reverted' && output.revertReason){
+					return Promise.reject({
+						data: output.data,
+						message: `execution reverted: ${output.revertReason}`
+					});
+				} else {
+					return Promise.reject({
+						message: output.vmError
+					})
+				}
 			}
 			return output.data;
 		} catch (err: any) {

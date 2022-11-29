@@ -2,7 +2,7 @@
 
 import { ErrCode } from './error';
 import { Net, ExplainArg } from './types';
-import { genRevertReason, getErrMsg, toInternalJsonRpcErr } from './utils';
+import { decodeRevertReason, getErrMsg, toInternalJsonRpcErr } from './utils';
 
 export class Restful {
 	private readonly _net: Net;
@@ -118,7 +118,18 @@ export class Restful {
 
 			const output = outputs[0];
 			if (output.reverted) {
-				return genRevertReason(output);
+				if (output.vmError === 'execution reverted') {		
+					const reason = decodeRevertReason(output.data)					
+
+					return Promise.reject({
+						data: output.data,
+						message: reason?  `execution reverted: ${reason}`: output.vmError
+					});
+				} else {
+					return Promise.reject({
+						message: output.vmError
+					})
+				}
 			}
 			return output.data;
 		} catch (err: any) {

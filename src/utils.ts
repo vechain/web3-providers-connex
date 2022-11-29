@@ -57,22 +57,6 @@ export function isHexStrict(hex: string) {
 	return web3Utils.isHexStrict(hex);
 }
 
-export function genRevertReason(output: Connex.VM.Output): string {
-	const errorSig = '0x08c379a0';
-	let errMsg = output.revertReason || output.vmError || output.data;
-
-	if (!errMsg.startsWith('0x')) {
-		// encode error message to allow sendTxCallback to decode later
-		errMsg = abi.encodeParameter('string', errMsg);
-	}
-
-	if (!errMsg.startsWith(errorSig)) {
-		errMsg = errorSig + errMsg.slice(2);
-	}
-
-	return errMsg;
-}
-
 export function toFilterCriteria(args: FilterOpts): Connex.Thor.Filter.Criteria<"event">[] {
 	const setCriteria = (address?: string, topics?: any) => {
 		const c: Connex.Thor.Filter.Criteria<"event"> = {};
