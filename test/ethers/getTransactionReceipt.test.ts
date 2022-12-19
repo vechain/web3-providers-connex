@@ -5,7 +5,7 @@ import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers } from 'ethers';
-import { ProviderEthers, types } from '../../src';
+import { Provider, types } from '../../src';
 import { urls } from '../settings';
 import { zeroBytes20 } from '../../src/common';
 
@@ -15,14 +15,14 @@ describe('Testing getTransactionReceipt', () => {
 
 	let driver: Driver;
 	let connex: Connex;
-	let cp: ProviderEthers;
+	let cp: Provider;
 	let provider: ethers.providers.Web3Provider;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			connex = new Framework(driver);
-			cp = new ProviderEthers({ connex: connex });
+			cp = new Provider({ connex: connex });
 			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);

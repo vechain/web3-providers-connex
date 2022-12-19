@@ -25,7 +25,7 @@ describe('Testing getLogs', () => {
 			driver = await Driver.connect(net, wallet);
 			provider = thor.ethers.modifyProvider(
 				new ethers.providers.Web3Provider(
-					new thor.ProviderEthers({ connex: new Framework(driver) })
+					new thor.Provider({ connex: new Framework(driver) })
 				)
 			);
 		} catch (err: any) {

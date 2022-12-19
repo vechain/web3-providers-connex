@@ -10,7 +10,8 @@ import Web3 from 'web3';
 
 import { ProviderWeb3 } from '../../src/index';
 import { urls, soloAccounts } from '../settings';
-import { decodeRevertReason, randAddr } from '../../src/utils';
+import { randAddr } from '../../src/utils';
+import { ProviderRpcError } from '../../src/eip1193';
 
 describe('Testing call', () => {
 	const net = new SimpleNet(urls.solo);
@@ -40,27 +41,6 @@ describe('Testing call', () => {
 		driver?.close();
 	})
 
-	// it('call without revision', async () => {
-	// 	const callObj = {
-	// 		from: wallet.list[0].address,
-	// 		to: randAddr(),
-	// 		value: '1' + '0'.repeat(18)
-	// 	}
-	// 	try {
-	// 		await provider.request({
-	// 			method: 'eth_call',
-	// 			params: [callObj]
-	// 		})
-
-	// 		await provider.request({
-	// 			method: 'eth_call',
-	// 			params: [callObj, 'latest']
-	// 		})
-	// 	} catch (err: any) {
-	// 		assert.fail(err.message || err)
-	// 	}
-	// })
-
 	it('call with revision', async () => {
 		// Transfer vethor to wallet[1] to make it have sufficient energy balance
 		const energy = new web3.eth.Contract(energyABI, energyAddr);
@@ -87,9 +67,9 @@ describe('Testing call', () => {
 				method: 'eth_call',
 				params: [callObj, Math.floor(n / 2)]
 			});
-			expect(decodeRevertReason(ret)).to.eql('insufficient balance for transfer');
+			assert.fail('Test failed')
 		} catch (err: any) {
-			assert.fail(err.message);
+			expect((err as ProviderRpcError).message).to.eql('insufficient balance for transfer');
 		}
 
 		// call at the previous block when wallet[1] doesn't have sufficient energy balance

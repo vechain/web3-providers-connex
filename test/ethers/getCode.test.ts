@@ -20,7 +20,7 @@ describe('Testing getCode', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			provider = new ethers.providers.Web3Provider(
-				new thor.ProviderEthers({ connex: new Framework(driver) })
+				new thor.Provider({ connex: new Framework(driver) })
 			);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);

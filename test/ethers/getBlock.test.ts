@@ -14,7 +14,7 @@ describe('Testing getBlock', () => {
 	const wallet = new SimpleWallet();
 
 	let driver: Driver;
-	let cp: thor.ProviderEthers;
+	let cp: thor.Provider;
 	let connex: Connex;
 	let provider: ethers.providers.Web3Provider;
 
@@ -22,7 +22,7 @@ describe('Testing getBlock', () => {
 		try {
 			driver = await Driver.connect(net, wallet);
 			connex = new Framework(driver);
-			cp = new thor.ProviderEthers({ connex: connex });
+			cp = new thor.Provider({ connex: connex });
 			provider = new ethers.providers.Web3Provider(cp);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);

@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers, BigNumber } from 'ethers';
 
-import { ProviderEthers, ethers as es, utils } from '../../src/index';
+import { Provider, ethers as es, utils } from '../../src/index';
 import { urls, soloAccounts } from '../settings'
 
 describe('Testing sendTransaction', () => {
@@ -17,13 +17,13 @@ describe('Testing sendTransaction', () => {
 	});
 
 	let driver: Driver;
-	let cp: ProviderEthers;
+	let cp: Provider;
 	let provider: ethers.providers.JsonRpcProvider;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			cp = new ProviderEthers({ connex: new Framework(driver) });
+			cp = new Provider({ connex: new Framework(driver) });
 			provider = es.modifyProvider(new ethers.providers.Web3Provider(cp));
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);

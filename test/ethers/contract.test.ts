@@ -24,7 +24,7 @@ describe('Testing contract', () => {
 			driver = await Driver.connect(net, wallet);
 			provider = thor.ethers.modifyProvider(
 				new ethers.providers.Web3Provider(
-					new thor.ProviderEthers({ connex: new Framework(driver) })
+					new thor.Provider({ connex: new Framework(driver) })
 				)
 			);
 		} catch (err: any) {
@@ -97,7 +97,7 @@ describe('Testing contract', () => {
 			await contract.set(10, 'hello');
 			await contract.get();
 		} catch (err: any) {
-			const msg: string = thor.utils.decodeRevertReason(err.error.data);
+			const msg: string = thor.utils.decodeRevertReason(err.data);
 			expect(msg).to.eql(errMsg);
 		}
 	})
