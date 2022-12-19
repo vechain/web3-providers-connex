@@ -100,10 +100,8 @@ describe('Testing getTransactionReceipt', () => {
 				expectedReceipt.outputs[0].events[index].address));
 			expect(log.topics).to.eql(expectedReceipt.outputs[0].events[index].topics);
 			expect(log.data).to.eql(expectedReceipt.outputs[0].events[index].data);
-
-			// Unsupported fields
-			expect(log.transactionIndex).to.eql(0);
-			expect(log.logIndex).to.eql(0);
+			expect(log.transactionIndex).to.eql(1);
+			expect(log.logIndex).to.eql(index);
 		})
 	})
 })

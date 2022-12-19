@@ -22,6 +22,7 @@ import {
 import { ErrMsg, ErrCode } from './error';
 import { zeroBytes8, zeroBytes20, zeroBytes32, zeroBytes256 } from './common';
 import { ProviderRpcError } from './eip1193';
+import { numberToHex } from 'web3-utils';
 
 export class Formatter {
 	private readonly _connex: Connex;
@@ -233,9 +234,9 @@ export class Formatter {
 		return [raw];
 	}
 
-	outputReceiptFormatter = (receipt: Connex.Thor.Transaction.Receipt): RetReceipt => {
+	outputReceiptFormatter = (receipt: Connex.Thor.Transaction.Receipt & { transactionIndex: string }): RetReceipt => {
 		const logs: RetLog[] = (receipt.outputs.length > 0 && receipt.outputs[0].events.length > 0) ?
-			receipt.outputs[0].events.map(event => {
+			receipt.outputs[0].events.map((event, index) => {
 				return {
 					blockHash: receipt.meta.blockID,
 					blockNumber: toHex(receipt.meta.blockNumber),
@@ -246,8 +247,8 @@ export class Formatter {
 
 					removed: false,
 
-					transactionIndex: '0x0',
-					logIndex: '0x0',
+					transactionIndex: receipt.transactionIndex,
+					logIndex: numberToHex(index),
 				}
 			}) : [];
 

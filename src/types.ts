@@ -170,8 +170,8 @@ export interface RetLog {
 
 	removed: false;
 
-	logIndex: '0x0';
-	transactionIndex: '0x0';
+	logIndex: string;			// number in hex string
+	transactionIndex: string;	// number in hex string
 }
 
 export type TxObj = {

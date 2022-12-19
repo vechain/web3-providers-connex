@@ -357,7 +357,18 @@ export class Provider extends EventEmitter implements IProvider {
 			if (!receipt) {
 				return null;
 			} else {
-				return this._formatter.outputReceiptFormatter(receipt);
+				const blk = await this.connex.thor.block(receipt.meta.blockNumber).get();
+				if (!blk) {
+					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Block not found'));
+				}
+
+				const txIndex = blk.transactions.findIndex(elem => elem == hash);
+
+				if (txIndex == -1) {
+					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Tx not found in block'));
+				}
+
+				return this._formatter.outputReceiptFormatter({ ...receipt, ...{ transactionIndex: numberToHex(txIndex) } });
 			}
 		} catch (err: any) {
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
@@ -433,7 +444,7 @@ export class Provider extends EventEmitter implements IProvider {
 				return null;
 			} else {
 				const blk = await this.connex.thor.block(tx.meta.blockNumber).get();
-				if(!blk) {
+				if (!blk) {
 					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Block not found'));
 				}
 
@@ -443,7 +454,7 @@ export class Provider extends EventEmitter implements IProvider {
 					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Tx not found in block'));
 				}
 
-				return this._formatter.outputTransactionFormatter({...tx, ...{transactionIndex: numberToHex(txIndex)}});
+				return this._formatter.outputTransactionFormatter({ ...tx, ...{ transactionIndex: numberToHex(txIndex) } });
 			}
 		} catch (err: any) {
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
