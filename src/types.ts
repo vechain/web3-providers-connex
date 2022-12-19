@@ -134,9 +134,9 @@ export interface RetTransaction {
 	value: string;				// number in hex string
 	gas: string;				// number in hex string
 	input: string;
+	transactionIndex: string;	// number in hex string
 
 	// incompatible fields
-	transactionIndex: '0x0';
 	nonce: '0x0';
 	gasPrice: '0x0';
 }

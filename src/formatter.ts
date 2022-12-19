@@ -296,7 +296,7 @@ export class Formatter {
 		};
 	}
 
-	outputTransactionFormatter = (tx: Connex.Thor.Transaction): RetTransaction => {
+	outputTransactionFormatter = (tx: Connex.Thor.Transaction & { transactionIndex: string }): RetTransaction => {
 		return {
 			hash: tx.id,
 			blockNumber: toHex(tx.meta.blockNumber),
@@ -307,8 +307,10 @@ export class Formatter {
 			value: tx.clauses[0].value,
 			gas: toHex(tx.gas),
 
+			transactionIndex: tx.transactionIndex,
+
 			// incompatible fields
-			transactionIndex: '0x0',
+			// transactionIndex: '0x0',
 			nonce: '0x0',
 			gasPrice: '0x0'
 		};

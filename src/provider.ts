@@ -11,6 +11,7 @@ import EventEmitter from 'eventemitter3';
 import { Restful } from './restful';
 import { IProvider, ProviderRpcError, RequestArguments } from './eip1193';
 import { EthJsonRpcMethods } from './common';
+import { numberToHex } from 'web3-utils';
 
 type MethodHandler = (params: any[]) => Promise<any>;
 
@@ -431,7 +432,18 @@ export class Provider extends EventEmitter implements IProvider {
 			if (!tx) {
 				return null;
 			} else {
-				return this._formatter.outputTransactionFormatter(tx);
+				const blk = await this.connex.thor.block(tx.meta.blockNumber).get();
+				if(!blk) {
+					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Block not found'));
+				}
+
+				const txIndex = blk.transactions.findIndex(elem => elem == tx.id);
+
+				if (txIndex == -1) {
+					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Tx not found in block'));
+				}
+
+				return this._formatter.outputTransactionFormatter({...tx, ...{transactionIndex: numberToHex(txIndex)}});
 			}
 		} catch (err: any) {
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
