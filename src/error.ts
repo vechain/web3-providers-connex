@@ -36,12 +36,7 @@ export const ErrCode = {
 	MethodNotFound: -32601,				// Method does not exist
 	InvalidParams: -32602,				// Invalid method parameters
 	InternalError: -32603,				// Internal JSON-RPC error
-	// Non-standard
-	InvalidInput: -32000,				// Missing or invalid parameters
-	ResourceNotFound: -32001,			// Requested resource not found
-	ResourceUnavailable: -32002,		// Requested resource not available
-	TransactionRejected: -32003,		// Transaction creation failed
-	MethodNotSupported: -32004,			// Method is not implemented
-	LimitExceeded: -32005,				// Request exceeds defined limit
-	JsonRpcVersionNotSupported: -32006	// Version of JSON-RPC protocol is not supported
+
+	// https://github.com/ethereum/go-ethereum/blob/master/rpc/errors.go
+	Default: -32000				
 }
