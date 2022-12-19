@@ -3,7 +3,7 @@
 'use strict';
 
 import { ConvertedFilterOpts, Net, Wallet, ExplainArg, DelegateOpt } from './types';
-import { hexToNumber, getErrMsg, toSubscription, toHex, toInternalJsonRpcErr, genRevertReason } from './utils';
+import { hexToNumber, getErrMsg, toSubscription, toHex, genRevertReason } from './utils';
 import { ErrMsg, ErrCode } from './error';
 import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
@@ -100,13 +100,13 @@ export class Provider extends EventEmitter implements IProvider {
 	async request(req: RequestArguments): Promise<any> {
 		if (!EthJsonRpcMethods.includes(req.method)) {
 			const msg = `Method ${req.method} not found`;
-			return Promise.reject(new ProviderRpcError(ErrCode.MethodNotFound,msg));
+			return Promise.reject(new ProviderRpcError(ErrCode.MethodNotFound, msg));
 		}
 
 		const exec = this._methodMap[req.method];
 		if (!exec) {
 			const msg = `Method ${req.method} not implemented`;
-			return Promise.reject(new ProviderRpcError(ErrCode.MethodNotSupported, msg));
+			return Promise.reject(new ProviderRpcError(ErrCode.MethodNotFound, msg));
 		}
 
 		let params: any[];
@@ -122,7 +122,7 @@ export class Provider extends EventEmitter implements IProvider {
 	private _mine = async (_: any) => {
 		if (this.chainTag !== 0x4a && this.chainTag !== 0x27) {
 			// test purpose only
-			await this.connex.vendor.sign('tx', [{ to: '0x' + '00'.repeat(20), value: '0x00', data: '0x' }]).request().catch()	
+			await this.connex.vendor.sign('tx', [{ to: '0x' + '00'.repeat(20), value: '0x00', data: '0x' }]).request().catch()
 		}
 		await this.connex.thor.ticker().next();
 	}
@@ -146,10 +146,11 @@ export class Provider extends EventEmitter implements IProvider {
 			if (this.restful) {
 				return await this.restful.sendRawTransaction(params[0]);
 			}
-			return null;
 		} catch (err: any) {
-			return Promise.reject(new ProviderRpcError(ErrCode.TransactionRejected, getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.Default, getErrMsg(err)));
 		}
+
+		return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Restful API call supported'));
 	}
 
 	private _subscribe = async (params: any[]) => {
@@ -158,7 +159,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 		if (this._subscriptions[subName][subId]) {
 			return Promise.reject(
-				toInternalJsonRpcErr(ErrMsg.SubscriptionAlreadyExist(subId))
+				new ProviderRpcError(ErrCode.InternalError, ErrMsg.SubscriptionAlreadyExist(subId))
 			);
 		}
 
@@ -171,7 +172,9 @@ export class Provider extends EventEmitter implements IProvider {
 		const subId: string = params[0];
 
 		if (!this._subscriptions['newHeads'][subId] && !this._subscriptions['logs'][subId]) {
-			return Promise.reject(toInternalJsonRpcErr(ErrMsg.SubscriptionIdNotFound(subId)));
+			return Promise.reject(
+				new ProviderRpcError(ErrCode.InternalError, ErrMsg.SubscriptionIdNotFound(subId))
+			);
 		}
 
 		this._subscriptions['newHeads'][subId] ?
@@ -240,7 +243,7 @@ export class Provider extends EventEmitter implements IProvider {
 				.apply(0, MAX_LIMIT);
 			return this._formatter.outputLogsFormatter(ret);
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -254,7 +257,15 @@ export class Provider extends EventEmitter implements IProvider {
 
 			const output = outputs[0];
 			if (output.reverted) {
-				return genRevertReason(output);
+				if (output.vmError === 'execution reverted' && output.revertReason) {
+					return Promise.reject(new ProviderRpcError(
+						ErrCode.InternalError,
+						`execution reverted: ${output.revertReason}`,
+						output.data,
+					))
+				} else {
+					return Promise.reject(new ProviderRpcError(ErrCode.Default, output.vmError))
+				}
 			}
 
 			const clause: Transaction.Clause = {
@@ -269,7 +280,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 			return toHex(estimatedGas);
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -287,11 +298,19 @@ export class Provider extends EventEmitter implements IProvider {
 			const outputs = await explainer.execute();
 			const output = outputs[0];
 			if (output.reverted) {
-				return genRevertReason(output);
+				if (output.vmError === 'execution reverted' && output.revertReason) {
+					return Promise.reject(new ProviderRpcError(
+						ErrCode.InternalError,
+						`execution reverted: ${output.revertReason}`,
+						output.data,
+					))
+				} else {
+					return Promise.reject(new ProviderRpcError(ErrCode.Default, output.vmError))
+				}
 			}
 			return output.data;
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -312,7 +331,7 @@ export class Provider extends EventEmitter implements IProvider {
 			const ret = await ss.request()
 			return ret.txid;
 		} catch (err: any) {
-			return Promise.reject(new ProviderRpcError(ErrCode.TransactionRejected, getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.Default, getErrMsg(err)));
 		}
 	}
 
@@ -326,7 +345,7 @@ export class Provider extends EventEmitter implements IProvider {
 			const storage = await this.connex.thor.account(addr).getStorage(key);
 			return storage.value;
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -340,7 +359,7 @@ export class Provider extends EventEmitter implements IProvider {
 				return this._formatter.outputReceiptFormatter(receipt);
 			}
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		};
 	}
 
@@ -360,7 +379,7 @@ export class Provider extends EventEmitter implements IProvider {
 				};
 			}
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -374,7 +393,7 @@ export class Provider extends EventEmitter implements IProvider {
 			const code = await this.connex.thor.account(addr).getCode();
 			return code.code;
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -387,7 +406,7 @@ export class Provider extends EventEmitter implements IProvider {
 				return toHex(blk.number);
 			}
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -401,7 +420,7 @@ export class Provider extends EventEmitter implements IProvider {
 			const acc = await this.connex.thor.account(addr).get();
 			return acc.balance;
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -415,7 +434,7 @@ export class Provider extends EventEmitter implements IProvider {
 				return this._formatter.outputTransactionFormatter(tx);
 			}
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -433,7 +452,7 @@ export class Provider extends EventEmitter implements IProvider {
 				return this._formatter.outputBlockFormatter(blk);
 			}
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -447,7 +466,7 @@ export class Provider extends EventEmitter implements IProvider {
 				return this._formatter.outputBlockFormatter(blk);
 			}
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 }

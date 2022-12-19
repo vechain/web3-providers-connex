@@ -18,10 +18,10 @@ import {
 	toFilterCriteria,
 	toHex,
 	isHexStrict,
-	toInvalidParamsErr,
 } from './utils';
-import { ErrMsg } from './error';
+import { ErrMsg, ErrCode } from './error';
 import { zeroBytes8, zeroBytes20, zeroBytes32, zeroBytes256 } from './common';
+import { ProviderRpcError } from './eip1193';
 
 export class Formatter {
 	private readonly _connex: Connex;
@@ -49,7 +49,7 @@ export class Formatter {
 		if (!inputFormatter) { return params || []; }
 		if (!params) {
 			const msg = 'Parameters missing';
-			throw toInvalidParamsErr(msg);
+			throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 		}
 		return inputFormatter(params);
 	}
@@ -58,7 +58,7 @@ export class Formatter {
 		const num = parseBlockNumber(params[0]);
 		if (num === null) {
 			const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
-			throw toInvalidParamsErr(msg);
+			throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 		}
 		return [num];
 	}
@@ -71,13 +71,13 @@ export class Formatter {
 				!(typeof revision === 'string' && revision === 'latest')
 			) {
 				const msg = ErrMsg.MethodParamNotSupported('eth_getBalance', 2);
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		} else if (typeof revision !== 'number') {
 			revision = parseBlockNumber(revision);
 			if (revision === null) {
 				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getBalance', 'revision');
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		}
 
@@ -92,13 +92,13 @@ export class Formatter {
 				!(typeof revision === 'string' && revision === 'latest')
 			) {
 				const msg = ErrMsg.MethodParamNotSupported('eth_getCode', 2);
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		} else if (typeof revision !== 'number') {
-			revision = parseBlockNumber(revision);``
+			revision = parseBlockNumber(revision); ``
 			if (revision === null) {
 				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getCode', 'revision');
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		}
 
@@ -113,13 +113,13 @@ export class Formatter {
 				!(typeof revision === 'string' && revision === 'latest')
 			) {
 				const msg = ErrMsg.MethodParamNotSupported('eth_getStorageAt', 3);
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		} else if (typeof revision !== 'number') {
 			revision = parseBlockNumber(revision);
 			if (revision === null) {
 				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getStorageAt', 'revision');
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		}
 
@@ -150,13 +150,13 @@ export class Formatter {
 				!(typeof revision === 'string' && revision === 'latest')
 			) {
 				const msg = ErrMsg.MethodParamNotSupported('eth_call', 2);
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		} else if (typeof revision !== 'number') {
 			revision = parseBlockNumber(revision);
 			if (revision === null) {
 				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_call', 'revision');
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		}
 
@@ -181,7 +181,7 @@ export class Formatter {
 				test = this._connex.thor.status.head.number;
 			} else if (typeof test !== 'number') {
 				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock');
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 			fromBlock = test;
 		}
@@ -194,7 +194,7 @@ export class Formatter {
 				test = this._connex.thor.status.head.number;
 			} else if (typeof test !== 'number') {
 				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock');
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 			toBlock = test;
 		}
@@ -220,7 +220,7 @@ export class Formatter {
 				return ['logs', toFilterCriteria(params[1])];
 			default:
 				const msg = ErrMsg.InvalidSubscriptionName(name);
-				throw toInvalidParamsErr(msg);
+				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 		}
 	}
 
@@ -228,7 +228,7 @@ export class Formatter {
 		const raw: string = params[0];
 		if (!isHexStrict(raw)) {
 			const msg = ErrMsg.ArgumentMissingOrInvalid('eth_sendRawTransaction', 'raw');
-			throw toInvalidParamsErr(msg);
+			throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 		}
 		return [raw];
 	}

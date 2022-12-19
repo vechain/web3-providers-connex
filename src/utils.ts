@@ -173,21 +173,6 @@ export function decodeRevertReason(data: string): string {
 	}
 }
 
-// export function encodeRevertReason(msg: string): string {
-// 	const errorSig = '0x08c379a0'
-// 	try {
-// 		return errorSig + abi.encodeParameter('string', msg)
-// 	} catch { return '' }
-// }
-
-export function toInvalidParamsErr(msg: string): ProviderRpcError {
-	return new ProviderRpcError(ErrCode.InvalidParams, msg);
-}
-
-export function toInternalJsonRpcErr(msg: string): ProviderRpcError {
-	return new ProviderRpcError(ErrCode.InternalError, msg);
-}
-
 export function getErrMsg(err: any): string {
 	let msg: string = '';
 	if (typeof err === 'string') {

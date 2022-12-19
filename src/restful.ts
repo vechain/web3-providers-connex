@@ -2,7 +2,8 @@
 
 import { ErrCode } from './error';
 import { Net, ExplainArg } from './types';
-import { genRevertReason, getErrMsg, toInternalJsonRpcErr } from './utils';
+import { decodeRevertReason, getErrMsg } from './utils';
+import { ProviderRpcError } from './eip1193';
 
 export class Restful {
 	private readonly _net: Net;
@@ -35,7 +36,7 @@ export class Restful {
 			return resp.id;
 		} catch (err: any) {
 			return Promise.reject({
-				code: ErrCode.TransactionRejected,
+				code: ErrCode.Default,
 				message: getErrMsg(err)
 			});
 		}
@@ -57,7 +58,7 @@ export class Restful {
 
 			return code.code;
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -77,7 +78,7 @@ export class Restful {
 
 			return acc.balance;
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -97,7 +98,7 @@ export class Restful {
 
 			return storage.value;
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 
@@ -118,11 +119,21 @@ export class Restful {
 
 			const output = outputs[0];
 			if (output.reverted) {
-				return genRevertReason(output);
+				if (output.vmError === 'execution reverted') {
+					const reason = decodeRevertReason(output.data)
+
+					return Promise.reject(new ProviderRpcError(ErrCode.Default,
+						reason ? `execution reverted: ${reason}` : output.vmError,
+						output.data
+					))
+				} else {
+					return Promise.reject(new ProviderRpcError(ErrCode.Default, output.vmError))
+				}
 			}
+			
 			return output.data;
 		} catch (err: any) {
-			return Promise.reject(toInternalJsonRpcErr(getErrMsg(err)));
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
 }
