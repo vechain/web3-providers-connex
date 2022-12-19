@@ -37,6 +37,6 @@ describe('Test custom JSON RPC methods', function () {
 		const n1 = await provider.request({ method: 'eth_blockNumber' })
 		await provider.request({ method: 'evm_mine' })
 		const n2 = await provider.request({ method: 'eth_blockNumber' })
-		expect(parseInt(n2, 16)).to.eql(parseInt(n1, 16) + 1)
+		expect(parseInt(n2, 16)).not.to.lessThan(parseInt(n1, 16) + 1)
 	})
 })

@@ -120,6 +120,10 @@ export class Provider extends EventEmitter implements IProvider {
 	}
 
 	private _mine = async (_: any) => {
+		if (this.chainTag !== 0x4a && this.chainTag !== 0x27) {
+			// test purpose only
+			await this.connex.vendor.sign('tx', [{ to: '0x' + '00'.repeat(20), value: '0x00', data: '0x' }]).request().catch()	
+		}
 		await this.connex.thor.ticker().next();
 	}
 
