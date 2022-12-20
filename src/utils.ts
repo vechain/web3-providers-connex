@@ -4,9 +4,8 @@ import { randomBytes } from 'crypto';
 import web3Utils from 'web3-utils';
 import { abi, Transaction } from 'thor-devkit';
 import { FilterOpts, Wallet, TxObj } from './types';
-import { ProviderRpcError, Subscription } from './eip1193';
+import { Subscription } from './eip1193';
 import { Provider } from './provider';
-import { ErrCode } from './error';
 
 export const toSubscription = function (ret: any, id: string): Subscription {
 	return {
