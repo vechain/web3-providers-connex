@@ -8,7 +8,7 @@ import Web3 from 'web3';
 
 import { ProviderWeb3, types } from '../../src/index';
 import { urls } from '../settings';
-import { zeroBytes20, zeroBytes256 } from '../../src/common';
+import { zeroBytes256 } from '../../src/common';
 
 describe('Testing getTransactionReceipt', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -48,6 +48,8 @@ describe('Testing getTransactionReceipt', () => {
 
 	it('without log', async () => {
 		const hash = '0xc5e0da1aedd7e194b49e8e72977affb3737c335a1d2c385c49a7510cc2fc4928';
+		const from = '0xa3531B5E9725e232f49d5b4F40D93379a8F99b24';
+		const to = '0x5734D36696DFE9A9109f03c2b45b6B5E8ecE5aC6';
 
 		let receipt: types.RetReceipt;
 		try {
@@ -66,13 +68,16 @@ describe('Testing getTransactionReceipt', () => {
 		expect(receipt.transactionHash).to.eql(expectedReceipt.meta.txID);
 		expect(receipt.logs.length).to.eql(0);
 		expect(receipt.status).to.eql(!expectedReceipt.reverted);
-
+		expect(receipt.from.toLowerCase()).to.eql(from.toLowerCase());
+		if(receipt.to){
+			expect(receipt.to.toLowerCase()).to.eql(to.toLowerCase());
+		} else {
+			assert.fail('Invalid receipt.to');
+		}
 		expect(receipt.contractAddress).to.be.null;
 
 		// Unsupported fields
 		expect(receipt.cumulativeGasUsed).to.eql(0);
-		expect(receipt.from).to.eql(zeroBytes20);
-		expect(receipt.to).to.eql(zeroBytes20);
 		expect(receipt.logsBloom).to.eql(zeroBytes256);
 	})
 
