@@ -9,7 +9,7 @@
 	],
 	"scripts": {
 		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
-		"test": "npm run test-web3 && npm run test-ethers && npm run test-restful",
+		"test": "nyc --reporter=lcov mocha --no-timeouts test/web3/*.ts test/ethers/*.ts test/restful/*.ts",
 		"test-web3": "mocha --no-timeouts test/web3/*.ts",
 		"test-ethers": "mocha --no-timeouts test/ethers/*.ts",
 		"test-restful": "mocha --no-timeouts test/restful/*.ts"
@@ -37,6 +37,7 @@
 		"@vechain/connex-framework": "^2.0.8",
 		"chai": "^4.3.6",
 		"mocha": "^9.2.0",
+		"nyc": "^15.1.0",
 		"thor-builtin": "^1.0.0",
 		"ts-node": "^10.5.0",
 		"tsconfig-paths": "^3.14.1",
