@@ -70,7 +70,6 @@ describe('Testing getTransactionReceipt', () => {
 		expect(receipt.contractAddress).to.be.null;
 
 		// Unsupported fields
-		expect(receipt.transactionIndex).to.eql(0);
 		expect(receipt.cumulativeGasUsed).to.eql(0);
 		expect(receipt.from).to.eql(zeroBytes20);
 		expect(receipt.to).to.eql(zeroBytes20);
@@ -100,8 +99,6 @@ describe('Testing getTransactionReceipt', () => {
 				expectedReceipt.outputs[0].events[index].address));
 			expect(log.topics).to.eql(expectedReceipt.outputs[0].events[index].topics);
 			expect(log.data).to.eql(expectedReceipt.outputs[0].events[index].data);
-			expect(log.transactionIndex).to.eql(1);
-			expect(log.logIndex).to.eql(index);
 		})
 	})
 })

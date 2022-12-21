@@ -96,14 +96,4 @@ describe('Testing getTransaction', () => {
 		expect(tx.input).to.eql(expected.data);
 		expect(tx.value).to.eql(expected.value);
 	})
-
-	it('test transaction index', async () => {
-		const hash = '0x3a444ff2f5884c818b0b5ffb761bb6cc2d8e1b1dc0cc0898e4082dda56407ae3';
-		try {
-			const ret = await web3.eth.getTransaction(hash);
-			expect(ret.transactionIndex).to.eql(4);
-		} catch (err: any) {
-			assert.fail(err);
-		}
-	})
 })
