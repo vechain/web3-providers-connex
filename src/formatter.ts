@@ -173,7 +173,7 @@ export class Formatter {
 		const args: FilterOpts = params[0];
 
 		let fromBlock: number, toBlock: number;
-
+		
 		if (!args.fromBlock) {
 			fromBlock = this._connex.thor.status.head.number; // fromBlock default set to latest
 		} else {
@@ -234,7 +234,14 @@ export class Formatter {
 		return [raw];
 	}
 
-	outputReceiptFormatter = (receipt: Connex.Thor.Transaction.Receipt & { transactionIndex: string }): RetReceipt => {
+	outputReceiptFormatter = (
+		receipt: Connex.Thor.Transaction.Receipt & { 
+			transactionIndex: string, 
+			logInds: string[],
+			from: string, 
+			to: string | null
+		}
+	): RetReceipt => {
 		const logs: RetLog[] = (receipt.outputs.length > 0 && receipt.outputs[0].events.length > 0) ?
 			receipt.outputs[0].events.map((event, index) => {
 				return {
@@ -248,7 +255,7 @@ export class Formatter {
 					removed: false,
 
 					transactionIndex: receipt.transactionIndex,
-					logIndex: numberToHex(index),
+					logIndex: receipt.logInds[index],
 				}
 			}) : [];
 
@@ -259,12 +266,14 @@ export class Formatter {
 			blockNumber: toHex(receipt.meta.blockNumber),
 			transactionHash: receipt.meta.txID,
 			gasUsed: toHex(receipt.gasUsed),
+			transactionIndex: receipt.transactionIndex,
+			from: receipt.from,
+			to: receipt.to,
 
-			transactionIndex: '0x0',
 			cumulativeGasUsed: '0x0',
 			logsBloom: zeroBytes256,
-			from: zeroBytes20,
-			to: zeroBytes20,
+			// from: zeroBytes20,
+			// to: zeroBytes20,
 
 			contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : null,
 			logs: logs,
@@ -311,26 +320,27 @@ export class Formatter {
 			transactionIndex: tx.transactionIndex,
 
 			// incompatible fields
-			// transactionIndex: '0x0',
 			nonce: '0x0',
 			gasPrice: '0x0'
 		};
 	}
 
-	outputLogsFormatter = (ret: Connex.Thor.Filter.Row<'event'>[]): RetLog[] => {
-		return ret.map((ret) => {
+	outputLogsFormatter = (
+		ret: {logs: Connex.Thor.Filter.Row<'event'>[], txInds: string[], logInds: string[] }
+	): RetLog[] => {
+		return ret.logs.map((log, i) => {
 			return {
-				address: ret.address,
-				topics: ret.topics,
-				data: ret.data,
-				blockHash: ret.meta.blockID,
-				blockNumber: toHex(ret.meta.blockNumber),
-				transactionHash: ret.meta.txID,
+				address: log.address,
+				topics: log.topics,
+				data: log.data,
+				blockHash: log.meta.blockID,
+				blockNumber: toHex(log.meta.blockNumber),
+				transactionHash: log.meta.txID,
 
 				removed: false,
 
-				transactionIndex: '0x0',
-				logIndex: '0x0',
+				transactionIndex: ret.txInds[i],
+				logIndex: ret.logInds[i],
 			};
 		});
 	}

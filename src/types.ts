@@ -147,13 +147,13 @@ export interface RetReceipt {
 	blockNumber: string;			// number in hex string
 	contractAddress: string | null;	// bytes20 | null 
 	gasUsed: string;				// number in hex string
+	transactionIndex: string		// bytes32
+	from: string					// bytes20
+	to: string | null				// bytes20 | null
 
 	status: '0x0' | '0x1';
 
 	// incompatible fields
-	from: ZeroBytes20;
-	to: ZeroBytes20;
-	transactionIndex: '0x0';
 	logsBloom: ZeroBytes256;
 	cumulativeGasUsed: '0x0';
 

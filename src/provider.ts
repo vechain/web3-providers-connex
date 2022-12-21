@@ -120,11 +120,63 @@ export class Provider extends EventEmitter implements IProvider {
 		return exec(params);
 	}
 
-	private _mine = async (_: any) => {
-		if (this.chainTag !== 0x4a && this.chainTag !== 0x27) {
-			// test purpose only
-			await this.connex.vendor.sign('tx', [{ to: '0x' + '00'.repeat(20), value: '0x00', data: '0x' }]).request().catch()
+	private _getTransactionIndex = async (blockId: string, txId: string): Promise<number> => {
+		const blk = await this.connex.thor.block(blockId).get();
+		if (!blk) { return Promise.reject(new Error('Block not found')); }
+
+		const txIndex = blk.transactions.findIndex(elem => elem == txId);
+		if (txIndex == -1) { return Promise.reject(new Error('Tx not found in block')); }
+
+		return txIndex;
+	}
+
+	private _getNumOfLogsAhead = async (blkId: string, txId: string): Promise<number> => {
+		const blk = await this.connex.thor.block(blkId).get();
+		if (!blk) { return Promise.reject(new Error('Block not found')); }
+
+		const txInd = await this._getTransactionIndex(blkId, txId);
+
+		// Count the number of logs in the txs whose number is lower than txId
+		let logInd = 0;
+		for (let i = 0; i < txInd; i++) {
+			const txId = blk.transactions[i];
+			const receipt = await this.connex.thor.transaction(txId).getReceipt();
+			if (!receipt) { return Promise.reject(new Error('Receipt not found')); }
+			receipt.outputs.forEach(output => {
+				logInd += output.events.length;
+			})
 		}
+
+		return logInd;
+	}
+
+	private _getLogIndexWithinTx = async (log: Connex.Thor.Filter.Row<'event'>): Promise<number> => {
+		const receipt = await this.connex.thor.transaction(log.meta.txID).getReceipt();
+		if (!receipt) { return Promise.reject(new Error('Receipt not found')); }
+
+		// Only check the first clause in the tx
+		const events = receipt.outputs[0].events;
+		for (let i = 0; i < events.length; i++) {
+			const ev = events[i];
+			if (log.address !== ev.address
+				|| log.topics.length !== ev.topics.length
+				|| log.data !== ev.data) { continue; }
+
+			for (let j = 0; j < log.topics.length; j++) {
+				if (log.topics[j] !== ev.topics[j]) { continue; }
+			}
+
+			return i;
+		}
+		return Promise.reject(new Error('Log not found'));
+	}
+
+	private _mine = async (_: any) => {
+		// The added tx may complicate testing
+		// if (this.chainTag !== 0x4a && this.chainTag !== 0x27) {
+		// 	// test purpose only
+		// 	await this.connex.vendor.sign('tx', [{ to: '0x' + '00'.repeat(20), value: '0x00', data: '0x' }]).request().catch()
+		// }
 		await this.connex.thor.ticker().next();
 	}
 
@@ -214,13 +266,26 @@ export class Provider extends EventEmitter implements IProvider {
 							to: best.number,
 						}
 
-						const ret = await this.connex.thor.filter('event', this._subscriptions['logs'][key])
+						let logs = await this.connex.thor.filter('event', this._subscriptions['logs'][key])
 							.range(range)
 							.apply(0, MAX_LIMIT);
+						logs = logs.filter(log => log.meta.clauseIndex === 0)
 
-						if (ret) {
+						if (logs) {
+							const txInds: string[] = [];
+							const logInds: string[] = [];
+							logs.forEach(async (log, i) => {
+								const offset = await this._getNumOfLogsAhead(log.meta.blockID, log.meta.txID);
+								const ind = await this._getLogIndexWithinTx(log);
+								logInds[i] = numberToHex(offset + ind);
+								txInds[i] = numberToHex(
+									await this._getTransactionIndex(log.meta.blockID, log.meta.txID)
+								);
+							});
+
 							this.emit('message', toSubscription(
-								this._formatter.outputLogsFormatter(ret), key
+								this._formatter.outputLogsFormatter({ logs: logs, txInds: txInds, logInds: logInds }),
+								key
 							));
 						}
 					});
@@ -239,10 +304,30 @@ export class Provider extends EventEmitter implements IProvider {
 		const MAX_LIMIT = 256;
 		const opts: ConvertedFilterOpts = params[0];
 		try {
-			const ret = await this.connex.thor.filter('event', opts.criteria)
+			let logs = await this.connex.thor.filter('event', opts.criteria)
 				.range(opts.range)
 				.apply(0, MAX_LIMIT);
-			return this._formatter.outputLogsFormatter(ret);
+
+			// Only keep logs in the first clause of a tx
+			logs = logs.filter(log => log.meta.clauseIndex === 0)
+
+			if (logs.length === 0) {
+				return [];
+			}
+
+			const txInds: string[] = [];
+			const logInds: string[] = [];
+			for (let i = 0; i < logs.length; i++) {
+				const log = logs[i];
+				const offset = await this._getNumOfLogsAhead(log.meta.blockID, log.meta.txID);
+				const ind = await this._getLogIndexWithinTx(log);
+				logInds[i] = numberToHex(offset + ind);
+				txInds[i] = numberToHex(
+					await this._getTransactionIndex(log.meta.blockID, log.meta.txID)
+				);
+			}
+
+			return this._formatter.outputLogsFormatter({ logs: logs, txInds: txInds, logInds: logInds });
 		} catch (err: any) {
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
@@ -357,18 +442,28 @@ export class Provider extends EventEmitter implements IProvider {
 			if (!receipt) {
 				return null;
 			} else {
-				const blk = await this.connex.thor.block(receipt.meta.blockNumber).get();
-				if (!blk) {
-					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Block not found'));
-				}
+				const blkId = receipt.meta.blockID;
+				const blk = await this.connex.thor.block(blkId).get();
+				if (!blk) { return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Block not found')); }
 
-				const txIndex = blk.transactions.findIndex(elem => elem == hash);
+				const tx = await this.connex.thor.transaction(hash).get();
+				if (!tx) { return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Tx not found')); }
 
-				if (txIndex == -1) {
-					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Tx not found in block'));
-				}
+				const txInd = numberToHex(await this._getTransactionIndex(blkId, hash));
+				const logIndOffset = await this._getNumOfLogsAhead(blkId, hash);
+				const n = receipt.outputs[0].events.length;
+				const logInds = new Array<number>(n)
+					.fill(logIndOffset)
+					.map((_, i) => { return numberToHex(logIndOffset + i); });
 
-				return this._formatter.outputReceiptFormatter({ ...receipt, ...{ transactionIndex: numberToHex(txIndex) } });
+				return this._formatter.outputReceiptFormatter(
+					{ ...receipt, ...{ 
+						transactionIndex: txInd, 
+						logInds: logInds, 
+						from: tx.origin, 
+						to: tx.clauses[0].to 
+					}, }
+				);
 			}
 		} catch (err: any) {
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
@@ -443,18 +538,8 @@ export class Provider extends EventEmitter implements IProvider {
 			if (!tx) {
 				return null;
 			} else {
-				const blk = await this.connex.thor.block(tx.meta.blockNumber).get();
-				if (!blk) {
-					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Block not found'));
-				}
-
-				const txIndex = blk.transactions.findIndex(elem => elem == tx.id);
-
-				if (txIndex == -1) {
-					return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Tx not found in block'));
-				}
-
-				return this._formatter.outputTransactionFormatter({ ...tx, ...{ transactionIndex: numberToHex(txIndex) } });
+				const ind = numberToHex(await this._getTransactionIndex(tx.meta.blockID, hash));
+				return this._formatter.outputTransactionFormatter({ ...tx, ...{ transactionIndex: ind } });
 			}
 		} catch (err: any) {
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));

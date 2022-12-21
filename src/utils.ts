@@ -72,6 +72,48 @@ export function genRevertReason(output: Connex.VM.Output): string {
 	return errMsg;
 }
 
+/**
+ * Decompose (T | T[] | null)[] into (T | null)[]. 
+ * E.g., [1, [2, 3], null, 4] => [[1 , 2, null, 4], [1, 3, null, 4]]
+ */
+function decompose<T>(x: (T | T[] | null)[]): (T | null)[][] {
+	let y: (T | null)[][] = []
+
+	// Create instances for the first element
+	if (Array.isArray(x[0])) {
+		x[0].forEach(x => y.push([x, null, null, null]))
+	} else {
+		y.push([x[0], null, null, null])
+	}
+
+	for (let i = 1; i < x.length; i++) {
+		const v = x[i]
+		if (v === null) { continue; }
+		if (!Array.isArray(v)) {
+			// Update the i'th element for the existing instances
+			y.map(y => y[i] = v)
+		} else {
+			// Update the i'th element for the existing instances
+			y.map(y => y[i] = v[0])
+
+			const z = y.map(y => y.map(y => y))
+			v.forEach((x, j) => {
+				if (j === 0) { return }
+
+				// Duplicate the existing instances and 
+				// assign a new value for the i'th element
+				const zz = z.map(y => y.map(y => y))
+				zz.map(y => y[i] = x)
+
+				// Attach the new instances
+				y = y.concat(zz)
+			})
+		}
+	}
+
+	return y
+}
+
 export function toFilterCriteria(args: FilterOpts): Connex.Thor.Filter.Criteria<"event">[] {
 	const setCriteria = (address?: string, topics?: any) => {
 		const c: Connex.Thor.Filter.Criteria<"event"> = {};
@@ -88,23 +130,31 @@ export function toFilterCriteria(args: FilterOpts): Connex.Thor.Filter.Criteria<
 	}
 
 	let ret: Connex.Thor.Filter.Criteria<"event">[] = [];
-	if (!(args.address && Array.isArray(args.address))
-		&& !(args.topics && args.topics[0] && Array.isArray(args.topics[0]))
-	) {
-		ret = [setCriteria(args.address, args.topics)];
-	} else if (Array.isArray(args.address) || Array.isArray(args.topics)) {
-		let len = 0;
-		if (args.address) { len = args.address.length; }
-		if (args.topics) { len = args.topics.length; }
 
-		for (let i = 0; i < len; i++) {
-			const addr = args.address ?
-				(Array.isArray(args.address) ? args.address[i] : args.address) : undefined;
-			const topics = args.topics ? args.topics[i] : undefined;
-			ret.push(setCriteria(addr, topics));
+	// Address and topics both unavailable
+	if (!args.address && !args.topics) { return []; }
+
+	// Only address available
+	if (!args.topics) {
+		if (Array.isArray(args.address)) {
+			args.address.forEach(addr => ret.push(setCriteria(addr)));
+		} else {
+			ret.push(setCriteria(args.address));
 		}
+		return ret;
 	}
 
+	// Decompose topics
+	let topics = decompose<string>(args.topics);
+	let address: (string | undefined)[]
+	if (!args.address) { address = [undefined] }
+	else if (!Array.isArray(args.address)) { address = [args.address]; }
+	else { address = args.address; }
+	address.forEach(addr => {
+		topics.forEach(topics => {
+			ret.push(setCriteria(addr, topics));
+		});
+	});
 	return ret;
 }
 

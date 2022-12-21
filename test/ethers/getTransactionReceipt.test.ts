@@ -7,7 +7,7 @@ import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers } from 'ethers';
 import { Provider, types } from '../../src';
 import { urls } from '../settings';
-import { zeroBytes20 } from '../../src/common';
+import { zeroBytes256 } from '../../src/common';
 
 describe('Testing getTransactionReceipt', () => {
 	const net = new SimpleNet(urls.mainnet);
@@ -45,15 +45,12 @@ describe('Testing getTransactionReceipt', () => {
 
 	it('without log', async () => {
 		const hash = '0xc5e0da1aedd7e194b49e8e72977affb3737c335a1d2c385c49a7510cc2fc4928';
+		const from = '0xa3531B5E9725e232f49d5b4F40D93379a8F99b24';
+		const to = '0x5734D36696DFE9A9109f03c2b45b6B5E8ecE5aC6';
 
 		let receipt: ethers.providers.TransactionReceipt;
-		let expected: types.RetReceipt;
 		try {
 			receipt = await provider.getTransactionReceipt(hash);
-			expected = await cp.request({
-				method: 'eth_getTransactionReceipt',
-				params: [hash]
-			});
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
@@ -69,27 +66,25 @@ describe('Testing getTransactionReceipt', () => {
 		expect(receipt.transactionHash).to.eql(expectedReceipt.meta.txID);
 		expect(receipt.logs.length).to.eql(0);
 		expect(!!receipt.status).to.eql(!expectedReceipt.reverted);
-
+		expect(receipt.from.toLowerCase()).to.eql(from.toLowerCase());
+		if(receipt.to){
+			expect(receipt.to.toLowerCase()).to.eql(to.toLowerCase());
+		} else {
+			assert.fail('Invalid receipt.to');
+		}
 		expect(receipt.contractAddress).to.be.null;
 
 		// Unsupported fields
-		expect(receipt.transactionIndex).to.eql(0);
 		expect(receipt.cumulativeGasUsed.toNumber()).to.eql(0);
-		expect(receipt.from).to.eql(zeroBytes20);
-		expect(receipt.to).to.eql(zeroBytes20);
+		expect(receipt.logsBloom).to.eql(zeroBytes256);
 	})
 
 	it('with log', async () => {
 		const hash = '0xe50017fb80165941a7501a845d20822a6b573bd659d8310a1ba8b6f7308cf634';
 
 		let actual: ethers.providers.TransactionReceipt;
-		let expected: types.RetReceipt;
 		try {
 			actual = await provider.getTransactionReceipt(hash);
-			expected = await cp.request({
-				method: 'eth_getTransactionReceipt',
-				params: [hash]
-			});
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
@@ -108,10 +103,6 @@ describe('Testing getTransactionReceipt', () => {
 			);
 			expect(log.topics).to.eql(expectedReceipt.outputs[0].events[index].topics);
 			expect(log.data).to.eql(expectedReceipt.outputs[0].events[index].data);
-
-			// Unsupported fields
-			expect(log.transactionIndex).to.eql(0);
-			expect(log.logIndex).to.eql(0);
 		})
 	})
 })

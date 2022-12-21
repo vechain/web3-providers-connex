@@ -5,8 +5,8 @@ import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ethers } from 'ethers';
-import { Log, Filter } from '@ethersproject/abstract-provider';
-import { abi as ABI, keccak256 } from 'thor-devkit';
+import { Log } from '@ethersproject/abstract-provider';
+import { abi as ABI } from 'thor-devkit';
 import * as thor from '../../src/index';
 import { urls, soloAccounts, abi, bin } from '../settings';
 
