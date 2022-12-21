@@ -2,5 +2,6 @@
 	"require": "ts-node/register",
 	"bail": true,
 	"colors": true,
-	"exit": true
+	"exit": true,
+	"file": "test/testSetup.ts"
 }
