@@ -33,7 +33,6 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 				new ethers.providers.Web3Provider(provider)
 			)
 
-			await provider.request({ method: 'evm_mine' })
 			const txRes = await setup()
 			txIds = txRes.map(res => res.txid)
 			await provider.request({ method: 'evm_mine' })
@@ -72,8 +71,6 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 			const contract = await factory.deploy(...[0, 'deploy'])
 			await contract.deployTransaction.wait()
 
-			await provider.request({ method: "evm_mine" })
-
 			// Get ABI for contract function "set"
 			const setABI = abi.find(abi => abi.name === "set" && abi.type === "function")
 
@@ -85,23 +82,24 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 
 			// Send a tx with 3 clauses with the 1st transferring VET 
 			// and the rest calling contract function "set"
+			driver.txParams.gasPriceCoef = 255
 			txRes[0] = await connex.vendor.sign('tx', [
 				{ to: wallet.list[2].address, value: '1000000000000000000', data: '0x' },
 				{ ...clauses[0] }, { ...clauses[1] }
 			]).signer(wallet.list[1].address).request()
 
 			// Send a tx with a single clause that calls function "set" 
+			driver.txParams.gasPriceCoef = 128
 			txRes[1] = await connex.vendor.sign('tx', [{ ...clauses[2] }])
 				.signer(wallet.list[1].address)
-				.dependsOn(txRes[0].txid)
 				.request()
 
 			// Send a tx with 2 clausese that call contract function "set"
+			driver.txParams.gasPriceCoef = 0
 			txRes[2] = await connex.vendor.sign('tx', [
 				{ ...clauses[3] }, { ...clauses[4] }
 			])
 				.signer(wallet.list[2].address)
-				.dependsOn(txRes[1].txid)
 				.request()
 
 			return txRes
@@ -112,12 +110,6 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 
 	it('Test eth_getTransactionReceipt', async function () {
 		try {
-			// const txIds = [
-			// 	'0x9ec28948d0385c72660a4cd5bb2060c931871e1e1e080e31fbb85575e5a400d6',
-			// 	'0x213ce09fe064e3d77f0932315fa52588bbf0ed44dedd058d264cb27f3a14907e',
-			// 	'0x170f0127199055300ef81e92a645ca33a9d1c21be0527f5727ffbc67434cf000'
-			// ]
-
 			const rec1 = await providerEthers.getTransactionReceipt(txIds[1])
 			const rec2 = await providerEthers.getTransactionReceipt(txIds[2])
 			expect(rec1.blockHash).to.eql(rec2.blockHash)
@@ -140,12 +132,6 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 
 	it('Test eth_getLogs', async () => {
 		try {
-			// const txIds = [
-			// 	'0x9ec28948d0385c72660a4cd5bb2060c931871e1e1e080e31fbb85575e5a400d6',
-			// 	'0x213ce09fe064e3d77f0932315fa52588bbf0ed44dedd058d264cb27f3a14907e',
-			// 	'0x170f0127199055300ef81e92a645ca33a9d1c21be0527f5727ffbc67434cf000'
-			// ]
-
 			const setSig = ethers.utils.keccak256(Buffer.from('Set(address,uint256,string)'))
 			const receipt = await providerEthers.getTransactionReceipt(txIds[0])
 
@@ -155,7 +141,7 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 				topics: [setSig]
 			})
 
-			expect(setSig.length).to.eql(2);
+			expect(logs.length).to.eql(2);
 			logs.forEach(log => {
 				expect(log.transactionHash === txIds[1] || log.transactionHash === txIds[2]).to.be.true
 				if (log.transactionHash === txIds[1]) {
@@ -163,7 +149,7 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 					expect(log.logIndex).to.eql(5)
 				} else {
 					expect(log.transactionIndex).to.eql(2)
-					expect(log.logIndex).to.eql(6)
+					expect(log.logIndex).to.eql(7)
 				}
 			})
 		} catch (err: any) {
