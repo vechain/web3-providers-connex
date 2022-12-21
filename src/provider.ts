@@ -73,6 +73,8 @@ export class Provider extends EventEmitter implements IProvider {
 			this.wallet = opt.wallet
 		}
 
+		this._methodMap['web3_clientVersion'] = async () => { return "thor"; };
+
 		// dummy
 		this._methodMap['eth_gasPrice'] = async () => { return '0x0'; };
 		this._methodMap['eth_getTransactionCount'] = async () => { return '0x0'; };
