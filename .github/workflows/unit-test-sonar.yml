@@ -1,9 +1,12 @@
-name: Unit Testing and SonarCloud (PR)
+name: Unit Testing and SonarCloud
 
-on:
+on: 
+  push: 
+    branches: 
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   test-and-scan:
@@ -16,7 +19,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
@@ -24,12 +26,19 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
+      - name: Sonar - Get Args
+        id: sonar-args
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+            echo "SONAR_ARGS=-Dsonar.branch.name=main" >> $GITHUB_OUTPUT
+          else
+            echo "SONAR_ARGS=-Dsonar.branch.target=main -Dsonar.branch.name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run SonarCloud analysis
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          args: >
-            -Dsonar.branch.target=main
-            -Dsonar.branch.name=${{ github.head_ref }}
+          args: ${{ steps.sonar-args.outputs.SONAR_ARGS }}
