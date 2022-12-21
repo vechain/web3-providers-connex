@@ -35,6 +35,9 @@ jobs:
             echo "SONAR_ARGS=-Dsonar.branch.target=main -Dsonar.branch.name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Debug Sonar Args
+        run: echo ${{ steps.sonar-args.outputs.SONAR_ARGS }}
+
       - name: Run SonarCloud analysis
         uses: SonarSource/sonarcloud-github-action@master
         env:
