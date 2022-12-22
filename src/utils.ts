@@ -206,15 +206,15 @@ export const signTransaction = async (ethTx: TxObj, key: Wallet.Key, provider: P
 	return '0x' + tx.encode().toString('hex');
 }
 
-export function decodeRevertReason(data: string): string {
+export function decodeRevertReason(data: string): string | null{
 	const errSig = '0x08c379a0'
 	try {
 		if (data.startsWith(errSig)) {
 			return abi.decodeParameter('string', '0x' + data.slice(errSig.length)) as string
 		}
-		return ''
+		return null
 	} catch {
-		return ''
+		return null
 	}
 }
 
