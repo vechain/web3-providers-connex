@@ -132,9 +132,9 @@ export class Formatter {
 		const o1: TxObj = params[0];
 		const o2: ExplainArg = {
 			clauses: [{
-				to: !!o1.to ? o1.to : null,
+				to: o1.to || null,
 				value: !!o1.value ? toHex(o1.value) : '0x0',
-				data: !!o1.data ? o1.data : '0x',
+				data: o1.data || '0x',
 			}],
 			gas: !!o1.gas ? hexToNumber(o1.gas) : undefined,
 			caller: o1.from,
