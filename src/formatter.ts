@@ -20,9 +20,8 @@ import {
 	isHexStrict,
 } from './utils';
 import { ErrMsg, ErrCode } from './error';
-import { zeroBytes8, zeroBytes20, zeroBytes32, zeroBytes256 } from './common';
+import { zeroBytes8, zeroBytes32, zeroBytes256 } from './common';
 import { ProviderRpcError } from './eip1193';
-import { numberToHex } from 'web3-utils';
 
 export class Formatter {
 	private readonly _connex: Connex;
@@ -34,6 +33,7 @@ export class Formatter {
 		this._ifSetNet = ifSetNet;
 
 		this._inputFormatters['eth_getBlockByNumber'] = this._getBlockByNumber;
+		this._inputFormatters['eth_getBlockByHash'] = this._getBlockByHash;
 		this._inputFormatters['eth_getBalance'] = this._getBalance;
 		this._inputFormatters['eth_getCode'] = this._getCode;
 		this._inputFormatters['eth_getStorageAt'] = this._getStorageAt;
@@ -59,6 +59,15 @@ export class Formatter {
 		const num = parseBlockNumber(params[0]);
 		if (num === null) {
 			const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockNumber');
+			throw new ProviderRpcError(ErrCode.InvalidParams, msg);
+		}
+		return [num];
+	}
+
+	private _getBlockByHash = (params: any[]) => {
+		const num = params[0];
+		if (num !== parseBlockNumber(num)) {
+			const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getBlockByNumber', 'blockHash');
 			throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 		}
 		return [num];
