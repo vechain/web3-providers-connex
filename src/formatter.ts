@@ -190,7 +190,7 @@ export class Formatter {
 			if (test === undefined) {
 				test = this._connex.thor.status.head.number;
 			} else if (typeof test !== 'number') {
-				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getPastLog', 'options.fromBlock');
+				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getLogs', 'options.fromBlock');
 				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 			fromBlock = test;
@@ -203,10 +203,13 @@ export class Formatter {
 			if (test === undefined) {
 				test = this._connex.thor.status.head.number;
 			} else if (typeof test !== 'number') {
-				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getPastLog', 'options.toBlock');
+				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getLogs', 'options.toBlock');
 				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 			toBlock = test;
+			if (fromBlock > toBlock) {
+				fromBlock = toBlock;
+			}
 		}
 
 		const out: ConvertedFilterOpts = {

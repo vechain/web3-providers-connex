@@ -143,7 +143,6 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 			expect(logs.length).to.eql(10)
 
 			logs = await providerEthers.getLogs({
-				fromBlock: receipt.blockNumber,
 				toBlock: receipt.blockNumber,
 				topics: [setSig]
 			})
