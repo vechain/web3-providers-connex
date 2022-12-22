@@ -39,4 +39,16 @@ describe('Test custom JSON RPC methods', function () {
 		const n2 = await provider.request({ method: 'eth_blockNumber' })
 		expect(parseInt(n2, 16)).not.to.lessThan(parseInt(n1, 16) + 1)
 	})
+
+	it('web3_clientVersion', async function () {
+		const ver = await provider.request({ method: 'web3_clientVersion' })
+		expect(ver).to.eql('thor')
+	})
+
+	it('dummy', async function () {
+		const gasprice = await provider.request({ method: 'eth_gasPrice' })
+		expect(parseInt(gasprice, 16)).to.eql(0)
+		const txCount = await provider.request({ method: 'eth_getTransactionCount' })
+		expect(parseInt(txCount, 16)).to.eql(0)
+	})
 })
