@@ -135,21 +135,31 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 			const setSig = ethers.utils.keccak256(Buffer.from('Set(address,uint256,string)'))
 			const receipt = await providerEthers.getTransactionReceipt(txIds[0])
 
-			const logs = await providerEthers.getLogs({
+			// No topics
+			let logs = await providerEthers.getLogs({
+				fromBlock: receipt.blockNumber,
+				toBlock: receipt.blockNumber
+			})
+			expect(logs.length).to.eql(10)
+
+			logs = await providerEthers.getLogs({
 				fromBlock: receipt.blockNumber,
 				toBlock: receipt.blockNumber,
 				topics: [setSig]
 			})
 
-			expect(logs.length).to.eql(2);
+			expect(logs.length).to.eql(5);
 			logs.forEach(log => {
-				expect(log.transactionHash === txIds[1] || log.transactionHash === txIds[2]).to.be.true
-				if (log.transactionHash === txIds[1]) {
+				if ((log.transactionHash === txIds[0])) {
+					expect(log.transactionIndex).to.eql(0)
+					expect(log.logIndex).to.be.oneOf([1, 3])
+				}
+				else if (log.transactionHash === txIds[1]) {
 					expect(log.transactionIndex).to.eql(1)
 					expect(log.logIndex).to.eql(5)
 				} else {
 					expect(log.transactionIndex).to.eql(2)
-					expect(log.logIndex).to.eql(7)
+					expect(log.logIndex).to.be.oneOf([7, 9])
 				}
 			})
 		} catch (err: any) {

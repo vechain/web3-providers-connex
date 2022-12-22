@@ -153,26 +153,30 @@ export class Provider extends EventEmitter implements IProvider {
 		const receipt = await this.connex.thor.transaction(log.meta.txID).getReceipt();
 		if (!receipt) { return Promise.reject(new Error(`Receipt of Tx ${log.meta.txID}} not found`)); }
 
-		// Only check the first clause in the tx
-		const events = receipt.outputs[0].events;
-		for (let i = 0; i < events.length; i++) {
-			const ev = events[i];
-			if (log.address !== ev.address
-				|| log.topics.length !== ev.topics.length
-				|| log.data !== ev.data) { continue; }
+		let offset = 0
+		for (let k = 0; k < receipt.outputs.length; k++) {
+			const events = receipt.outputs[k].events;
+			for (let i = 0; i < events.length; i++) {
+				const ev = events[i];
+				if (log.address !== ev.address
+					|| log.topics.length !== ev.topics.length
+					|| log.data !== ev.data) { continue; }
 
-			for (let j = 0; j < log.topics.length; j++) {
-				if (log.topics[j] !== ev.topics[j]) { continue; }
+				for (let j = 0; j < log.topics.length; j++) {
+					if (log.topics[j] !== ev.topics[j]) { continue; }
+				}
+
+				return i + offset
 			}
-
-			return i;
+			offset += events.length
 		}
+
 		return Promise.reject(new Error('Log not found'));
 	}
 
 	private _mine = async (_: any) => {
 		await this.connex.thor.ticker().next();
-	} 
+	}
 
 	private _accounts = async (_: any) => {
 		if (!this.wallet || this.wallet.list.length === 0) {
@@ -257,7 +261,6 @@ export class Provider extends EventEmitter implements IProvider {
 						let logs = await this.connex.thor.filter('event', this._subscriptions['logs'][key])
 							.range(range)
 							.apply(0, MAX_LIMIT);
-						logs = logs.filter(log => log.meta.clauseIndex === 0)
 
 						if (logs) {
 							const txInds: string[] = [];
@@ -295,9 +298,6 @@ export class Provider extends EventEmitter implements IProvider {
 			let logs = await this.connex.thor.filter('event', opts.criteria)
 				.range(opts.range)
 				.apply(0, MAX_LIMIT);
-
-			// Only keep logs in the first clause of a tx
-			logs = logs.filter(log => log.meta.clauseIndex === 0)
 
 			if (logs.length === 0) {
 				return [];
@@ -445,12 +445,14 @@ export class Provider extends EventEmitter implements IProvider {
 					.map((_, i) => { return numberToHex(logIndOffset + i); });
 
 				return this._formatter.outputReceiptFormatter(
-					{ ...receipt, ...{ 
-						transactionIndex: txInd, 
-						logInds: logInds, 
-						from: tx.origin, 
-						to: tx.clauses[0].to 
-					}, }
+					{
+						...receipt, ...{
+							transactionIndex: txInd,
+							logInds: logInds,
+							from: tx.origin,
+							to: tx.clauses[0].to
+						},
+					}
 				);
 			}
 		} catch (err: any) {
