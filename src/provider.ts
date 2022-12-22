@@ -81,9 +81,6 @@ export class Provider extends EventEmitter implements IProvider {
 
 		this._subLoop();
 
-		// Thor methods
-		this._methodMap['thor_next'] = this._next;
-
 		// Ganache methods
 		this._methodMap['evm_mine'] = this._mine;
 	}
@@ -174,19 +171,8 @@ export class Provider extends EventEmitter implements IProvider {
 	}
 
 	private _mine = async (_: any) => {
-		// The added tx may complicate testing
-		// if (this.chainTag !== 0x4a && this.chainTag !== 0x27) {
-		// 	// test purpose only
-		// 	await this.connex.vendor.sign('tx', [{ to: '0x' + '00'.repeat(20), value: '0x00', data: '0x' }]).request().catch()
-		// }
 		await this.connex.thor.ticker().next();
-	}
-
-	private _next = async (_: any) => {
-		const ticker = this.connex.thor.ticker();
-		await ticker.next();
-		return true;
-	}
+	} 
 
 	private _accounts = async (_: any) => {
 		if (!this.wallet || this.wallet.list.length === 0) {
