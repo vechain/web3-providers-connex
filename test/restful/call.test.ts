@@ -6,9 +6,8 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { randomBytes } from 'crypto';
 import { energyAddr, energyABI } from 'thor-builtin';
-import Web3 from 'web3';
 
-import { ProviderWeb3 } from '../../src/index';
+import { Provider } from '../../src/index';
 import { urls, soloAccounts } from '../settings';
 import { randAddr } from '../../src/utils';
 import { ProviderRpcError } from '../../src/eip1193';
@@ -21,17 +20,17 @@ describe('Testing call', () => {
 	wallet.import(randPk);
 
 	let driver: Driver;
-	let provider: ProviderWeb3;
-	let web3: any;
+	let provider: Provider;
+	let connex: Connex;
 
 	before(async () => {
 		try {
 			driver = await Driver.connect(net, wallet);
-			provider = new ProviderWeb3({
-				connex: new Framework(driver),
+			connex = new Framework(driver)
+			provider = new Provider({
+				connex: connex,
 				net: net
 			});
-			web3 = new Web3(provider);
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -42,39 +41,41 @@ describe('Testing call', () => {
 	})
 
 	it('call with revision', async () => {
-		// Transfer vethor to wallet[1] to make it have sufficient energy balance
-		const energy = new web3.eth.Contract(energyABI, energyAddr);
-		await energy.methods.transfer(wallet.list[1].address, '100' + '0'.repeat(18))
-			.send({ from: wallet.list[0].address });
-		await web3.eth.sendTransaction({
-			from: wallet.list[0].address,
-			to: wallet.list[1].address,
-			value: '1' + '0'.repeat(18)
-		});
+		// Get the block when wallet[1] has zero balance
+		const n = parseInt(await provider.request({ method: 'eth_blockNumber' }), 16);
 
-		// record the block number when wallet[1] has sufficient energy balance
-		const n = await web3.eth.getBlockNumber();
+		// Transfer vet & vethor from wallet[0] to wallet[1]
+		const transferABI = (energyABI as any[]).find(abi => abi.name === "transfer" && abi.type === "function")
+		const clause = connex.thor.account(energyAddr).method(transferABI)
+			.asClause(wallet.list[1].address, '1000000000000000000000');
+		await connex.vendor.sign('tx', [
+			{ to: wallet.list[1].address, value: '1000000000000000000', data: '0x' },
+			{ ...clause }
+		]).signer(wallet.list[0].address).request()
 
+		await provider.request({method: "evm_mine"})
 		const callObj = {
 			from: wallet.list[1].address,
 			to: randAddr(),
-			value: '1' + '0'.repeat(18)
+			value: '1000000000000000000'
 		}
 
 		let ret: string;
 		try {
 			ret = await provider.request({
 				method: 'eth_call',
-				params: [callObj, Math.floor(n / 2)]
+				params: [callObj, n]
 			});
 			assert.fail('Test failed')
 		} catch (err: any) {
 			expect((err as ProviderRpcError).message).to.eql('insufficient balance for transfer');
 		}
 
-		// call at the previous block when wallet[1] doesn't have sufficient energy balance
 		try {
-			ret = await web3.eth.call(callObj, n);
+			ret = await provider.request({
+				method: 'eth_call',
+				params: [callObj]
+			});
 			expect(ret).to.eql('0x');
 		} catch (err: any) {
 			assert.fail(err);
