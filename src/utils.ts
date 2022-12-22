@@ -170,15 +170,11 @@ const txParams = {
 	gasPriceCoef: 0
 }
 
-export const signTransaction = async (ethTx: TxObj, wallet: Wallet, provider: Provider): Promise<string> => {
-	if (wallet.list.length == 0) {
-		return Promise.reject('Empty wallet');
-	}
-
+export const signTransaction = async (ethTx: TxObj, key: Wallet.Key, provider: Provider): Promise<string> => {
 	const clauses = [{
-		to: ethTx.to ? ethTx.to.toLowerCase() : null,
-		value: ethTx.value ? ethTx.value : '0x0',
-		data: ethTx.data ? ethTx.data : '0x',
+		to: ethTx.to || null,
+		value: ethTx.value ? toHex(ethTx.value) : '0x0',
+		data: ethTx.data || '0x'
 	}];
 
 	const gas = ethTx.gas || await provider.request({
@@ -205,7 +201,7 @@ export const signTransaction = async (ethTx: TxObj, wallet: Wallet, provider: Pr
 	}
 
 	const tx = new Transaction(txBody)
-	tx.signature = await wallet.list[0].sign(tx.signingHash());
+	tx.signature = await key.sign(tx.signingHash());
 
 	return '0x' + tx.encode().toString('hex');
 }

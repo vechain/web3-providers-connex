@@ -36,7 +36,7 @@ describe('Testing sendRawTransaction', () => {
 			from: wallet.list[0].address,
 			to: utils.randAddr(),
 			value: '1' + '0'.repeat(18)
-		}, wallet, provider)
+		}, wallet.list[0], provider)
 
 		try {
 			const r1: types.RetReceipt = await web3.eth.sendSignedTransaction(raw);
