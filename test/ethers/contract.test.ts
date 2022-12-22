@@ -97,7 +97,7 @@ describe('Testing contract', () => {
 			await contract.set(10, 'hello');
 			await contract.get();
 		} catch (err: any) {
-			const msg: string = thor.utils.decodeRevertReason(err.data);
+			const msg = thor.utils.decodeRevertReason(err.data);
 			expect(msg).to.eql(errMsg);
 		}
 	})
