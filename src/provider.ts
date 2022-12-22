@@ -3,7 +3,7 @@
 'use strict';
 
 import { ConvertedFilterOpts, Net, Wallet, ExplainArg, DelegateOpt } from './types';
-import { hexToNumber, getErrMsg, toSubscription, toHex, genRevertReason } from './utils';
+import { hexToNumber, getErrMsg, toSubscription, toHex } from './utils';
 import { ErrMsg, ErrCode } from './error';
 import { Formatter } from './formatter';
 import { Transaction, keccak256 } from 'thor-devkit';
@@ -119,19 +119,19 @@ export class Provider extends EventEmitter implements IProvider {
 		return exec(params);
 	}
 
-	private _getTransactionIndex = async (blockId: string, txId: string): Promise<number> => {
-		const blk = await this.connex.thor.block(blockId).get();
-		if (!blk) { return Promise.reject(new Error('Block not found')); }
+	private _getTransactionIndex = async (blkId: string, txId: string): Promise<number> => {
+		const blk = await this.connex.thor.block(blkId).get();
+		if (!blk) { return Promise.reject(new Error(`Block ${blkId} not found`)); }
 
 		const txIndex = blk.transactions.findIndex(elem => elem == txId);
-		if (txIndex == -1) { return Promise.reject(new Error('Tx not found in block')); }
+		if (txIndex == -1) { return Promise.reject(new Error(`Tx ${txId} not found in block`)); }
 
 		return txIndex;
 	}
 
 	private _getNumOfLogsAhead = async (blkId: string, txId: string): Promise<number> => {
 		const blk = await this.connex.thor.block(blkId).get();
-		if (!blk) { return Promise.reject(new Error('Block not found')); }
+		if (!blk) { return Promise.reject(new Error(`Block ${blkId} not found`)); }
 
 		const txInd = await this._getTransactionIndex(blkId, txId);
 
@@ -140,7 +140,7 @@ export class Provider extends EventEmitter implements IProvider {
 		for (let i = 0; i < txInd; i++) {
 			const txId = blk.transactions[i];
 			const receipt = await this.connex.thor.transaction(txId).getReceipt();
-			if (!receipt) { return Promise.reject(new Error('Receipt not found')); }
+			if (!receipt) { return Promise.reject(new Error(`Receipt of Tx ${txId} not found`)); }
 			receipt.outputs.forEach(output => {
 				logInd += output.events.length;
 			})
@@ -151,7 +151,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 	private _getLogIndexWithinTx = async (log: Connex.Thor.Filter.Row<'event'>): Promise<number> => {
 		const receipt = await this.connex.thor.transaction(log.meta.txID).getReceipt();
-		if (!receipt) { return Promise.reject(new Error('Receipt not found')); }
+		if (!receipt) { return Promise.reject(new Error(`Receipt of Tx ${log.meta.txID}} not found`)); }
 
 		// Only check the first clause in the tx
 		const events = receipt.outputs[0].events;
@@ -191,7 +191,7 @@ export class Provider extends EventEmitter implements IProvider {
 			return Promise.reject(new ProviderRpcError(ErrCode.Default, getErrMsg(err)));
 		}
 
-		return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Restful API call supported'));
+		return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Restful API not supported'));
 	}
 
 	private _subscribe = async (params: any[]) => {
