@@ -202,12 +202,6 @@ export class Provider extends EventEmitter implements IProvider {
 		const subId = this._getSubscriptionId(params);
 		const subName: 'newHeads' | 'logs' = params[0];
 
-		if (this._subscriptions[subName][subId]) {
-			return Promise.reject(
-				new ProviderRpcError(ErrCode.InternalError, ErrMsg.SubscriptionAlreadyExist(subId))
-			);
-		}
-
 		this._subscriptions[subName][subId] = params[1] || {};
 
 		return subId;

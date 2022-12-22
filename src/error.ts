@@ -19,10 +19,6 @@ export const ErrMsg = {
 		return `Subscription not found: id=${id}`;
 	},
 
-	SubscriptionAlreadyExist: (id: string) => {
-		return `Subscription already exists: id=${id}`;
-	},
-
 	InvalidSubscriptionName: (name: string) => {
 		return `Invalid subscription: name=${name}`;
 	}
