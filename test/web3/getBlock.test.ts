@@ -68,23 +68,18 @@ describe('Testing getBlock', () => {
 	it('existing hash/id', async () => {
 		const hash = '0x00af11f1090c43dcb9e23f3acd04fb9271ac08df0e1303711a851c03a960d571';
 		const num = 11473393;
+		const txs = ['0xf0d4f159a54650cecb19ae51acee042a73e038ff398a9af8288579aada4eee16'];
 
 		let blk: types.RetBlock;
 		try {
 			blk = await web3.eth.getBlock(hash);
 		} catch (err: any) {
-			assert.fail(`UnexpectedBlock error: ${err}`);
-		}
-
-		const expectedBlock = await connex.thor.block(hash).get();
-		if (expectedBlock === null) {
-			assert.fail('Block not found');
+			assert.fail(err.message || err);
 		}
 
 		expect(blk.hash).to.eql(hash);
 		expect(blk.number).to.eql(num);
-		expect(blk.hash).to.eql(expectedBlock.id);
-		expect(blk.parentHash).to.eql(expectedBlock.parentID);
+		expect(blk.transactions).to.eql(txs);
 
 		// Unsupported fields
 		expect(blk.difficulty).to.eql('0');
