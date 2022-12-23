@@ -1,10 +1,6 @@
 'use strict';
 
 export const ErrMsg = {
-	MethodNotFound: (method: string) => {
-		return `Method not supported: method=${method}`;
-	},
-
 	MethodParamNotSupported: (method: string, index: number) => {
 		return `Parameter not supported: method=${method}, index=${index}`;
 	},
