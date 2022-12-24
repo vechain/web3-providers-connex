@@ -75,10 +75,14 @@ function decompose<T>(x: (T | T[] | null)[]): (T | null)[][] {
 		if (v === null) { continue; }
 		if (!Array.isArray(v)) {
 			// Update the i'th element for the existing instances
-			y.map(y => y[i] = v)
+			for (let e of y) {
+				e[i] = v
+			}
 		} else {
 			// Update the i'th element for the existing instances
-			y.map(y => y[i] = v[0])
+			for (let e of y) {
+				e[i] = v[0]
+			}
 
 			const z = y.map(y => y.map(y => y))
 			v.forEach((x, j) => {
@@ -87,7 +91,9 @@ function decompose<T>(x: (T | T[] | null)[]): (T | null)[][] {
 				// Duplicate the existing instances and 
 				// assign a new value for the i'th element
 				const zz = z.map(y => y.map(y => y))
-				zz.map(y => y[i] = x)
+				for (let e of zz) {
+					e[i] = x
+				}
 
 				// Attach the new instances
 				y = y.concat(zz)
@@ -190,7 +196,7 @@ export const signTransaction = async (ethTx: TxObj, key: Wallet.Key, provider: P
 	return '0x' + tx.encode().toString('hex');
 }
 
-export function decodeRevertReason(data: string): string | null{
+export function decodeRevertReason(data: string): string | null {
 	const errSig = '0x08c379a0'
 	try {
 		if (data.startsWith(errSig)) {
