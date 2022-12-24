@@ -105,7 +105,7 @@ export class Formatter {
 				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
 			}
 		} else if (typeof revision !== 'number') {
-			revision = parseBlockNumber(revision); ``
+			revision = parseBlockNumber(revision);
 			if (revision === null) {
 				const msg = ErrMsg.ArgumentMissingOrInvalid('eth_getCode', 'revision');
 				throw new ProviderRpcError(ErrCode.InvalidParams, msg);
