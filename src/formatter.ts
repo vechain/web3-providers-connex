@@ -284,8 +284,6 @@ export class Formatter {
 
 			cumulativeGasUsed: '0x0',
 			logsBloom: zeroBytes256,
-			// from: zeroBytes20,
-			// to: zeroBytes20,
 
 			contractAddress: (receipt.outputs.length && receipt.outputs[0].contractAddress) ? receipt.outputs[0].contractAddress : null,
 			logs: logs,
