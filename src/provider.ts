@@ -154,8 +154,8 @@ export class Provider extends EventEmitter implements IProvider {
 		if (!receipt) { return Promise.reject(new Error(`Receipt of Tx ${log.meta.txID}} not found`)); }
 
 		let offset = 0
-		for (let k = 0; k < receipt.outputs.length; k++) {
-			const events = receipt.outputs[k].events;
+		for (let output of receipt.outputs) {
+			const events = output.events;
 			for (let i = 0; i < events.length; i++) {
 				const ev = events[i];
 				if (log.address !== ev.address
