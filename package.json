@@ -17,6 +17,13 @@
 	},
 	"nyc": {
 		"extends": "@istanbuljs/nyc-config-typescript",
+		"include": [
+			"src/*.ts"
+		],
+		"exclude": [
+			"src/ethers.ts",
+			"src/compatProvider.ts"
+		],
 		"all": true,
 		"check-coverage": true
 	},
