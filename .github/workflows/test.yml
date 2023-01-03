@@ -1,9 +1,8 @@
 name: Test
 on: 
-  workflow_dispatch:
-    inputs:
-      dummy:
-        description: 'dummy'
+  push:
+    branches:
+      - rebuild
         
 jobs:
   test:
