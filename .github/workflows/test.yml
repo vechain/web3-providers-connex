@@ -1,6 +1,9 @@
 name: Test
 on: 
   workflow_dispatch:
+    inputs:
+      dummy:
+        description: 'dummy'
         
 jobs:
   test:
