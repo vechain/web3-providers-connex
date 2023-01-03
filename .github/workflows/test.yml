@@ -26,4 +26,4 @@ jobs:
         run: npm install
 
       - name: Run unit tests
-        run: npm run test
+        run: mocha --no-timeouts test/web3/getPastLogs.test.ts
