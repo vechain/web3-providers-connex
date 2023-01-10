@@ -356,7 +356,7 @@ export class Provider extends EventEmitter implements IProvider {
 		const txObj: ExplainArg = params[0];
 		try {
 			if (this.restful) {
-				return await this.restful.call(txObj, params[1]);
+				return this.restful.call(txObj, params[1]);
 			}
 
 			let explainer = this.connex.thor.explain([txObj.clauses[0]]);
