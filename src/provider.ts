@@ -433,7 +433,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 				const txInd = numberToHex(await this._getTransactionIndex(blkId, hash));
 				const logIndOffset = await this._getNumOfLogsAhead(blkId, hash);
-				const n = receipt.outputs[0].events.length;
+				const n = receipt.outputs[0]?.events.length || 0;
 				const logInds = new Array<number>(n)
 					.fill(logIndOffset)
 					.map((_, i) => { return numberToHex(logIndOffset + i); });
