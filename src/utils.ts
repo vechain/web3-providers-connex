@@ -77,16 +77,12 @@ function decompose<T>(x: (T | T[] | null)[]): (T | null)[][] {
 
 		if (!Array.isArray(xi)) {
 			// Update the i'th element for the existing instances
-			for (let e of y) {
-				e[i] = xi
-			}
+			y.forEach(e => e[i] = xi)
 			continue
 		}
 
 		// Update the i'th row of y with value xi[0]
-		for (let e of y) {
-			e[i] = xi[0]
-		}
+		y.forEach(e => e[i] = xi[0])
 
 		// make a copy of y
 		const cpy = y.map(e => e.map(e => e))
@@ -94,9 +90,7 @@ function decompose<T>(x: (T | T[] | null)[]): (T | null)[][] {
 			// Duplicate the current copy and 
 			// assign a new value for the i'th element
 			const yy = cpy.map(e => e.map(e => e))
-			for (let e of yy) {
-				e[i] = xi[j]
-			}
+			yy.forEach(e => e[i] = xi[j])
 
 			// Attach the new instances
 			y = y.concat(yy)
