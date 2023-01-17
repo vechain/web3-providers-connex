@@ -1,0 +1,47 @@
+name: Unit Testing and SonarCloud
+
+on: 
+  push: 
+    branches: 
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Use Node v16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Sonar - Get Args
+        id: sonar-args
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+            echo "SONAR_ARGS=-Dsonar.branch.name=main" >> $GITHUB_OUTPUT
+          else
+            echo "SONAR_ARGS=-Dsonar.branch.target=main -Dsonar.branch.name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Debug Sonar Args
+        run: echo ${{ steps.sonar-args.outputs.SONAR_ARGS }}
+
+      - name: Run SonarCloud analysis
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: ${{ steps.sonar-args.outputs.SONAR_ARGS }}
