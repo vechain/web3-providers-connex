@@ -1,12 +1,12 @@
 name: Unit Testing and SonarCloud
 
-on: 
-  push: 
-    branches: 
-      - main
-  pull_request:
+on:
+  push:
     branches:
       - main
+      - rebuild
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   test-and-scan:
@@ -32,11 +32,8 @@ jobs:
           if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
             echo "SONAR_ARGS=-Dsonar.branch.name=main" >> $GITHUB_OUTPUT
           else
-            echo "SONAR_ARGS=-Dsonar.branch.target=main -Dsonar.branch.name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+            echo "SONAR_ARGS=-Dsonar.branch.target=main -Dsonar.branch.name=${{ github.head_ref || github.ref_name }}" >> $GITHUB_OUTPUT
           fi
-
-      - name: Debug Sonar Args
-        run: echo ${{ steps.sonar-args.outputs.SONAR_ARGS }}
 
       - name: Run SonarCloud analysis
         uses: SonarSource/sonarcloud-github-action@master
