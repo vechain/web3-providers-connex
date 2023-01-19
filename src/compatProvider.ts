@@ -25,6 +25,10 @@ export class ProviderWeb3 extends Provider {
 					result: ret
 				});
 			})
-			.catch(err => callback(err));
+			.catch(err => callback(err, {
+				id: payload.id,
+				jsonrpc: '2.0',
+				error: err
+			}));
 	}
 }
