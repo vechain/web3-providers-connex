@@ -1,4 +1,4 @@
-name: Unit Testing
+name: Unit Testing and SonarCloud
 
 on:
   push:
@@ -11,13 +11,6 @@ on:
 jobs:
   test-and-scan:
     runs-on: ubuntu-latest
-
-    services:
-      thor-solo:
-        image: zzdockerzz/thor-solo
-        ports:
-          - 8669:8669
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -33,8 +26,18 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
+      - name: Sonar - Get Args
+        id: sonar-args
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+            echo "SONAR_ARGS=-Dsonar.branch.name=main" >> $GITHUB_OUTPUT
+          else
+            echo "SONAR_ARGS=-Dsonar.branch.target=main -Dsonar.branch.name=${{ github.head_ref || github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
       - name: Run SonarCloud analysis
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: ${{ steps.sonar-args.outputs.SONAR_ARGS }}
