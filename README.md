@@ -1,121 +1,177 @@
 # web3-providers-connex
-Web3.js provider implemented using Connex.js and Thor restful APIs. It makes it possible to use [web3.js](https://github.com/ChainSafe/web3.js) and [ethers.js](https://github.com/ethers-io/ethers.js/) to interact with [VeChain Thor protocol](https://github.com/vechain/thor).
+This project implements the JSON-RPC provider defined in [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md) for the [VeChain Thor protocol](https://github.com/vechain/thor). The provider is made to be compatible with [web3.js](https://github.com/ChainSafe/web3.js) and [ethers.js](https://github.com/ethers-io/ethers.js), allowing developers to use the two libs to interact with a Thor node.
 ## Installation
 ```
 npm i web3-providers-connex
 ```
-## Usage
-To get a web3 object:
+## Examples
+### Using EIP-1193 provider
+Checking account balance
 ```ts
-import * as thor from 'web3-providers-connex';
+import { Provider } from 'web3-providers-connex'
 
 // connexObj is an instance of Connex
-const provider = new thor.ProviderWeb3({ connex: connexObj });
-const web3 = new Web3(provider);
+const provider = new Provider({connex: connexObj})
+const balance = await provider.request({ 
+  method: 'eth_getBalance', 
+  params: ['0x...'] 
+})
 ```
-To get an ethers JsonRpcProvider:
+Obtaining a connex instance in Node.js
 ```ts
-import * as thor from 'web3-providers-connex';
+import { Framework } from '@vechain/connex-framework'
+import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver'
 
-// connex is an instance of Connex
+const net = new SimpleNet(url-to-thor-node)
+const wallet = new SimpleWallet()
+// import private key if needed
+wallet.import('0x...')
+const driver = await Driver.connect(net, wallet)
+const connexObj = new Framework(driver)
+```
+Sending VET
+```ts
+const txId = await provider.request({
+  method: 'eth_sendTransaction',
+  params: [{ 
+    from: '0x...', 
+    to: '0x...', 
+    value: '0x...' 
+  }]
+})
+```
+### Working with `web3.js`:
+```ts
+import { ProviderWeb3 } from 'web3-providers-connex'
+import Web3 from 'web3' 
+
+const provider = new ProviderWeb3({ connex: connexObj })
+const web3 = new Web3(provider)
+```
+### Working with `ethers.js`
+```ts
+import * as thor from 'web3-providers-connex'
+import { ethers } from 'ethers'
+
 const provider = thor.ethers.modifyProvider(
   new ethers.providers.Web3Provider(
-    new thor.ProviderEtheres({ connex: connex })
+    new thor.Provider({ connex: connexObj })
   )
-);
+)
 ```
-To get an ethers JsonRpcSigner:
+Obtaining a singner
 ```ts
-const signer = provider.getSigner(address);
+const signer = provider.getSigner(address)
 ```
-To deploy a contract
+Deploying a contract
 ```ts
 const factory = thor.ethers.modifyFactory(
   new ethers.ContractFactory(abi, bin, signer)
-);
-const contract = await factory.deploy(...args);
+)
+const contract = await factory.deploy(...args)
 ```
-Methods `modifyProvider` and `modifyFactory` are used to replace methods `jsonRpcProvider.sendTransaction` and `contractFactory.deploy` shipped with ethers.js to bypass the contract address computation that is incompatible with the Thor protocol.  
+Methods `modifyProvider` and `modifyFactory` are used to bypass the Ethereum contract address computation that is incompatible with the Thor protocol.  
 
-## Guides
 ### Request at a Particular Block Hight
-There are a few Eth JSON-RPC APIs where users can specify a particular block height when requesting information [1]. To enable this feature, you need to provide a `Net` object when creating a `ConnexProvider` object as illustrated as follows:
+APIs `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call` allow users to specify a particular block height [1]. To do that, we need to provide a `Net` object when creating a provider:
 ```ts
-import { SimpleNet } from '@vechain/connex-driver';
-import * as thor from 'web3-providers-connex';
+import { SimpleNet } from '@vechain/connex-driver'
+import * as thor from 'web3-providers-connex'
+import Web3 from 'web3'
+import { ethers } from 'ethers'
 
-// url: thor node address (e.g., https://sync-mainnet.veblocks.net/)
-const net = new SimpleNet(url);
-const cp = new thor.ConnexProvider({ 
+const provider = new thor.Provider({ 
   connex: connexObj,
-  net: net
-});
-```
-For the default block number options [1], only `latest` and `earliest` are supported. The followings are the affected ETH JSON-RPC APIs: `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call`. 
-### Fee delegation
-Fee delegation can be enabled by passing the delegator URL to the `ConnexProvider` constructor:
-```ts
-import * as thor from 'web3-providers-connex';
+  net: netObj
+})
 
-const cp = new thor.ConnexProvider({
+const web3 = new Web3(
+  new thor.ProviderWeb3({ 
+    connex: connexObj,
+    net: netObj
+  })
+)
+
+const providerEthers = thor.ethers.modifyProvider(
+  new ethers.providers.Web3Provider(
+    new thor.Provider({ 
+      connex: connexObj,
+      net: netObj
+    })
+  )
+)
+```
+### Fee delegation
+Fee delegation can be enabled by passing the delegator URL when constructing an instance of `Provider`/`ProviderWeb3`:
+```ts
+import { Provider } from 'web3-providers-connex';
+
+const provider = new Provider({
   connex: Obj,
   delegate: {
-    url: 'https://delegator.url'
+    url: url-to-delegator
   }
 })
 ```
 or calling `enableDelegate`:
 ```ts
-cp.enableDelegate({ url: 'https://delegator.url' });
+provider.enableDelegate({ url: url-to-delegator });
 ```
 You can also disable fee delegation by
 ```ts
-cp.disableDelegate();
+provider.disableDelegate();
 ```
-A delegator is a web service that co-signs and returns a signature for transactions it accepts. The gas fee would then be deducted from the delegator's account rather than the transaction sender's account. 
+A delegator is a web service that co-signs and returns a signature for transactions it accepts. The gas fee would then be deducted from the delegator's account instead of the transaction sender's account. 
 
-You can build your own delegator by implementing [VIP201](https://github.com/vechain/VIPs/blob/master/vips/VIP-201.md). Alternatively, you can use public fee delegation services (e.g., provided by [vechain.energy](https://vechain.energy)).
-### Get a Connex instance in the Node.js environment
-```ts
-import { Framework } from '@vechain/connex-framework';
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
+You can build your own delegator by implementing [VIP201](https://github.com/vechain/VIPs/blob/master/vips/VIP-201.md). See `/test/web3/feeDelegate.test.ts` for a quick demo.
+### More Examples
+More examples can be found in `/test/`
 
-const net = new SimpleNet(nodeUrl);
-const wallet = new SimpleWallet();
-// Import private key: 
-wallet.import(privateKey)
+## Supported APIs
+##### `eth_accounts`
+##### `eth_blockNumber`
+##### `eth_call`
+##### `eth_estimateGas`
+##### `eth_gasPrice`
+Returning `0x0`
+##### `eth_getBalance`
+##### `eth_getBlockByNumber`
+##### `eth_getBlockByHash`
+##### `eth_chainId`
+##### `eth_getCode`
+##### `eth_getLogs`
+##### `eth_getStorageAt`
+##### `eth_getTransactionByHash`
+##### `eth_getTransactionCount`
+Returning `0x0`
+##### `eth_getTransactionReceipt`
+##### `eth_isSyncing`
+##### `eth_sendRawTransaction`
+Requiring passing a `Net` object when constructing an instance of `Provider` or `ProviderWeb3`
+##### `eth_sendTransaction`
+##### `eth_subscribe`, `eth_unsubscribe`
+Supported subscription type: `newHeads`, `logs`
+##### `evm_mine`
+##### `net_version`
+Equivalent to `eth_chainId`
+##### `web3_clientVersion`
+Returning string `thor`
 
-const driver = await Driver.connect(net, wallet);
-const connex = new Framework(driver);
-```
-### Examples
-You can check [https://github.com/zzGHzz/web3-providers-connex/tree/main/test](https://github.com/zzGHzz/web3-providers-connex/tree/main/test) for more examples.
-
-## Implemented ETH JSON-RPC APIs
-The table below lists all the implemented JSON-RPC APIs. All the web3/ethers APIs that invoke the APIs are therefore available.
-
-|ETH JSON-RPC API|Remark|
-|:--|:--|
-|`eth_estimateGas`|Args:<ul><li>`gasPrice` can be omitted</li></ul>|
-|`eth_blockNumber`||
-|`eth_getBalance`| Args:<ul><li>Default block parameter `pending` not supported |
-|`eth_getBlockByNumber`<br>`eth_getBlockByHash`|Args:<ul><li>Default block parameter `pending` not supported</li></ul>Returned block object:<ul><li>`hash` [32 bytes] - Thor block ID</li><li>`transactions` [`Array<string>`] - always return transaction hashes</li><li>Unsupported fields: `difficulty`, `totalDifficulty`, `uncles`, `sha3Uncles`, `nonce`, `logsBloom`, `extraData`</li></ul>|
-|`eth_chainId`||
-|`eth_getCode`||
-|`eth_getLogs`|Returned log object:<ul><li>Unsupported fields: `transactionIndex`, `logIndex`</li></ul>|
-|`eth_getStorageAt`||
-|`eth_getTransaction`|Returned transaction object:<ul><li>`hash` [32 bytes] - Thor transaction ID</li><li>Unsupported fields: `nonce`, `gasPrice`, `transactionIndex`, `maxPriorityFeePerGas`, `maxFeePerGas`</li></ul>|
-|`eth_getTransactionReceipt`|Returned transaction receipt object:<ul><li> Unsupported fields: `transactionIndex`, `cumulativeGasUsed`, `from`, `to`, `logsBloom`</li></ul>|
-|`eth_isSyncing`|If under syncing, returned object:<ul><li> `currentBlock` [`Number`]</li><li>`highestBlock` [`Number`]</li></ul>|
-|`eth_sendTransaction`|Args:<ul><li>`txObj` includes fields: `from`, `to`, `value`, `data`, `gas`</li></ul>|
-|`eth_call`|Args:<ul><li>`gasPrice` can be omitted</li></ul>|
-|`eth_subscribe`<br>`eth_unsubscribe`|Args:<ul><li>Supported subscription type: `newHeads`, `logs`</li></ul>|
-|`net_version` |Equivalent to `eth_chainId`|
-|`eth_gasPrice` (dummy)|Return 0|
-|`eth_getTransactionCount` (dummy)| Return 0|
+## Implementation Notes
+1. Here `blockHash` and `transactionHash` equivalent to `blockId` and `transactionId` in the Thor protocol
+2. APIs `eth_estimateGas`, `eth_call` and `eth_getTransactionReceipt` only return information associated with the first [clause](https://docs.vechain.org/thor/learn/transaction-model.html#clauses) in a transaction
+3. Unsupported returning fields (all set to zero):
+* `cumulativeGasUsed`
+* `difficulty`
+* `gasPrice`
+* `logsBloom`
+* `nonce`
+* `sha3Uncles`
+* `totalDifficulty`
+4. For the default block number options [1], only `latest` and `earliest` are supported
 ## License
 This software is licensed under the
 [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.html), also included
-in *LICENSE* file in repository.
+in *LICENSE##### file in repository.
 ## References
 [1] [https://eth.wiki/json-rpc/API](https://eth.wiki/json-rpc/API).
