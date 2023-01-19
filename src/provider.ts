@@ -192,6 +192,9 @@ export class Provider extends EventEmitter implements IProvider {
 				return await this.restful.sendRawTransaction(params[0]);
 			}
 		} catch (err: any) {
+			if (err instanceof ProviderRpcError) {
+				return Promise.reject(err);
+			}
 			return Promise.reject(new ProviderRpcError(ErrCode.Default, getErrMsg(err)));
 		}
 
@@ -356,7 +359,7 @@ export class Provider extends EventEmitter implements IProvider {
 		const txObj: ExplainArg = params[0];
 		try {
 			if (this.restful) {
-				return this.restful.call(txObj, params[1]);
+				return await this.restful.call(txObj, params[1]);
 			}
 
 			let explainer = this.connex.thor.explain([txObj.clauses[0]]);
@@ -378,6 +381,9 @@ export class Provider extends EventEmitter implements IProvider {
 			}
 			return output.data;
 		} catch (err: any) {
+			if (err instanceof ProviderRpcError) {
+				return Promise.reject(err);
+			}
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
@@ -413,6 +419,9 @@ export class Provider extends EventEmitter implements IProvider {
 			const storage = await this.connex.thor.account(addr).getStorage(key);
 			return storage.value;
 		} catch (err: any) {
+			if (err instanceof ProviderRpcError) {
+				return Promise.reject(err);
+			}
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
@@ -484,6 +493,9 @@ export class Provider extends EventEmitter implements IProvider {
 			const code = await this.connex.thor.account(addr).getCode();
 			return code.code;
 		} catch (err: any) {
+			if (err instanceof ProviderRpcError) {
+				return Promise.reject(err);
+			}
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
@@ -511,6 +523,9 @@ export class Provider extends EventEmitter implements IProvider {
 			const acc = await this.connex.thor.account(addr).get();
 			return acc.balance;
 		} catch (err: any) {
+			if (err instanceof ProviderRpcError) {
+				return Promise.reject(err);
+			}
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}
 	}
