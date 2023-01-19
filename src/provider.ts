@@ -247,7 +247,7 @@ export class Provider extends EventEmitter implements IProvider {
 
 				const logsKeys = Object.keys(this._subscriptions['logs']);
 				if (logsKeys.length > 0) {
-					logsKeys.forEach(async (key) => {
+					await Promise.all(logsKeys.map(async (key) => {
 						const MAX_LIMIT = 256;
 						const range: Connex.Thor.Filter.Range = {
 							unit: 'block',
@@ -262,21 +262,22 @@ export class Provider extends EventEmitter implements IProvider {
 						if (logs) {
 							const txInds: string[] = [];
 							const logInds: string[] = [];
-							logs.forEach(async (log, i) => {
+							for (let i = 0; i < logs.length; i++) {
+								const log = logs[i];
 								const offset = await this._getNumOfLogsAhead(log.meta.blockID, log.meta.txID);
 								const ind = await this._getLogIndexWithinTx(log);
 								logInds[i] = numberToHex(offset + ind);
 								txInds[i] = numberToHex(
 									await this._getTransactionIndex(log.meta.blockID, log.meta.txID)
 								);
-							});
+							};
 
 							this.emit('message', toSubscription(
 								this._formatter.outputLogsFormatter({ logs: logs, txInds: txInds, logInds: logInds }),
 								key
 							));
 						}
-					});
+					}));
 				}
 			}
 		} catch (err: any) {
