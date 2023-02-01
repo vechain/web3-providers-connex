@@ -1,7 +1,7 @@
 {
-	"name": "web3-providers-connex",
-	"version": "0.7.4",
-	"description": "Web3.js provider built upon Connex.js to allow Web3.js/ethers.js to be compatible with the Thor protocol",
+	"name": "@vechain/web3-providers-connex",
+	"version": "1.0.0",
+	"description": "Implementation of the JSON-RPC provider for the VeChain Thor protocol, compatible with web3.js and ethers.js.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"files": [
