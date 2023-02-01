@@ -72,7 +72,7 @@ const contract = await factory.deploy(...args)
 ```
 Methods `modifyProvider` and `modifyFactory` are used to bypass the Ethereum contract address computation that is incompatible with the Thor protocol.  
 
-### Request at a Particular Block Hight
+### Request at a particular block hight
 APIs `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call` allow users to specify a particular block height [1]. To do that, we need to provide a `Net` object when creating a provider:
 ```ts
 import { SimpleNet } from '@vechain/connex-driver'
@@ -158,7 +158,7 @@ Equivalent to `eth_chainId`
 Returning string `thor`
 
 ## Implementation Notes
-1. Here `blockHash` and `transactionHash` equivalent to `blockId` and `transactionId` in the Thor protocol
+1. Fields `blockHash` and `transactionHash` return the values of [`blockId`](https://docs.vechain.org/thor/learn/block.html#block) and [`transactionId`](https://docs.vechain.org/thor/learn/transaction-model.html#transaction-id) defined in the Thor protocol, respectively
 2. APIs `eth_estimateGas`, `eth_call` and `eth_getTransactionReceipt` only return information associated with the first [clause](https://docs.vechain.org/thor/learn/transaction-model.html#clauses) in a transaction
 3. Unsupported returning fields (all set to zero):
 * `cumulativeGasUsed`
