@@ -2,13 +2,13 @@
 This project implements the JSON-RPC provider defined in [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md) for the [VeChain Thor protocol](https://github.com/vechain/thor). The provider is made to be compatible with [web3.js](https://github.com/ChainSafe/web3.js) and [ethers.js](https://github.com/ethers-io/ethers.js), allowing developers to use the two libs to interact with a Thor node.
 ## Installation
 ```
-npm i web3-providers-connex
+npm i @vechain/web3-providers-connex
 ```
 ## Examples
 ### Using EIP-1193 provider
 Checking account balance
 ```ts
-import { Provider } from 'web3-providers-connex'
+import { Provider } from '@vechain/web3-providers-connex'
 
 // connexObj is an instance of Connex
 const provider = new Provider({connex: connexObj})
@@ -42,7 +42,7 @@ const txId = await provider.request({
 ```
 ### Working with `web3.js`:
 ```ts
-import { ProviderWeb3 } from 'web3-providers-connex'
+import { ProviderWeb3 } from '@vechain/web3-providers-connex'
 import Web3 from 'web3' 
 
 const provider = new ProviderWeb3({ connex: connexObj })
@@ -50,7 +50,7 @@ const web3 = new Web3(provider)
 ```
 ### Working with `ethers.js`
 ```ts
-import * as thor from 'web3-providers-connex'
+import * as thor from '@vechain/web3-providers-connex'
 import { ethers } from 'ethers'
 
 const provider = thor.ethers.modifyProvider(
@@ -76,7 +76,7 @@ Methods `modifyProvider` and `modifyFactory` are used to bypass the Ethereum con
 APIs `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call` allow users to specify a particular block height [1]. To do that, we need to provide a `Net` object when creating a provider:
 ```ts
 import { SimpleNet } from '@vechain/connex-driver'
-import * as thor from 'web3-providers-connex'
+import * as thor from '@vechain/web3-providers-connex'
 import Web3 from 'web3'
 import { ethers } from 'ethers'
 
@@ -104,7 +104,7 @@ const providerEthers = thor.ethers.modifyProvider(
 ### Fee delegation
 Fee delegation can be enabled by passing the delegator URL when constructing an instance of `Provider`/`ProviderWeb3`:
 ```ts
-import { Provider } from 'web3-providers-connex';
+import { Provider } from '@vechain/web3-providers-connex';
 
 const provider = new Provider({
   connex: Obj,
