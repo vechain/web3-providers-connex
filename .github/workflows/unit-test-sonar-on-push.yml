@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-      - rebuild
-  pull_request:
-    types: [opened, synchronize, reopened]
 
 jobs:
   test-and-scan:
