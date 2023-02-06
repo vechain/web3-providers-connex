@@ -1,5 +1,20 @@
 # web3-providers-connex
 This project implements the JSON-RPC provider defined in [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md) for the [VeChain Thor protocol](https://github.com/vechain/thor). The provider is made to be compatible with [web3.js](https://github.com/ChainSafe/web3.js) and [ethers.js](https://github.com/ethers-io/ethers.js), allowing developers to use the two libs to interact with a Thor node.
+
+![Main (GH Actions)](https://github.com/vechain/web3-providers-connex/actions/workflows/unit-test-sonar.yml/badge.svg?branch=main)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=coverage)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=bugs)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
+
+
 ## Installation
 ```
 npm i @vechain/web3-providers-connex
