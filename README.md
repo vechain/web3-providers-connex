@@ -1,7 +1,7 @@
 # web3-providers-connex
 This project implements the JSON-RPC provider defined in [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md) for the [VeChain Thor protocol](https://github.com/vechain/thor). The provider is made to be compatible with [web3.js](https://github.com/ChainSafe/web3.js) and [ethers.js](https://github.com/ethers-io/ethers.js), allowing developers to use the two libs to interact with a Thor node.
 
-![Main (GH Actions)](https://github.com/vechain/web3-providers-connex/actions/workflows/unit-test-sonar.yml/badge.svg?branch=main)
+![Main (GH Actions)](https://github.com/vechain/web3-providers-connex/actions/workflows/unit-test-sonar-on-push.yml/badge.svg?branch=main)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=coverage)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=vechain_web3-providers-connex&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=vechain_web3-providers-connex)
