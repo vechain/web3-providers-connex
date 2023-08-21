@@ -2,55 +2,37 @@
 
 import 'mocha';
 import { expect, assert } from 'chai';
-import { Framework } from '@vechain/connex-framework';
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import { ethers } from 'ethers';
+import { RetTransaction } from '../../src/types';
+import { TestObject } from './testSetup';
+import { modifyProvider } from '../../src/ethers';
+import { BrowserProvider, TransactionResponse } from 'ethers';
 
-import * as thor from '../../src';
-import { urls } from '../settings';
-
-describe('Testing getTransaction', () => {
-	const net = new SimpleNet(urls.mainnet);
-	const wallet = new SimpleWallet();
-
-	let driver: Driver;
-	let connex: Connex;
-	let cp: thor.Provider;
-	let provider: ethers.providers.JsonRpcProvider;
-
-	before(async () => {
-		try {
-			driver = await Driver.connect(net, wallet);
-			connex = new Framework(driver)
-			cp = new thor.Provider({ connex: connex });
-			provider = new ethers.providers.Web3Provider(cp);
-		} catch (err: any) {
-			assert.fail('Initialization failed: ' + err);
-		}
+describe('Testing function getTransaction', function () {
+	before(function () {
+		const { eip1193Providers, connexs } = this.testObject as TestObject;
+		this.provider = modifyProvider(new BrowserProvider(eip1193Providers.main));
+		this.connex = connexs.main;
+		this.cp = eip1193Providers.main;
 	})
 
-	after(() => {
-		driver?.close();
-	})
-
-	it('non-existing hash/id', async () => {
+	it('should return null when passing a non-existing tx hash', async function () {
 		const hash = '0x' + '0'.repeat(64);
 		try {
-			const tx = await provider.getTransaction(hash);
+			const tx = await this.provider.getTransaction(hash);
 			expect(tx).to.be.null;
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 	})
 
-	it('existing hash/id of a contract call', async () => {
+	it('should return the correct info after passing an existing tx hash of a contract call', async function () {
 		const hash = '0xe50017fb80165941a7501a845d20822a6b573bd659d8310a1ba8b6f7308cf634';
 
-		let actual: ethers.providers.TransactionResponse;
-		let expected: thor.types.RetTransaction;
+		let actual: TransactionResponse;
+		let expected: RetTransaction;
 		try {
-			actual = await provider.getTransaction(hash);
-			expected = await cp.request({
+			actual = await this.provider.getTransaction(hash);
+			expected = await this.cp.request({
 				method: 'eth_getTransactionByHash',
 				params: [hash]
 			})
@@ -58,7 +40,7 @@ describe('Testing getTransaction', () => {
 			assert.fail(`Unexpected error: ${err}`);
 		}
 
-		const expectedTx = await connex.thor.transaction(hash).get();
+		const expectedTx = await this.connex.thor.transaction(hash).get();
 
 		if (expectedTx === null) {
 			assert.fail('Tx not found');
@@ -73,21 +55,21 @@ describe('Testing getTransaction', () => {
 
 		expect(actual.to!.toLowerCase()).to.eql(expected.to!.toLowerCase());
 		expect(actual.data).to.eql(expected.input);
-		expect(actual.value.toNumber()).to.eql(parseInt(expected.value));
-		expect(actual.gasLimit.toNumber()).to.eql(parseInt(expected.gas, 16));
+		expect(actual.value.toString()).to.eql('' + parseInt(expected.value));
+		expect(actual.gasLimit.toString()).to.eql('' + parseInt(expected.gas, 16));
 
 		// Unsupported fields
 		expect(actual.nonce).to.eql(0);
 	})
 
-	it('existing hash/id of a VET transfer', async () => {
+	it('should return the correct info after passing an existing tx hash of a token transfer', async function () {
 		const hash = '0xc5e0da1aedd7e194b49e8e72977affb3737c335a1d2c385c49a7510cc2fc4928';
 
-		let actual: ethers.providers.TransactionResponse;
-		let expected: thor.types.RetTransaction;
+		let actual: TransactionResponse;
+		let expected: RetTransaction;
 		try {
-			actual = await provider.getTransaction(hash);
-			expected = await cp.request({
+			actual = await this.provider.getTransaction(hash);
+			expected = await this.cp.request({
 				method: 'eth_getTransactionByHash',
 				params: [hash]
 			})
@@ -96,6 +78,6 @@ describe('Testing getTransaction', () => {
 		}
 
 		expect(actual.data).to.eql(expected.input);
-		expect(actual.value.toHexString()).to.eql(expected.value);
+		expect(actual.value.toString(16)).to.eql(expected.value.substring(2));
 	})
 })

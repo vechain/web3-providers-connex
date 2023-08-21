@@ -2,49 +2,28 @@
 
 import 'mocha';
 import { expect, assert } from 'chai';
-import { Framework } from '@vechain/connex-framework';
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import { ethers } from 'ethers';
-import { Log } from '@ethersproject/abstract-provider';
 import { abi as ABI } from 'thor-devkit';
-import * as thor from '../../src/index';
-import { urls, soloAccounts, abi, bin } from '../settings';
 
-describe('Testing getLogs', () => {
-	const net = new SimpleNet(urls.solo);
-	const wallet = new SimpleWallet();
-	soloAccounts.forEach(key => {
-		wallet.import(key);
+import { TestObject } from './testSetup';
+import { BrowserProvider, Log, keccak256, Contract, ContractFactory } from 'ethers';
+import { modifyProvider, modifyFactory } from '../../src/ethers';
+
+describe('Testing function getLogs', function () {
+	let deployer: string;
+	let setter1: string;
+	let setter2: string;
+	let contractAddress: string;
+
+	before(function () {
+		const { eip1193Providers, wallet } = this.testObject as TestObject;
+		this.provider = modifyProvider(new BrowserProvider(eip1193Providers.solo));
+
+		deployer = wallet.list[0].address;
+		setter1 = wallet.list[0].address;
+		setter2 = wallet.list[0].address;
 	});
 
-	let driver: Driver;
-	let provider: ethers.providers.JsonRpcProvider;
-
-	before(async () => {
-		try {
-			driver = await Driver.connect(net, wallet);
-			provider = thor.ethers.modifyProvider(
-				new ethers.providers.Web3Provider(
-					new thor.Provider({ connex: new Framework(driver) })
-				)
-			);
-		} catch (err: any) {
-			assert.fail('Initialization failed: ' + err);
-		}
-	})
-
-	after(() => {
-		driver?.close();
-	})
-
-	const deployer = wallet.list[0].address;
-	const setter1 = wallet.list[0].address;
-	const setter2 = wallet.list[0].address;
-	let contractAddress: string;
-	let fromBlock: number;
-	let contract: ethers.Contract;
-
-	const test = (ret: Log, addr: string, args: any[]) => {
+	const test = function (ret: Log, addr: string, args: any[]) {
 		expect(ret.address).to.eql(contractAddress);
 		expect(ret.topics[1]).to.eql(ABI.encodeParameter('address', addr));
 		expect(ret.data).to.eql(ABI.encodeParameters(
@@ -54,48 +33,49 @@ describe('Testing getLogs', () => {
 	}
 
 	const tests = (ret: Log[], accs: string[], args: any[][]) => {
-		ret.forEach(ret => {
-			for(let i = 0; i < accs.length; i++) {
-
-			}
-		})
+		for(let i = 0; i < ret.length; i++) {
+			test(ret[i], accs[i], args[i]);
+		}
 	}
 
-	it('single query', async () => {
-		fromBlock = await provider.getBlockNumber();
+	it('single query', async function () {
+		const { abi, bin } = this.testObject as TestObject;
 
-		const factory = thor.ethers.modifyFactory(
-			new ethers.ContractFactory(abi, bin, provider.getSigner(deployer))
-		);
+		this.fromBlock = await this.provider.getBlockNumber();
+
+		const signer = await this.provider.getSigner(deployer);
+		const factory = modifyFactory(new ContractFactory(abi, bin, signer));
+
 		const args = [100, 'test contract deploy'];
 
 		try {
-			contract = await factory.deploy(...args);
+			const base = await factory.deploy(...args);
+			await base.waitForDeployment();
 
-			contractAddress = contract.address;
+			contractAddress = await base.getAddress();
 
-			const topic0 = ethers.utils.keccak256(Buffer.from('Deploy(address,uint256,string)'));
+			const topic0 = keccak256(Buffer.from('Deploy(address,uint256,string)'));
 			let ret: Log[];
 
 			// With address & topics
-			ret = await provider.getLogs({
-				fromBlock: fromBlock,
+			ret = await this.provider.getLogs({
+				fromBlock: this.fromBlock,
 				address: contractAddress,
 				topics: [topic0],
 			});
 			test(ret[0], deployer, args);
 
 			// with only address
-			ret = await provider.getLogs({
-				fromBlock: fromBlock,
+			ret = await this.provider.getLogs({
+				fromBlock: this.fromBlock,
 				address: contractAddress,
 			});
 			// skip event $Master(address) emitted when creating the contract
 			test(ret[1], deployer, args);
 
 			// with only topics
-			ret = await provider.getLogs({
-				fromBlock: fromBlock,
+			ret = await this.provider.getLogs({
+				fromBlock: this.fromBlock,
 				topics: [topic0],
 			});
 			test(ret[0], deployer, args);
@@ -104,32 +84,37 @@ describe('Testing getLogs', () => {
 		}
 	})
 
-	it('multiple queries', async () => {
+	it('multiple queries', async function () {
+		const { abi } = this.testObject as TestObject;
+
 		const args0 = [100, 'test contract deploy'];
 		const args1 = [200, 'set1'];
 		const args2 = [300, 'set2'];
 		const topics = [
-			[ethers.utils.keccak256(Buffer.from('Deploy(address,uint256,string)'))],
-			[ethers.utils.keccak256(Buffer.from('Set(address,uint256,string)'))],
+			[keccak256(Buffer.from('Deploy(address,uint256,string)'))],
+			[keccak256(Buffer.from('Set(address,uint256,string)'))],
 		];
 
 		try {
-			contract = new ethers.Contract(contractAddress, abi, provider.getSigner(setter1));
-			await contract.set(args1[0], args1[1]);
-			contract = new ethers.Contract(contractAddress, abi, provider.getSigner(setter2));
-			await contract.set(args2[0], args2[1]);
+			const signer1 = await this.provider.getSigner(setter1);
+			const contract1 = new Contract(contractAddress, abi, signer1);
+			await contract1.set(args1[0], args1[1]);
+
+			const signer2 = await this.provider.getSigner(setter2);
+			const contract2 = new Contract(contractAddress, abi, signer2);
+			await contract2.set(args2[0], args2[1]);
 
 			let ret: Log[];
-			ret = await provider.getLogs({
-				fromBlock: fromBlock,
+			ret = await this.provider.getLogs({
+				fromBlock: this.fromBlock,
 				address: contractAddress,
 				topics: topics,
 			});
 			tests(ret, [deployer, setter1, setter2], [args0, args1, args2]);
 
 			// with only topics
-			ret = await provider.getLogs({
-				fromBlock: fromBlock,
+			ret = await this.provider.getLogs({
+				fromBlock: this.fromBlock,
 				topics: topics,
 			});
 			tests(ret, [deployer, setter1, setter2], [args0, args1, args2]);

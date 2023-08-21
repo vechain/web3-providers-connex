@@ -2,53 +2,40 @@
 
 import 'mocha';
 import { expect, assert } from 'chai';
-import { Framework } from '@vechain/connex-framework';
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import { BigNumber, ethers } from 'ethers';
+import { ErrMsg } from '../../src/error';
+import { TestObject } from './testSetup';
+import { BrowserProvider } from 'ethers';
+import { modifyProvider } from '../../src/ethers';
 
-import * as thor from '../../src/index';
-import { urls } from '../settings'
-
-describe('Testing getBalance', () => {
-	const net = new SimpleNet(urls.mainnet);
-	const wallet = new SimpleWallet();
-
-	let driver: Driver;
-	let provider: ethers.providers.Web3Provider;
-
-	before(async () => {
-		try {
-			driver = await Driver.connect(net, wallet);
-			provider = new ethers.providers.Web3Provider(
-				new thor.Provider({connex: new Framework(driver)})
-			);
-		} catch (err: any) {
-			assert.fail('Initialization failed: ' + err);
-		}
+describe('Testing function getBalance', function () {
+	before(async function () {
+		const { eip1193Providers, wallet } = this.testObject as TestObject;
+		this.provider = modifyProvider(new BrowserProvider(eip1193Providers.solo));
+		this.signer = await this.provider.getSigner(wallet.list[0].address);
+		this.addr = '0x69Cba4e17FEB8DA7Bd24EA36aabafE53a0f76439';
 	})
 
-	after(() => {
-		driver?.close();
-	})
-
-	const addr = '0x69Cba4e17FEB8DA7Bd24EA36aabafE53a0f76439';
-
-	it('option not supported', async () => {
+	it('should return error when querying balance at the previous block height', async function () {
 		const opt = 'earliest';
-		const expectedErr = thor.ErrMsg.MethodParamNotSupported('eth_getBalance', 2);
+		const expectedErr = ErrMsg.MethodParamNotSupported('eth_getBalance', 2);
 		try {
-			await provider.getBalance(addr, opt);
+			await this.provider.getBalance(this.addr, opt);
 			assert.fail();
 		} catch (err: any) {
-			expect(err.message).to.eql(expectedErr);
+			assert(err.message.includes(expectedErr), 'Unexpected error');
 		}
 	})
 
-	it('valid call', async () => {
-		const expectedBalance = '156' + '0'.repeat(16);
-		let balance: BigNumber;
+	it('should return the correct balance after receiving tokens', async function () {
+		const expectedBalance = '156' + '0'.repeat(18);
+		let balance: bigint;
+
 		try {
-			balance = await provider.getBalance(addr, 'latest');
+			await this.signer.sendTransaction({
+				to: this.addr,
+				value: expectedBalance,
+			});	
+			balance = await this.provider.getBalance(this.addr, 'latest');
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
@@ -56,7 +43,7 @@ describe('Testing getBalance', () => {
 		expect(balance.toString()).to.eql(expectedBalance);
 
 		try {
-			balance = await provider.getBalance(addr);
+			balance = await this.provider.getBalance(this.addr);
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
