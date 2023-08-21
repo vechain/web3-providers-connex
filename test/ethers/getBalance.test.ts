@@ -6,13 +6,14 @@ import { ErrMsg } from '../../src/error';
 import { TestObject } from './testSetup';
 import { BrowserProvider } from 'ethers';
 import { modifyProvider } from '../../src/ethers';
+import { randAddr } from '../../src/utils';
 
 describe('Testing function getBalance', function () {
 	before(async function () {
 		const { eip1193Providers, wallet } = this.testObject as TestObject;
 		this.provider = modifyProvider(new BrowserProvider(eip1193Providers.solo));
 		this.signer = await this.provider.getSigner(wallet.list[0].address);
-		this.addr = '0x69Cba4e17FEB8DA7Bd24EA36aabafE53a0f76439';
+		this.addr = randAddr();
 	})
 
 	it('should return error when querying balance at the previous block height', async function () {
