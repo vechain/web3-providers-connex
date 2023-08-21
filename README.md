@@ -69,7 +69,7 @@ import * as thor from '@vechain/web3-providers-connex'
 import { ethers } from 'ethers'
 
 const provider = thor.ethers.modifyProvider(
-  new ethers.BrowseProvider(
+  new ethers.BrowserProvider(
     new thor.Provider({ 
       connex: connexObj,
       wallet: walletObj,	// MUST provide to call [getSigner] method 	 
@@ -115,7 +115,7 @@ const web3 = new Web3(
 )
 
 const providerEthers = thor.ethers.modifyProvider(
-  new ethers.BrowseProvider(
+  new ethers.BrowserProvider(
     new thor.Provider({ 
       connex: connexObj,
       net: netObj
