@@ -9,10 +9,9 @@
 	],
 	"scripts": {
 		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
-		"test": "nyc --reporter=lcov npm run test-all",
-		"test-all": "npm run test-web3 && npm run test-ethers && npm run test-restful && npm run test-provider",
+		"test": "nyc --reporter=lcov mocha --no-timeouts test/**/*.test.ts",
 		"test-web3": "mocha --no-timeouts test/web3/*.test.ts",
-		"test-ethers": "mocha --no-timeouts test/testSetup.ts test/ethers/testSetup.ts test/ethers/*.test.ts",
+		"test-ethers": "mocha --no-timeouts test/ethers/*.test.ts",
 		"test-restful": "mocha --no-timeouts test/restful/*.test.ts",
 		"test-provider": "mocha --no-timeouts test/provider/*.test.ts"
 	},
