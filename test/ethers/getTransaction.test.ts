@@ -3,7 +3,7 @@
 import 'mocha';
 import { expect, assert } from 'chai';
 import { RetTransaction } from '../../src/types';
-import { TestObject } from './testSetup';
+import { TestObject } from '../testSetup';
 import { modifyProvider } from '../../src/ethers';
 import { BrowserProvider, TransactionResponse } from 'ethers';
 

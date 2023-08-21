@@ -3,7 +3,7 @@
 import 'mocha';
 import { expect, assert } from 'chai';
 import { zeroBytes256 } from '../../src/common';
-import { TestObject } from './testSetup';
+import { TestObject } from '../testSetup';
 import { BrowserProvider, TransactionReceipt } from 'ethers';
 import { modifyProvider } from '../../src/ethers';
 

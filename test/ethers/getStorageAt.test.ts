@@ -2,7 +2,7 @@
 
 import 'mocha';
 import { expect, assert } from 'chai';
-import { TestObject } from './testSetup';
+import { TestObject } from '../testSetup';
 import { BrowserProvider } from 'ethers';
 import { ErrMsg } from '../../src/error';
 import { modifyProvider } from '../../src/ethers';

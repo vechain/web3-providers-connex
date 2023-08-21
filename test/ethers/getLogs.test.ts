@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { abi as ABI } from 'thor-devkit';
 
-import { TestObject } from './testSetup';
+import { TestObject } from '../testSetup';
 import { BrowserProvider, Log, keccak256, Contract, ContractFactory } from 'ethers';
 import { modifyProvider, modifyFactory } from '../../src/ethers';
 

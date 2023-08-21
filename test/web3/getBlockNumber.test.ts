@@ -1,7 +1,7 @@
 'use strict';
 
 import 'mocha';
-import { expect, assert } from 'chai';
+import { assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import Web3 from 'web3';
@@ -12,7 +12,6 @@ import { urls } from '../settings';
 describe('Testing getBlockNumber', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
 
 	let driver: Driver;
 	let web3: any;

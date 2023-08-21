@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { abi as ABI } from 'thor-devkit';
 import { decodeRevertReason } from '../../src/utils';
-import { TestObject } from './testSetup';
+import { TestObject } from '../testSetup';
 import {
 	BrowserProvider,
 	ContractFactory,

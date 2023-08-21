@@ -11,8 +11,7 @@ import { urls } from '../settings';
 
 describe('Testing getTransaction', () => {
 	const net = new SimpleNet(urls.mainnet);
-	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
+	const wallet = new SimpleWallet();	
 
 	let driver: Driver;
 	let web3: any;

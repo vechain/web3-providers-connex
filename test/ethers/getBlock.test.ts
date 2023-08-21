@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { ErrMsg } from '../../src/error';
 import { RetBlock } from '../../src/types';
-import { TestObject } from './testSetup';
+import { TestObject } from '../testSetup';
 import { BrowserProvider, Block } from 'ethers';
 import { modifyProvider } from '../../src/ethers';
 
