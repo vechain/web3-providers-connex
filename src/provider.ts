@@ -64,6 +64,8 @@ export class Provider extends EventEmitter implements IProvider {
 		this._methodMap['eth_accounts'] = this._accounts;
 		this._methodMap['net_version'] = this._getChainId;
 
+		this._methodMap['eth_requestAccounts'] = this._requestAccounts;
+
 		if (opt.net) {
 			this.restful = new Restful(opt.net, this.connex.thor.genesis.id);
 			this._methodMap['eth_sendRawTransaction'] = this._sendRawTransaction;
@@ -117,6 +119,15 @@ export class Provider extends EventEmitter implements IProvider {
 		}
 
 		return exec(params);
+	}
+
+	private _requestAccounts = async () => {
+		if (!this.wallet || this.wallet.list.length === 0) {
+			return Promise.reject(new ProviderRpcError(ErrCode.Default, 'No account'));
+		}
+
+		const addrs = this.wallet.list.map(key => key.address);
+		return addrs;
 	}
 
 	private _getTransactionIndex = async (blkId: string, txId: string): Promise<number> => {
@@ -183,7 +194,8 @@ export class Provider extends EventEmitter implements IProvider {
 			return [];
 		}
 
-		return this.wallet.list.map(key => key.address);
+		const addrs = this.wallet.list.map(key => key.address);
+		return addrs;
 	}
 
 	private _sendRawTransaction = async (params: any[]) => {

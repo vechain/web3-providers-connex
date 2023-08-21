@@ -87,10 +87,10 @@ describe('Testing subscribe', () => {
 
 				let check = false;
 
-				for (let i = 0; i < topics.length; i++) {
-					check = result.data === topics[i].data &&
-						result.topics[0] === topics[i].topics[0] &&
-						result.topics[1] === topics[i].topics[1];
+				for (const elem of topics) {
+					check = result.data === elem.data &&
+						result.topics[0] === elem.topics[0] &&
+						result.topics[1] === elem.topics[1];
 					if (check) { break; }
 				}
 

@@ -41,7 +41,12 @@ export function toBytes32(hex: string): string {
 }
 
 export function hexToNumber(hex: string): number {
-	return web3Utils.hexToNumber(hex);
+	const n = web3Utils.hexToNumber(hex);
+	if(typeof n === 'number') {
+		return n;
+	} 
+	
+	return parseInt(n);
 }
 
 export function toHex(value: number | string): string {

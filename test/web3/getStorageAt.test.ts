@@ -50,9 +50,8 @@ describe('Testing getStorageAt', () => {
 			{ key: 2 ** 64, expected: '0x' + '0'.repeat(64) },
 		]
 
-		for (let i = 0; i < tests.length; i++) {
+		for (const t of tests) {
 			let value: string;
-			const t = tests[i];
 			try {
 				value = await web3.eth.getStorageAt(addr, t.key);
 			} catch (err: any) {

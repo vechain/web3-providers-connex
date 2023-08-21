@@ -13,8 +13,7 @@ import { zeroBytes8, zeroBytes32, zeroBytes256 } from '../../src/common';
 describe('Testing getBlock', () => {
 	const net = new SimpleNet(urls.mainnet);
 	const wallet = new SimpleWallet();
-	// wallet.import(soloAccounts[0]);
-
+	
 	let driver: Driver;
 	let web3: any;
 	let connex: Connex;
