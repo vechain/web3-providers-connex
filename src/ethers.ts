@@ -118,11 +118,11 @@ function formatTransactionResponse(value: any): TransactionResponseParams {
     /**
 	 * Remove the original code (Line 227-229 in providers/format.ts) due to 
 	 * the incompactibility of fn getCreateAddress:
-	 * 
-	 * 		// If to and creates are empty, populate the creates from the value
-     * 		if (result.to == null && result.creates == null) {
-     *   		result.creates = getCreateAddress(result);
-     *		}
+	 *
+	 *		// If to and creates are empty, populate the creates from the value
+     *		if (result.to == null && result.creates == null) {
+     *			result.creates = getCreateAddress(result)
+	 *		}
 	 */
 
     // @TODO: Check fee data
@@ -135,11 +135,11 @@ function formatTransactionResponse(value: any): TransactionResponseParams {
 	/**
 	 * Remove the original code (Line 239-243 in providers/format.ts):
 	 * 
-	 * 		// Compute the signature
-     * 		if (value.signature) {
-     *   		result.signature = Signature.from(value.signature);
-     * 		} else {
-     * 			result.signature = Signature.from(value);
+	 *		// Compute the signature
+     *		if (value.signature) {
+     *			result.signature = Signature.from(value.signature);
+     *		} else {
+     *			result.signature = Signature.from(value);
      *		}
 	 */
     
