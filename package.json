@@ -9,9 +9,10 @@
 	],
 	"scripts": {
 		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
-		"test": "nyc --reporter=lcov mocha --no-timeouts test/**/*.test.ts",
+		"test": "nyc --reporter=lcov npm run test-all",
+		"test-all": "npm run test-web3 && npm run test-ethers && npm run test-restful && npm run test-provider",
 		"test-web3": "mocha --no-timeouts test/web3/*.test.ts",
-		"test-ethers": "mocha --no-timeouts test/ethers/*.test.ts",
+		"test-ethers": "mocha --no-timeouts test/testSetup.ts test/ethers/testSetup.ts test/ethers/*.test.ts",
 		"test-restful": "mocha --no-timeouts test/restful/*.test.ts",
 		"test-provider": "mocha --no-timeouts test/provider/*.test.ts"
 	},
@@ -40,7 +41,7 @@
 		"web3-utils": "^1.7.3"
 	},
 	"peerDependencies": {
-		"ethers": "^5.7.2"
+		"ethers": "^6.7.1"
 	},
 	"devDependencies": {
 		"@istanbuljs/nyc-config-typescript": "^1.0.2",
@@ -57,7 +58,7 @@
 		"thor-builtin": "^1.0.0",
 		"ts-node": "^10.5.0",
 		"tsconfig-paths": "^4.1.2",
-		"typescript": "^4.5.5",
+		"typescript": "^5.1.6",
 		"web3": "^1.7.3"
 	}
 }
