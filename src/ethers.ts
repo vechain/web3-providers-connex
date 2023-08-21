@@ -34,11 +34,10 @@ export const modifyFactory = (factory: ContractFactory<Array<any>, BaseContract>
 
 		const sentTx = await this.runner.sendTransaction(tx);
 
-		/**
-		 * Patch the original code (Line 112 in contract/factory.ts): 
-		 * 
-		 * 		const address = getCreateAddress(sentTx);
-		 */
+		// Patch the original code (Line 112 in contract/factory.ts): 
+		//
+		//    const address = getCreateAddress(sentTx);
+		//
 		let address: string | null = null;
 		let count = 0; // try 5 times
 		while (count < 5) {
@@ -52,9 +51,7 @@ export const modifyFactory = (factory: ContractFactory<Array<any>, BaseContract>
 			}
 			count++;
 		}
-		/**
-		 * End of the patch
-		 */
+		// End of the patch
 
 		return new (<any>BaseContract)(address, this.interface, this.runner, sentTx);
 	};
@@ -115,15 +112,13 @@ function formatTransactionResponse(value: any): TransactionResponseParams {
         gasLimit: [ "gas" ]
     })(value);
 
-    /**
-	 * Remove the original code (Line 227-229 in providers/format.ts) due to 
-	 * the incompactibility of fn getCreateAddress:
-	 *
-	 *		// If to and creates are empty, populate the creates from the value
-     *		if (result.to == null && result.creates == null) {
-     *			result.creates = getCreateAddress(result)
-	 *		}
-	 */
+	// Remove the original code (Line 227-229 in providers/format.ts) due to 
+	// the incompactibility of fn getCreateAddress:
+	//
+	//    // If to and creates are empty, populate the creates from the value
+    //    if (result.to == null && result.creates == null) {
+    //        result.creates = getCreateAddress(result)
+	//    }
 
     // @TODO: Check fee data
 
@@ -132,27 +127,22 @@ function formatTransactionResponse(value: any): TransactionResponseParams {
         result.accessList = [ ];
     }
 
-	/**
-	 * Remove the original code (Line 239-243 in providers/format.ts):
-	 * 
-	 *		// Compute the signature
-     *		if (value.signature) {
-     *			result.signature = Signature.from(value.signature);
-     *		} else {
-     *			result.signature = Signature.from(value);
-     *		}
-	 */
+	// Remove the original code (Line 239-243 in providers/format.ts):
+	//
+	//    // Compute the signature
+    //    if (value.signature) {
+    //        result.signature = Signature.from(value.signature);
+    //    } else {
+    //        result.signature = Signature.from(value);
+    //    }
     
-	/**
-	 * Remove the original code (Line 246-249 in providers/format.ts):
-	 * 
-	 * 		// Some backends omit ChainId on legacy transactions, but we can compute it
-     *		if (result.chainId == null) {
-     *   		const chainId = result.signature.legacyChainId;
-     *  		if (chainId != null) { result.chainId = chainId; }
-     *		}
-	 */
-    
+	// Remove the original code (Line 246-249 in providers/format.ts):
+	// 
+	//    // Some backends omit ChainId on legacy transactions, but we can compute it
+    //    if (result.chainId == null) {
+    //        const chainId = result.signature.legacyChainId;
+    //        if (chainId != null) { result.chainId = chainId; }
+    //    }
 
     // 0x0000... should actually be null
     if (result.blockHash && getBigInt(result.blockHash) === BN_0) {
