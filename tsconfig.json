@@ -1,16 +1,26 @@
 {
 	"compilerOptions": {
-		"target": "es6",
+		"target": "es2022",
 		"module": "commonjs",
 		"outDir": "dist",
-		"declaration": true,
-		"declarationMap": true,
+		// "declaration": true,
+		// "declarationMap": true,
 		"sourceMap": true,
 		"strict": true,
 		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
+		// "allowSyntheticDefaultImports": true,
+		
+		"noEmitOnError": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
+		"noUnusedLocals": true,
+		"preserveSymlinks": true,
+		"preserveWatchOutput": true,
+		"pretty": false,
 	},
 	"include": [
-		"src",
+		"src/*.ts",
 	]
 }
