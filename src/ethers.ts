@@ -111,14 +111,14 @@ function formatTransactionResponse(value: any): TransactionResponseParams {
         data: [ "input" ],
         gasLimit: [ "gas" ]
     })(value);
-
-	// Remove the original code (Line 227-229 in providers/format.ts) due to 
-	// the incompactibility of fn getCreateAddress:
-	//
-	//    // If to and creates are empty, populate the creates from the value
+	
+    // Remove the original code (Line 227-229 in providers/format.ts) due to 
+    // the incompactibility of fn getCreateAddress:
+    //
+    //    // If to and creates are empty, populate the creates from the value
     //    if (result.to == null && result.creates == null) {
     //        result.creates = getCreateAddress(result)
-	//    }
+    //    }
 
     // @TODO: Check fee data
 
@@ -126,19 +126,19 @@ function formatTransactionResponse(value: any): TransactionResponseParams {
     if ((value.type === 1 || value.type === 2) && value.accessList == null) {
         result.accessList = [ ];
     }
-
-	// Remove the original code (Line 239-243 in providers/format.ts):
-	//
-	//    // Compute the signature
+	
+    // Remove the original code (Line 239-243 in providers/format.ts)
+    //
+    //    // Compute the signature
     //    if (value.signature) {
     //        result.signature = Signature.from(value.signature);
     //    } else {
     //        result.signature = Signature.from(value);
     //    }
     
-	// Remove the original code (Line 246-249 in providers/format.ts):
-	// 
-	//    // Some backends omit ChainId on legacy transactions, but we can compute it
+    // Remove the original code (Line 246-249 in providers/format.ts):
+    // 
+    //    // Some backends omit ChainId on legacy transactions, but we can compute it
     //    if (result.chainId == null) {
     //        const chainId = result.signature.legacyChainId;
     //        if (chainId != null) { result.chainId = chainId; }
