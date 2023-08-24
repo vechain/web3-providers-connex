@@ -28,17 +28,25 @@ describe('Testing getChainId', () => {
 	after(() => {
 		driver?.close();
 	})
-
-	it('get mainnet chainTag', async () => {
-		const tag = 74;
-		let id: number;
+	
+	it('get mainnet genesis Id', async () => {
+		const tag: string = "0x851caf3cfdb6e899cf5958bfb1ac3413d346d43539627e6be7ec1b4a";
 
 		try {
-			id = await web3.eth.getChainId();
+			web3.extend({
+				property: 'eth',
+				methods: [{
+					name: 'getChainId',
+					call: 'eth_chainId',
+					params: 0,
+				}]
+			});
+
+			let res = await web3.eth.getChainId();
+			
+			expect("0x" + res.toString(16)).to.eql(tag);
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
 		}
-
-		expect(id).to.eql(tag);
 	})
 })
