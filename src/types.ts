@@ -180,6 +180,8 @@ export type TxObj = {
 	value?: string;
 	data?: string;
 	gas?: string;
+
+	input?: string;		// Added to support requests from web3.js
 }
 
 export type FilterOpts = {
