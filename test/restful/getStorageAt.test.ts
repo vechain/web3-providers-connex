@@ -4,7 +4,7 @@ import 'mocha';
 import { expect, assert } from 'chai';
 import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import Web3 from 'web3';
+import { Web3 } from 'web3';
 
 import { ProviderWeb3 } from '../../src/index';
 import { urls, soloAccounts, abi, bin } from '../settings';

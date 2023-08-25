@@ -6,7 +6,7 @@ import { Framework } from '@vechain/connex-framework';
 import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ProviderWeb3, types, utils } from '../../src/index';
 import { urls, soloAccounts } from '../settings';
-import Web3 from 'web3';
+import { Web3 } from 'web3';
 
 describe('Testing sendRawTransaction', () => {
 	const net = new SimpleNet(urls.solo);
