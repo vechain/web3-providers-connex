@@ -47,7 +47,7 @@ export class Formatter {
 
 	formatInput = (method: string, params?: any[]): any[] => {
 		const inputFormatter = this._inputFormatters[method];
-		if (!inputFormatter) { return params || []; }
+		if (!inputFormatter) { return params ? params : []; }
 		if (!params) {
 			const msg = 'Parameters missing';
 			throw new ProviderRpcError(ErrCode.InvalidParams, msg);
