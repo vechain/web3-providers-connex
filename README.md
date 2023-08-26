@@ -58,7 +58,7 @@ const txId = await provider.request({
 ### Working with `web3.js`:
 ```ts
 import { ProviderWeb3 } from '@vechain/web3-providers-connex'
-import Web3 from 'web3' 
+import { Web3 } from 'web3' 
 
 const provider = new ProviderWeb3({ connex: connexObj })
 const web3 = new Web3(provider)
@@ -99,7 +99,7 @@ APIs `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call` allow use
 ```ts
 import { SimpleNet } from '@vechain/connex-driver'
 import * as thor from '@vechain/web3-providers-connex'
-import Web3 from 'web3'
+import { Web3 } from 'web3'
 import { ethers } from 'ethers'
 
 const provider = new thor.Provider({ 

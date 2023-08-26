@@ -12,7 +12,7 @@ import { urls, soloAccounts } from '../settings';
 import { randAddr } from '../../src/utils';
 import { ProviderRpcError } from '../../src/eip1193';
 
-describe('Testing call', () => {
+describe('Testing eth_call', () => {
 	const net = new SimpleNet(urls.solo);
 	const wallet = new SimpleWallet();
 	wallet.import(soloAccounts[0])
@@ -22,6 +22,12 @@ describe('Testing call', () => {
 	let driver: Driver;
 	let provider: Provider;
 	let connex: Connex;
+	let n: number;
+	const callObj = {
+		from: wallet.list[1].address,
+		to: randAddr(),
+		value: '1000000000000000000'
+	}
 
 	before(async () => {
 		try {
@@ -31,6 +37,20 @@ describe('Testing call', () => {
 				connex: connex,
 				net: net
 			});
+
+			// Get the block when wallet[1] has zero balance
+			n = parseInt(await provider.request({ method: 'eth_blockNumber' }), 16);
+
+			// Transfer vet & vethor from wallet[0] to wallet[1]
+			const transferABI = (energyABI as any[]).find(abi => abi.name === "transfer" && abi.type === "function")
+			const clause = connex.thor.account(energyAddr).method(transferABI)
+				.asClause(wallet.list[1].address, '1000000000000000000000');
+			await connex.vendor.sign('tx', [
+				{ to: wallet.list[1].address, value: '1000000000000000000', data: '0x' },
+				{ ...clause }
+			]).signer(wallet.list[0].address).request()
+			await provider.request({ method: "evm_mine" })
+
 		} catch (err: any) {
 			assert.fail('Initialization failed: ' + err);
 		}
@@ -40,29 +60,9 @@ describe('Testing call', () => {
 		driver?.close();
 	})
 
-	it('call with revision', async () => {
-		// Get the block when wallet[1] has zero balance
-		const n = parseInt(await provider.request({ method: 'eth_blockNumber' }), 16);
-
-		// Transfer vet & vethor from wallet[0] to wallet[1]
-		const transferABI = (energyABI as any[]).find(abi => abi.name === "transfer" && abi.type === "function")
-		const clause = connex.thor.account(energyAddr).method(transferABI)
-			.asClause(wallet.list[1].address, '1000000000000000000000');
-		await connex.vendor.sign('tx', [
-			{ to: wallet.list[1].address, value: '1000000000000000000', data: '0x' },
-			{ ...clause }
-		]).signer(wallet.list[0].address).request()
-
-		await provider.request({method: "evm_mine"})
-		const callObj = {
-			from: wallet.list[1].address,
-			to: randAddr(),
-			value: '1000000000000000000'
-		}
-
-		let ret: string;
+	it('Should return insufficient balance error when calling w.r.t. a block before the transfer', async () => {
 		try {
-			ret = await provider.request({
+			await provider.request({
 				method: 'eth_call',
 				params: [callObj, n]
 			});
@@ -70,9 +70,11 @@ describe('Testing call', () => {
 		} catch (err: any) {
 			expect((err as ProviderRpcError).message).to.eql('insufficient balance for transfer');
 		}
+	});
 
+	it('Should succeed when calling w.r.t. the latest block', async () => {
 		try {
-			ret = await provider.request({
+			const ret = await provider.request({
 				method: 'eth_call',
 				params: [callObj]
 			});
