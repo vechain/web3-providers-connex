@@ -3,7 +3,6 @@ import { expect, assert } from 'chai'
 import {
 	BrowserProvider,
 	ContractFactory,
-	TransactionReceipt,
 	keccak256,
 	Log
 } from 'ethers'
@@ -99,17 +98,19 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 
 	it('Test eth_getTransactionReceipt', async function () {
 		try {
-			const rec1: TransactionReceipt = await this.provider.getTransactionReceipt(txIds[1])
-			const rec2: TransactionReceipt = await this.provider.getTransactionReceipt(txIds[2])
-			expect(rec1.blockHash).to.eql(rec2.blockHash)
+			const rec1 = await (this.provider as BrowserProvider).getTransactionReceipt(txIds[1])
+			const rec2 = await (this.provider as BrowserProvider).getTransactionReceipt(txIds[2])
+			expect(rec1).not.to.be.null
+			expect(rec2).not.to.be.null
+			expect(rec1?.blockHash).to.eql(rec2?.blockHash)
 
-			rec1.logs.forEach((log, i) => {
+			rec1?.logs.forEach((log, i) => {
 				const offset = 4
 				expect(log.transactionIndex).to.eql(1)
 				expect(log.index).to.eql(offset + i)
 			})
 
-			rec2.logs.forEach((log, i) => {
+			rec2?.logs.forEach((log, i) => {
 				const offset = 6
 				expect(log.transactionIndex).to.eql(2)
 				expect(log.index).to.eql(offset + i)
