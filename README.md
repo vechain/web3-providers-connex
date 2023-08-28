@@ -95,7 +95,7 @@ const contract = new ethers.Contract(contractAddress, abi, signer)
 Methods `modifyProvider` and `modifyFactory` are used to patch the original code of [ethers.js](https://github.com/ethers-io/ethers.js) that is incompatible with the Thor protocol.  
 
 ### Request at a particular block hight
-APIs `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call` allow users to specify a particular block height [1]. To do that, we need to provide a `Net` object when creating a provider:
+APIs `eth_getBalance`, `eth_getCode`, `eth_getStorageAt` and `eth_call` allow users to specify a particular block height [1]. To do that, we need to provide a `Net` object when creating a provider:
 ```ts
 import { SimpleNet } from '@vechain/connex-driver'
 import * as thor from '@vechain/web3-providers-connex'
