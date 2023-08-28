@@ -47,7 +47,7 @@ export class Formatter {
 
 	formatInput = (method: string, params?: any[]): any[] => {
 		const inputFormatter = this._inputFormatters[method];
-		if (!inputFormatter) { return params || []; }
+		if (!inputFormatter) { return params ? params : []; }
 		if (!params) {
 			const msg = 'Parameters missing';
 			throw new ProviderRpcError(ErrCode.InvalidParams, msg);
@@ -139,13 +139,22 @@ export class Formatter {
 
 	private _sendTransaction = (params: any[]) => {
 		const o1: TxObj = params[0];
+		
+		let data: string = '0x';
+		if (o1.data) {
+			data = o1.data;
+		}
+		if(o1.input) {
+			data = o1.input;
+		}
+
 		const o2: ExplainArg = {
 			clauses: [{
 				to: o1.to || null,
-				value: !!o1.value ? toHex(o1.value) : '0x0',
-				data: o1.data || '0x',
+				value: o1.value ? toHex(o1.value) : '0x0',
+				data: data,
 			}],
-			gas: !!o1.gas ? hexToNumber(o1.gas) : undefined,
+			gas: o1.gas ? hexToNumber(o1.gas) : undefined,
 			caller: o1.from,
 		}
 
@@ -182,7 +191,7 @@ export class Formatter {
 		const args: FilterOpts = params[0];
 
 		let fromBlock: number, toBlock: number;
-		
+
 		if (!args.fromBlock) {
 			fromBlock = this._connex.thor.status.head.number; // fromBlock default set to latest
 		} else {
@@ -247,10 +256,10 @@ export class Formatter {
 	}
 
 	outputReceiptFormatter = (
-		receipt: Connex.Thor.Transaction.Receipt & { 
-			transactionIndex: string, 
+		receipt: Connex.Thor.Transaction.Receipt & {
+			transactionIndex: string,
 			logInds: string[],
-			from: string, 
+			from: string,
 			to: string | null
 		}
 	): RetReceipt => {
@@ -336,7 +345,7 @@ export class Formatter {
 	}
 
 	outputLogsFormatter = (
-		ret: {logs: Connex.Thor.Filter.Row<'event'>[], txInds: string[], logInds: string[] }
+		ret: { logs: Connex.Thor.Filter.Row<'event'>[], txInds: string[], logInds: string[] }
 	): RetLog[] => {
 		return ret.logs.map((log, i) => {
 			return {
