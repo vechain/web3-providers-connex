@@ -25,7 +25,7 @@ describe('Testing function getChainId', function () {
 				}]
 			});
 
-			let res = await web3.eth.getChainId();
+			let res = await this.web3.eth.getChainId();
 			expect("0x" + res.toString(16)).to.eql(tag);
 		} catch (err: any) {
 			assert.fail(`Unexpected error: ${err}`);
