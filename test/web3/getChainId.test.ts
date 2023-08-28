@@ -16,7 +16,7 @@ describe('Testing function getChainId', function () {
 		const tag: string = "0x851caf3cfdb6e899cf5958bfb1ac3413d346d43539627e6be7ec1b4a";
 
 		try {
-			web3.extend({
+			this.web3.extend({
 				property: 'eth',
 				methods: [{
 					name: 'getChainId',
