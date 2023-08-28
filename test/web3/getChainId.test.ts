@@ -7,12 +7,12 @@ import { Web3 } from 'web3';
 import { ProviderWeb3 } from '../../src/index';
 
 describe('Testing function getChainId', function () {
-	before(async function (){
+	before(async function () {
 		const { eip1193Providers } = this.testObject as TestObject;
 		this.web3 = new Web3(new ProviderWeb3(eip1193Providers.main));
 	})
 	
-	it('get mainnet genesis Id', async () => {
+	it('get mainnet genesis Id', async function() {
 		const tag: string = "0x851caf3cfdb6e899cf5958bfb1ac3413d346d43539627e6be7ec1b4a";
 
 		try {
