@@ -18,6 +18,7 @@ type MethodHandler = (params: any[]) => Promise<any>;
 export class Provider extends EventEmitter implements IProvider {
 	readonly connex: Connex;
 	readonly chainTag: number;
+	readonly chainId: string;
 	readonly restful?: Restful;
 	readonly wallet?: Wallet;
 
@@ -41,7 +42,7 @@ export class Provider extends EventEmitter implements IProvider {
 		this.connex = opt.connex;
 		const id = opt.connex.thor.genesis.id;
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
-
+		this.chainId = id;
 		this._formatter = new Formatter(opt.connex, !!opt.net);
 		this._delegate = opt.delegate || null;
 
@@ -559,7 +560,8 @@ export class Provider extends EventEmitter implements IProvider {
 	}
 
 	private _getChainId = async (_: any[]) => {
-		return toHex(this.chainTag);
+		const bigIntValue = BigInt(this.chainId);
+		return bigIntValue;
 	}
 
 	private _getBlockByNumber = async (params: any[]) => {
