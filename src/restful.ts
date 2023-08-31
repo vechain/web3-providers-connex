@@ -1,7 +1,7 @@
 'use strict';
 
 import { ErrCode } from './error';
-import { Net, ExplainArg } from './types';
+import { Net, ExplainArg, TraceClauseOption, TraceCallOption } from './types';
 import { decodeRevertReason, getErrMsg } from './utils';
 import { ProviderRpcError } from './eip1193';
 
@@ -132,6 +132,49 @@ export class Restful {
 			}
 			
 			return output.data;
+		} catch (err: any) {
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
+		}
+	}
+
+	traceClause = async (opts: TraceClauseOption) =>{
+		try {
+			const httpParams: Net.Params = {
+				body: opts,
+				validateResponseHeader: this._headerValidator
+			}
+
+			const ret: object = await this._net.http(
+				"POST",
+				'debug/tracers',
+				httpParams
+			);
+
+			
+			return ret;
+		} catch (err: any) {
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
+		}
+	}
+
+	traceCall = async (opts: TraceCallOption, revision?: string) => {
+		try {
+			const httpParams: Net.Params = {
+				body: opts,
+				validateResponseHeader: this._headerValidator
+			}
+			if (revision) {
+				httpParams.query = { "revision": revision };
+			}
+
+			const ret: object = await this._net.http(
+				"POST",
+				'debug/tracers/call',
+				httpParams
+			);
+
+			
+			return ret;
 		} catch (err: any) {
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
 		}

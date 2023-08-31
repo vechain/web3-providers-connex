@@ -11,6 +11,7 @@ services:
         "-c",
         "apk update && apk upgrade && apk add curl && thor solo --on-demand --data-dir /data/thor --api-addr 0.0.0.0:8669 --api-cors '*' --api-backtrace-limit -1 --verbosity 4"
       ]
+    user: root
     ports:
       - "8669:8669"
       - "11235:11235"

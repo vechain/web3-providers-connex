@@ -56,5 +56,8 @@ export const EthJsonRpcMethods = [
 	'eth_subscribe',
 	'eth_unsubscribe',
 
+	'debug_traceTransaction',
+	'debug_traceCall',
+
 	'evm_mine'
 ]

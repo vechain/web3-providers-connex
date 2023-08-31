@@ -180,6 +180,7 @@ export type TxObj = {
 	value?: string;
 	data?: string;
 	gas?: string;
+	gasPrice?: string;
 }
 
 export type FilterOpts = {
@@ -197,4 +198,22 @@ export type ConvertedFilterOpts = {
 export type DelegateOpt = {
 	url: string;
 	signer?: string;
+}
+
+export interface TracerOption {
+	name: string;
+	config: object;
+}
+
+export interface TraceClauseOption extends TracerOption {
+	target: string;
+}
+
+export interface TraceCallOption extends TracerOption{
+	to: string | null
+	value: string
+	data: string
+	caller?: string;
+	gas?: number;
+	gasPrice?: string;
 }
