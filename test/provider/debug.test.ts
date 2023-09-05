@@ -132,132 +132,132 @@ describe('Test debug namespace methods', function () {
 		})
 	})
 
-	// describe('Test trace call', function () {
-	// 	let solo: Provider
-	// 	let soloDriver: Driver
+	describe('Test trace call', function () {
+		let solo: Provider
+		let soloDriver: Driver
 
-	// 	const wallet = new SimpleWallet()
-	// 	wallet.import(soloAccounts[0])
+		const wallet = new SimpleWallet()
+		wallet.import(soloAccounts[0])
 
-	// 	before(async () => {
-	// 		const net = new SimpleNet(urls.solo)
+		before(async () => {
+			const net = new SimpleNet(urls.solo)
 
-	// 		try {
-	// 			soloDriver = await Driver.connect(net, wallet)
-	// 			const connex = new Framework(soloDriver)
-	// 			solo = new Provider({
-	// 				connex: connex,
-	// 				net: net,
-	// 				wallet: wallet
-	// 			})
-	// 		} catch (err: any) {
-	// 			assert.fail(err.message || err)
-	// 		}
-	// 	})
+			try {
+				soloDriver = await Driver.connect(net, wallet)
+				const connex = new Framework(soloDriver)
+				solo = new Provider({
+					connex: connex,
+					net: net,
+					wallet: wallet
+				})
+			} catch (err: any) {
+				assert.fail(err.message || err)
+			}
+		})
 
-	// 	after(function () {
-	// 		soloDriver.close()
-	// 	})
+		after(function () {
+			soloDriver.close()
+		})
 
-	// 	it('normalize args', async () => {
-	// 		let ret = await solo.request({
-	// 			method: 'debug_traceCall',
-	// 			params: [
-	// 				{
-	// 					from: wallet.list[0].address,
-	// 					gas: '0x100000',
-	// 				},
-	// 				'latest',
-	// 				{
-	// 					tracer: 'call',
-	// 				}
-	// 			]
-	// 		})
-	// 		expect(ret).to.not.haveOwnProperty('calls')
-	// 	})
+		it('normalize args', async () => {
+			let ret = await solo.request({
+				method: 'debug_traceCall',
+				params: [
+					{
+						from: wallet.list[0].address,
+						gas: '0x100000',
+					},
+					'latest',
+					{
+						tracer: 'call',
+					}
+				]
+			})
+			expect(ret).to.not.haveOwnProperty('calls')
+		})
 
-	// 	it('call tracer', async () => {
-	// 		let ret = await solo.request({
-	// 			method: 'debug_traceCall',
-	// 			params: [
-	// 				{
-	// 					from: wallet.list[0].address,
-	// 					to: '0x0000000000000000000000000000456e65726779',
-	// 					data: '0xa9059cbb000000000000000000000000bec38ea2338a4dafc246eb7eaf1b81e8a15d635400000000000000000000000000000000000000000000003635c9adc5dea00000'
-	// 				},
-	// 				'latest',
-	// 				{
-	// 					tracer: 'call'
-	// 				}
-	// 			]
-	// 		})
+		it('call tracer', async () => {
+			let ret = await solo.request({
+				method: 'debug_traceCall',
+				params: [
+					{
+						from: wallet.list[0].address,
+						to: '0x0000000000000000000000000000456e65726779',
+						data: '0xa9059cbb000000000000000000000000bec38ea2338a4dafc246eb7eaf1b81e8a15d635400000000000000000000000000000000000000000000003635c9adc5dea00000'
+					},
+					'latest',
+					{
+						tracer: 'call'
+					}
+				]
+			})
 
-	// 		expect(ret).to.haveOwnProperty('calls')
-	// 		expect(ret.calls).to.be.an('array')
-	// 		expect(ret).to.haveOwnProperty('type')
-	// 		expect(ret.type).to.equal('CALL')
+			expect(ret).to.haveOwnProperty('calls')
+			expect(ret.calls).to.be.an('array')
+			expect(ret).to.haveOwnProperty('type')
+			expect(ret.type).to.equal('CALL')
 
-	// 		ret = await solo.request({
-	// 			method: 'debug_traceCall',
-	// 			params: [
-	// 				{
-	// 					from: wallet.list[0].address,
-	// 					to: '0x0000000000000000000000000000456e65726779',
-	// 					data: '0xa9059cbb000000000000000000000000bec38ea2338a4dafc246eb7eaf1b81e8a15d635400000000000000000000000000000000000000000000003635c9adc5dea00000'
-	// 				},
-	// 				'latest',
-	// 				{
-	// 					tracer: 'call',
-	// 					tracerConfig: {
-	// 						onlyTopCall: true
-	// 					}
-	// 				}
-	// 			]
-	// 		})
-	// 		expect(ret).to.not.haveOwnProperty('calls')
-	// 	})
+			ret = await solo.request({
+				method: 'debug_traceCall',
+				params: [
+					{
+						from: wallet.list[0].address,
+						to: '0x0000000000000000000000000000456e65726779',
+						data: '0xa9059cbb000000000000000000000000bec38ea2338a4dafc246eb7eaf1b81e8a15d635400000000000000000000000000000000000000000000003635c9adc5dea00000'
+					},
+					'latest',
+					{
+						tracer: 'call',
+						tracerConfig: {
+							onlyTopCall: true
+						}
+					}
+				]
+			})
+			expect(ret).to.not.haveOwnProperty('calls')
+		})
 
-	// 	it('struct logger', async () => {
-	// 		let ret = await solo.request({
-	// 			method: 'debug_traceCall',
-	// 			params: [
-	// 				{
-	// 					from: wallet.list[0].address,
-	// 					to: '0x0000000000000000000000000000456e65726779',
-	// 					data: '0xa9059cbb000000000000000000000000bec38ea2338a4dafc246eb7eaf1b81e8a15d635400000000000000000000000000000000000000000000003635c9adc5dea00000'
-	// 				},
-	// 				'latest',
-	// 				{
-	// 					tracer: ''
-	// 				}
-	// 			]
-	// 		})
+		it('struct logger', async () => {
+			let ret = await solo.request({
+				method: 'debug_traceCall',
+				params: [
+					{
+						from: wallet.list[0].address,
+						to: '0x0000000000000000000000000000456e65726779',
+						data: '0xa9059cbb000000000000000000000000bec38ea2338a4dafc246eb7eaf1b81e8a15d635400000000000000000000000000000000000000000000003635c9adc5dea00000'
+					},
+					'latest',
+					{
+						tracer: ''
+					}
+				]
+			})
 
-	// 		expect(ret).to.haveOwnProperty('returnValue')
-	// 		expect(ret).to.haveOwnProperty('structLogs')
-	// 		expect(ret.structLogs).to.be.an('array')
-	// 		expect(ret.structLogs[0]).to.haveOwnProperty('stack')
+			expect(ret).to.haveOwnProperty('returnValue')
+			expect(ret).to.haveOwnProperty('structLogs')
+			expect(ret.structLogs).to.be.an('array')
+			expect(ret.structLogs[0]).to.haveOwnProperty('stack')
 
-	// 		ret = await solo.request({
-	// 			method: 'debug_traceCall',
-	// 			params: [
-	// 				{
-	// 					from: wallet.list[0].address,
-	// 					to: '0x0000000000000000000000000000456e65726779',
-	// 					data: '0xa9059cbb000000000000000000000000bec38ea2338a4dafc246eb7eaf1b81e8a15d635400000000000000000000000000000000000000000000003635c9adc5dea00000'
-	// 				},
-	// 				'latest',
-	// 				{
-	// 					tracer: '',
-	// 					config: {
-	// 						disableStack: true
-	// 					}
-	// 				}
-	// 			]
-	// 		})
+			ret = await solo.request({
+				method: 'debug_traceCall',
+				params: [
+					{
+						from: wallet.list[0].address,
+						to: '0x0000000000000000000000000000456e65726779',
+						data: '0xa9059cbb000000000000000000000000bec38ea2338a4dafc246eb7eaf1b81e8a15d635400000000000000000000000000000000000000000000003635c9adc5dea00000'
+					},
+					'latest',
+					{
+						tracer: '',
+						config: {
+							disableStack: true
+						}
+					}
+				]
+			})
 
-	// 		expect(ret.structLogs[0]).to.not.haveOwnProperty('stack')
-	// 	})
-	// })
+			expect(ret.structLogs[0]).to.not.haveOwnProperty('stack')
+		})
+	})
 
 })

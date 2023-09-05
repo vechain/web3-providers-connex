@@ -2,7 +2,7 @@ version: "3"
 
 services:
   thor-solo:
-    image: vechain/thor:v2.0.0
+    image: vechain/thor:v2.1.0
     container_name: thor-solo
     # Install curl for our healthcheck, then start thor solo
     entrypoint:
