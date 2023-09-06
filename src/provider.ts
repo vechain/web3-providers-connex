@@ -44,7 +44,7 @@ export class Provider extends EventEmitter implements IProvider {
 		this.chainTag = hexToNumber('0x' + id.substring(id.length - 2));
 		this.chainId = id;
 		this._formatter = new Formatter(opt.connex, !!opt.net);
-		this._delegate = opt.delegate || null;
+		this._delegate = opt.delegate ? opt.delegate : null;
 
 		this._methodMap['eth_getBlockByHash'] = this._getBlockByHash;
 		this._methodMap['eth_getBlockByNumber'] = this._getBlockByNumber;
@@ -603,6 +603,10 @@ export class Provider extends EventEmitter implements IProvider {
 		 * 	tracerConfig: {} // tracer specific config object
 		 * }
 		 */
+		if(!this.restful) {
+			return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Restful API not supported'));
+		}
+
 		try {
 			const txId = params[0]
 			const opts = params[1]
@@ -613,8 +617,8 @@ export class Provider extends EventEmitter implements IProvider {
 			const txIndex = blk.transactions.findIndex(elem => elem == txId);
 
 
-			if (opts && opts.tracer) {
-				return this.restful!.traceClause({
+			if (opts?.tracer) {
+				return await this.restful.traceClause({
 					target: `${tx.meta.blockID}/${txIndex}/0`,
 					name: opts?.tracer,
 					config: opts?.tracerConfig,
@@ -622,7 +626,7 @@ export class Provider extends EventEmitter implements IProvider {
 			} else {
 				// if tracerConfig.name not specified, it's struct logger
 				// struct logger config is located at tracerConfig.config
-				return this.restful!.traceClause({
+				return await this.restful.traceClause({
 					target: `${tx.meta.blockID}/${txIndex}/0`,
 					name: opts?.tracer,
 					config: opts?.config,
@@ -642,13 +646,17 @@ export class Provider extends EventEmitter implements IProvider {
 		 * 	tracerConfig: {} // tracer specific config object
 		 * }
 		 */
+		if(!this.restful) {
+			return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Restful API not supported'));
+		}
+
 		try {
 			const callArgs = params[0]
 			const revision = params[1]
 			const opts = params[2]
 
-			if (opts && opts.tracer) {
-				return this.restful!.traceCall({
+			if (opts?.tracer) {
+				return await this.restful.traceCall({
 					... callArgs,
 					name: opts?.tracer,
 					config: opts?.tracerConfig,
@@ -656,7 +664,7 @@ export class Provider extends EventEmitter implements IProvider {
 			} else {
 				// if tracerConfig.name not specified, it's struct logger
 				// struct logger config is located at tracerConfig.config
-				return this.restful!.traceCall({
+				return await this.restful.traceCall({
 					... callArgs,
 					name: opts.tracer,
 					config: opts.config,
