@@ -77,7 +77,7 @@ const provider = thor.ethers.modifyProvider(
   )
 )
 ```
-Obtaining a singner
+Obtaining a signer
 ```ts
 const signer = provider.getSigner(address)
 ```
@@ -179,10 +179,12 @@ Supported subscription type: `newHeads`, `logs`
 Equivalent to `eth_chainId`
 ##### `web3_clientVersion`
 Returning string `thor`
+##### `debug_traceTransaction`
+##### `debug_traceCall`
 
 ## Implementation Notes
 1. Fields `blockHash` and `transactionHash` return the values of [`blockId`](https://docs.vechain.org/thor/learn/block.html#block) and [`transactionId`](https://docs.vechain.org/thor/learn/transaction-model.html#transaction-id) defined in the Thor protocol, respectively
-2. APIs `eth_estimateGas`, `eth_call` and `eth_getTransactionReceipt` only return information associated with the first [clause](https://docs.vechain.org/thor/learn/transaction-model.html#clauses) in a transaction
+2. APIs `eth_estimateGas`, `eth_call`, `eth_getTransactionReceipt`, `debug_traceTransaction` and `debug_traceCall` only return information associated with the first [clause](https://docs.vechain.org/thor/learn/transaction-model.html#clauses) in a transaction
 3. Unsupported returning fields (all set to zero):
 * `cumulativeGasUsed`
 * `difficulty`
@@ -195,6 +197,6 @@ Returning string `thor`
 ## License
 This software is licensed under the
 [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.html), also included
-in *LICENSE##### file in repository.
+in *LICENSE* file in repository.
 ## References
 [1] [https://eth.wiki/json-rpc/API](https://eth.wiki/json-rpc/API).

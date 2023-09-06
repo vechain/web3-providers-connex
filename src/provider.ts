@@ -70,6 +70,8 @@ export class Provider extends EventEmitter implements IProvider {
 		if (opt.net) {
 			this.restful = new Restful(opt.net, this.connex.thor.genesis.id);
 			this._methodMap['eth_sendRawTransaction'] = this._sendRawTransaction;
+			this._methodMap['debug_traceTransaction'] = this._traceTransaction;
+			this._methodMap['debug_traceCall'] = this._traceCall;
 		}
 
 		if (opt.wallet) {
@@ -586,6 +588,79 @@ export class Provider extends EventEmitter implements IProvider {
 				return null;
 			} else {
 				return this._formatter.outputBlockFormatter(blk);
+			}
+		} catch (err: any) {
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
+		}
+	}
+
+	private _traceTransaction = async (params: any[]) => {
+		/**
+		 * debug_traceTransaction(txHash, traceOptions)
+		 * traceOptions: {
+		 * 	tracer: '', // name of tracer or custom js tracer code
+		 * 	config: {}  // struct logger config object
+		 * 	tracerConfig: {} // tracer specific config object
+		 * }
+		 */
+		try {
+			const txId = params[0]
+			const opts = params[1]
+			const tx = await this.connex.thor.transaction(txId).get();
+			if (!tx) { return Promise.reject(new ProviderRpcError(ErrCode.Default, 'Target not found')); }
+
+			const blk = (await this.connex.thor.block(tx.meta.blockID).get())!;
+			const txIndex = blk.transactions.findIndex(elem => elem == txId);
+
+
+			if (opts && opts.tracer) {
+				return this.restful!.traceClause({
+					target: `${tx.meta.blockID}/${txIndex}/0`,
+					name: opts?.tracer,
+					config: opts?.tracerConfig,
+				})
+			} else {
+				// if tracerConfig.name not specified, it's struct logger
+				// struct logger config is located at tracerConfig.config
+				return this.restful!.traceClause({
+					target: `${tx.meta.blockID}/${txIndex}/0`,
+					name: opts?.tracer,
+					config: opts?.config,
+				})
+			}
+		} catch (err: any) {
+			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));
+		}
+	}
+
+	private _traceCall = async (params: any[]) => {
+		/**
+		 * debug_traceCall(callArgs, blockHashOrNumber ,tracerOptions)
+		 * tracerOptions: {
+		 * 	tracer: '', // name of tracer or custom js tracer code
+		 * 	config: {}  // struct logger config object
+		 * 	tracerConfig: {} // tracer specific config object
+		 * }
+		 */
+		try {
+			const callArgs = params[0]
+			const revision = params[1]
+			const opts = params[2]
+
+			if (opts && opts.tracer) {
+				return this.restful!.traceCall({
+					... callArgs,
+					name: opts?.tracer,
+					config: opts?.tracerConfig,
+				}, revision)
+			} else {
+				// if tracerConfig.name not specified, it's struct logger
+				// struct logger config is located at tracerConfig.config
+				return this.restful!.traceCall({
+					... callArgs,
+					name: opts.tracer,
+					config: opts.config,
+				}, revision)
 			}
 		} catch (err: any) {
 			return Promise.reject(new ProviderRpcError(ErrCode.InternalError, getErrMsg(err)));

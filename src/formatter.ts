@@ -43,6 +43,7 @@ export class Formatter {
 		this._inputFormatters['eth_getLogs'] = this._getLogs;
 		this._inputFormatters['eth_subscribe'] = this._subscribe;
 		this._inputFormatters['eth_sendRawTransaction'] = this._sendRawTransaction;
+		this._inputFormatters['debug_traceCall'] = this._traceCall;
 	}
 
 	formatInput = (method: string, params?: any[]): any[] => {
@@ -155,6 +156,7 @@ export class Formatter {
 				data: data,
 			}],
 			gas: o1.gas ? hexToNumber(o1.gas) : undefined,
+			gasPrice: o1.gasPrice,
 			caller: o1.from,
 		}
 
@@ -231,6 +233,32 @@ export class Formatter {
 		}
 
 		return [out];
+	}
+
+	private _traceCall = (params: any[]) => {
+		// trace call needs net, bypass if net not set
+		if (!this._ifSetNet) {
+			return params;
+		}
+
+		let [callObj, revision = 'latest', opt] = params;
+
+		revision = parseBlockNumber(revision);
+		if (revision === null) {
+			const msg = ErrMsg.ArgumentMissingOrInvalid('debug_traceCall', 'revision');
+			throw new ProviderRpcError(ErrCode.InvalidParams, msg);
+		}
+
+		const arg = {
+			to: callObj.to || null,
+			value: callObj.value || '0x0',
+			data: callObj.data || '0x',
+			gas: callObj.gas ? hexToNumber(callObj.gas) : undefined,
+			gasPrice: callObj.gasPrice,
+			caller: callObj.from,
+		};
+
+		return [arg, revision, opt];
 	}
 
 	private _subscribe = (params: any[]) => {
