@@ -58,7 +58,7 @@ const txId = await provider.request({
 ### Working with `web3.js`:
 ```ts
 import { ProviderWeb3 } from '@vechain/web3-providers-connex'
-import Web3 from 'web3' 
+import { Web3 } from 'web3' 
 
 const provider = new ProviderWeb3({ connex: connexObj })
 const web3 = new Web3(provider)
@@ -69,8 +69,11 @@ import * as thor from '@vechain/web3-providers-connex'
 import { ethers } from 'ethers'
 
 const provider = thor.ethers.modifyProvider(
-  new ethers.providers.Web3Provider(
-    new thor.Provider({ connex: connexObj })
+  new ethers.BrowserProvider(
+    new thor.Provider({ 
+      connex: connexObj,
+      wallet: walletObj,	// MUST provide to call [getSigner] method 	 
+    })
   )
 )
 ```
@@ -83,16 +86,20 @@ Deploying a contract
 const factory = thor.ethers.modifyFactory(
   new ethers.ContractFactory(abi, bin, signer)
 )
-const contract = await factory.deploy(...args)
+const base = await factory.deploy(...args)
+await base.waitForDeployment()
+
+const contractAddress = await base.getAddress()
+const contract = new ethers.Contract(contractAddress, abi, signer)
 ```
-Methods `modifyProvider` and `modifyFactory` are used to bypass the Ethereum contract address computation that is incompatible with the Thor protocol.  
+Methods `modifyProvider` and `modifyFactory` are used to patch the original code of [ethers.js](https://github.com/ethers-io/ethers.js) that is incompatible with the Thor protocol.  
 
 ### Request at a particular block hight
-APIs `eth_getBalance`, `eth_getCode`, `et_getStorageAt` and `eth_call` allow users to specify a particular block height [1]. To do that, we need to provide a `Net` object when creating a provider:
+APIs `eth_getBalance`, `eth_getCode`, `eth_getStorageAt` and `eth_call` allow users to specify a particular block height [1]. To do that, we need to provide a `Net` object when creating a provider:
 ```ts
 import { SimpleNet } from '@vechain/connex-driver'
 import * as thor from '@vechain/web3-providers-connex'
-import Web3 from 'web3'
+import { Web3 } from 'web3'
 import { ethers } from 'ethers'
 
 const provider = new thor.Provider({ 
@@ -108,7 +115,7 @@ const web3 = new Web3(
 )
 
 const providerEthers = thor.ethers.modifyProvider(
-  new ethers.providers.Web3Provider(
+  new ethers.BrowserProvider(
     new thor.Provider({ 
       connex: connexObj,
       net: netObj
@@ -161,6 +168,7 @@ Returning `0x0`
 Returning `0x0`
 ##### `eth_getTransactionReceipt`
 ##### `eth_isSyncing`
+##### `eth_requestAccounts`
 ##### `eth_sendRawTransaction`
 Requiring passing a `Net` object when constructing an instance of `Provider` or `ProviderWeb3`
 ##### `eth_sendTransaction`

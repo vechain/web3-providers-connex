@@ -2,136 +2,111 @@
 
 import 'mocha';
 import { expect, assert } from 'chai';
-import { Framework } from '@vechain/connex-framework';
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import Web3 from 'web3';
-
+import { TestObject } from '../testSetup';
+import { Web3 } from 'web3';
 import { ProviderWeb3, types } from '../../src/index';
 import { wait, hexToNumber } from '../../src/utils';
-import { urls, soloAccounts, bin, abi } from '../settings'
 
-describe('Testing subscribe', () => {
-	const net = new SimpleNet(urls.solo);
-	const wallet = new SimpleWallet();
-	soloAccounts.forEach(pk => {
-		wallet.import(pk);
+describe('Testing function subscribe', function () {
+	before(async function () {
+		const { eip1193Providers } = this.testObject as TestObject;
+		this.web3 = new Web3(new ProviderWeb3(eip1193Providers.solo));
 	})
 
-	let driver: Driver;
-	let web3: any;
-
-	before(async () => {
-		try {
-			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ProviderWeb3({ connex: new Framework(driver) }));
-		} catch (err: any) {
-			assert.fail('Initialization failed: ' + err);
-		}
-	})
-
-	after(() => {
-		driver?.close();
-	})
-
-	it('subscribe logs', async () => {
-		let contract = new web3.eth.Contract(abi);
+	it('Should return logs with the correct topic and data values', async function () {
+		const { abi, bin, wallet } = this.testObject as TestObject;
+		const undeployed = (new this.web3.eth.Contract(abi)).deploy({
+			data: bin,
+			arguments: [100, 'deploy'],
+		});
 
 		try {
-			contract = await contract.deploy({
-				data: bin,
-				arguments: [100, 'deploy'],
-			})
-				.send({
-					from: wallet.list[0].address,
-				})
-
-			await contract.methods.set(200, 'set1').send({ from: wallet.list[1].address });
-			const best = await web3.eth.getBlockNumber();
+			const tx = await undeployed.send({ from: wallet.list[0].address, });
+			const contractAddress = tx.options.address;
+			const deployed = new this.web3.eth.Contract(abi, contractAddress);
+			await deployed.methods.set(200, 'set1').send({ from: wallet.list[1].address });
+			await deployed.methods.set(300, 'set2').send({ from: wallet.list[2].address });
+			const best = await this.web3.eth.getBlockNumber();
 
 			const subOpts = {
 				fromBlock: 0,
 				toBlock: best,
-				address: [contract.options.address, contract.options.address],
+				address: contractAddress,
 				topics: [
-					[web3.utils.sha3('Deploy(address,uint256,string)')],
-					[web3.utils.sha3('Set(address,uint256,string)')],
+					[
+						this.web3.utils.sha3('Deploy(address,uint256,string)'),
+						this.web3.utils.sha3('Set(address,uint256,string)')
+					],
 				],
 			}
 
 			const topics = [
 				{
 					topics: [
-						web3.utils.sha3('Deploy(address,uint256,string)'),
-						web3.eth.abi.encodeParameter('address', wallet.list[0].address),
+						this.web3.utils.sha3('Deploy(address,uint256,string)'),
+						this.web3.eth.abi.encodeParameter('address', wallet.list[0].address),
 					],
-					data: web3.eth.abi.encodeParameters(['uint', 'string'], [100, 'deploy']),
+					data: this.web3.eth.abi.encodeParameters(['uint', 'string'], [100, 'deploy']),
 				},
 				{
 					topics: [
-						web3.utils.sha3('Set(address,uint256,string)'),
-						web3.eth.abi.encodeParameter('address', wallet.list[1].address),
+						this.web3.utils.sha3('Set(address,uint256,string)'),
+						this.web3.eth.abi.encodeParameter('address', wallet.list[1].address),
 					],
-					data: web3.eth.abi.encodeParameters(['uint', 'string'], [200, 'set1']),
+					data: this.web3.eth.abi.encodeParameters(['uint', 'string'], [200, 'set1']),
 				},
 				{
 					topics: [
-						web3.utils.sha3('Set(address,uint256,string)'),
-						web3.eth.abi.encodeParameter('address', wallet.list[2].address),
+						this.web3.utils.sha3('Set(address,uint256,string)'),
+						this.web3.eth.abi.encodeParameter('address', wallet.list[2].address),
 					],
-					data: web3.eth.abi.encodeParameters(['uint', 'string'], [300, 'set2']),
+					data: this.web3.eth.abi.encodeParameters(['uint', 'string'], [300, 'set2']),
 				}
 			]
 
-			const sub = web3.eth.subscribe('logs', subOpts, (err: any, result: types.RetLog) => {
-				if (err) { assert.fail(err); }
-
+			const sub = await this.web3.eth.subscribe('logs', subOpts);
+			let count = 0;
+			sub.on('data', (log: types.RetLog) => {
 				let check = false;
 
-				for (let i = 0; i < topics.length; i++) {
-					check = result.data === topics[i].data &&
-						result.topics[0] === topics[i].topics[0] &&
-						result.topics[1] === topics[i].topics[1];
+				for (const elem of topics) {
+					check = log.data === elem.data &&
+						log.topics[0] === elem.topics[0] &&
+						log.topics[1] === elem.topics[1];
 					if (check) { break; }
 				}
 
 				expect(check).to.be.true;
-			})
-				.on('data', (log: Object) => {
-					console.log(`On data: ${JSON.stringify(log)}`);
-				})
-
-			await wait(1000);
-
-			await contract.methods.set(300, 'set2').send({ from: wallet.list[2].address });
+				count ++;
+			});
 
 			await wait(10000);
 
-			sub.unsubscribe((err: any, success: boolean) => {
-				if (err) { assert.fail(err); }
-			});
+			expect(count).to.eql(3);
+
+			sub.unsubscribe();
 		} catch (err: any) {
 			assert.fail(err);
 		}
 	})
 
-	it('subscribe newBlockHeaders', async () => {
+	it('Should return blocks with the block number incrementing by 1 each time', async function () {
 		let blockNumber: number;
-		const sub = web3.eth.subscribe('newBlockHeaders', (err: any, result: types.RetBlock) => {
-			if (err) { assert.fail(err); }
-			if (!blockNumber) { blockNumber = hexToNumber(result.number); }
-			else {
-				expect(result.number).to.eql(blockNumber + 1);
-				blockNumber++;
-			}
-		})
-			.on('data', (header: object) => {
-				console.log(`On data: ${JSON.stringify(header)}`);
+		try {
+			const sub = await this.web3.eth.subscribe('newBlockHeaders')
+			sub.on('data', (blk: types.RetBlock) => {
+				if (!blockNumber) { blockNumber = hexToNumber(blk.number); }
+				else {
+					expect(blk.number).to.eql(blockNumber + 1);
+					blockNumber++;
+				}
 			});
-
-		await wait(50000);
-
-		sub.unsubscribe((err: any, success: boolean) => {
-			if (err) { assert.fail(err); }
-		});
+	
+			await wait(50000);
+	
+			sub.unsubscribe();
+		} catch (err: any) {
+			assert.fail(err);
+		}
 	})
 })
