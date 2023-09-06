@@ -139,6 +139,7 @@ export interface RetTransaction {
 	// incompatible fields
 	nonce: '0x0';
 	gasPrice: '0x0';
+	signature: "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 }
 
 export interface RetReceipt {
@@ -181,6 +182,7 @@ export type TxObj = {
 	data?: string;
 	gas?: string;
 	gasPrice?: string;
+	input?: string;		// Added to support requests from web3.js
 }
 
 export type FilterOpts = {

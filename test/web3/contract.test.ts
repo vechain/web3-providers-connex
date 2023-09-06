@@ -2,83 +2,66 @@
 
 import 'mocha';
 import { expect, assert } from 'chai';
-import { Framework } from '@vechain/connex-framework';
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-
+import { TestObject } from '../testSetup';
 import { ProviderWeb3 } from '../../src/index';
-import { urls, soloAccounts, abi, bin } from '../settings';
-import Web3 from 'web3';
+import { Web3 } from 'web3';
 
-describe('Testing contract', () => {
-	const net = new SimpleNet(urls.solo);
-	const wallet = new SimpleWallet();
-	soloAccounts.forEach(key => {
-		wallet.import(key);
-	});
-
-	let driver: Driver;
-	let web3: any;
-
-	before(async () => {
-		try {
-			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ProviderWeb3({ connex: new Framework(driver) }));
-		} catch (err: any) {
-			assert.fail('Initialization failed: ' + err);
-		}
-	})
-
-	after(() => {
-		driver?.close();
+describe('Testing operations on contract', () => {
+	before(function () {
+		const { eip1193Providers } = this.testObject as TestObject;
+		this.web3 = new Web3(new ProviderWeb3(eip1193Providers.solo));
 	})
 
 	let contractAddress: string;
-	const from = wallet.list[0].address;
+	let from: string;
 
-	it('deploy', async () => {
-		let contract = new web3.eth.Contract(abi);
+	it('Should deploy the contract and return the correct initial values', async function () {
+		const { abi, bin, wallet } = this.testObject as TestObject;
+		from = wallet.list[0].address;
 		const args = [100, 'test contract deploy'];
+		const undeployed = (new this.web3.eth.Contract(abi)).deploy({
+			data: bin,
+			arguments: args,
+		});
 
 		try {
-			contract = await contract.deploy({
-				data: bin,
-				arguments: args,
-			})
-				.send({
-					from: from,
-				})
+			const tx = await undeployed.send({ from: from });
 
-			contractAddress = contract.options.address;
-
-			const ret: string[] = await contract.methods.get().call();
-			args.forEach((val, i) => {
-				expect(ret[i]).to.eql('' + val);
-			})
+			if (!tx.options.address) {
+				assert.fail('Contract address is undefined');
+			}
+			contractAddress = tx.options.address;
+			
+			const deployed = new this.web3.eth.Contract(abi, contractAddress);
+			const ret = await deployed.methods.get().call();
+			expect(ret[0].toString()).to.eql('' + args[0]);
+			expect(ret[1]).to.eql(args[1]);
 		} catch (err: any) {
 			assert.fail(err);
 		}
 	})
 
-	it('send', async () => {
+	it('Should return the correct set values after calling fn set', async function () {
+		const { abi, wallet } = this.testObject as TestObject;
 		const from = wallet.list[0].address;
 
-		let contract = new web3.eth.Contract(abi, contractAddress);
+		let contract = new this.web3.eth.Contract(abi, contractAddress);
 		const args = [200, 'test contract send'];
 
 		try {
 			await contract.methods.set(args[0], args[1]).send({ from: from });
 
-			let ret: string[] = await contract.methods.get().call();
-			args.forEach((val, i) => {
-				expect(ret[i]).to.eql('' + val);
-			})
+			let ret = await contract.methods.get().call();
+			expect(ret[0].toString()).to.eql('' + args[0]);
+			expect(ret[1]).to.eql(args[1]);
 		} catch (err: any) {
 			assert.fail(err);
 		}
 	})
 
-	it('call with error', async () => {
-		const contract = new web3.eth.Contract(abi, contractAddress);
+	it('Should return the correct error message', async function () {
+		const { abi } = this.testObject as TestObject;
+		const contract = new this.web3.eth.Contract(abi, contractAddress);
 		contract.handleRevert = true;
 		const errMsg = 'Test error message in contract call';
 
@@ -87,8 +70,8 @@ describe('Testing contract', () => {
 			await contract.methods.get().call();
 			assert.fail('Unexpected error');
 		} catch (err: any) {
-			const msg: string = err.reason;
-			expect(msg).to.eql(errMsg);
+			const msg: string = err.innerError.message;
+			assert.ok(msg.includes(errMsg));
 		}
 	})
 })

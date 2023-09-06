@@ -2,27 +2,27 @@
 
 import 'mocha';
 import { expect, assert } from 'chai';
+import { soloAccounts, urls, abi, bin } from '../settings';
+import { SimpleWallet, Driver, SimpleNet } from '@vechain/connex-driver';
 import { Framework } from '@vechain/connex-framework';
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
 import { ProviderWeb3 } from '../../src/index';
-import { urls, soloAccounts, abi, bin } from '../settings';
-import Web3 from 'web3';
+import { Web3 } from 'web3';
 import { DelegateOpt } from '../../src/types';
 import http from 'http';
 import { Transaction } from 'thor-devkit';
 
-describe('Testing fee delegate', () => {
-	const net = new SimpleNet(urls.solo);
+describe('Testing fee delegate', function () {
 	const wallet = new SimpleWallet();
-
-	let driver: Driver;
-	let provider: ProviderWeb3;
-	let web3: any;
 	let srv: http.Server;
+	let driver: Driver;
+	let web3: any;
+	let provider: ProviderWeb3;
+	let contractAddress: string;
 
-	before(async () => {
+	before(async function () {
 		try {
-			driver = await Driver.connect(net, wallet);
+			const net = new SimpleNet(urls.solo);
+			const driver = await Driver.connect(net, wallet);
 			provider = new ProviderWeb3({ connex: new Framework(driver) });
 			web3 = new Web3(provider);
 
@@ -53,44 +53,57 @@ describe('Testing fee delegate', () => {
 		}
 	})
 
-	after(() => {
-		driver?.close();
-		srv?.close();
+	after(function () {
+		if (srv) {
+			srv.close();
+		}
+
+		if (driver) {
+			driver.close();
+		}
 	})
 
-	it('deploy contract', async () => {
+	it('Should deploy the contract using an account with zero balance when fee delegation is on', async function () {
 		const opt: DelegateOpt = {
 			url: 'http://localhost:8000'
 		}
 		provider.enableDelegate(opt);
 
-		let contract = new web3.eth.Contract(abi);
+		
 		const args = [100, 'test contract deploy'];
 		const from = wallet.list[0].address;
+		const undeployed = (new web3.eth.Contract(abi)).deploy({
+			data: bin,
+			arguments: args,
+		})
 
 		try {
-			contract = await contract.deploy({
-				data: bin,
-				arguments: args,
-			})
-				.send({
-					from: from,
-				});
+			const tx = await undeployed.send({
+				from: from,
+			});
 
-			const ret: string[] = await contract.methods.get().call();
-			args.forEach((val, i) => {
-				expect(ret[i]).to.eql('' + val);
-			})
+			if (!tx.options.address) {
+				assert.fail('Contract address is undefined');
+			}
+			contractAddress = tx.options.address;
+			
+			const deployed = new web3.eth.Contract(abi, contractAddress);
+			const ret = await deployed.methods.get().call();
+			expect(ret[0]).to.eql(BigInt(args[0]));
+			expect(ret[1]).to.eql(args[1]);
 		} catch (err: any) {
 			assert.fail(err.message);
 		}
+	})
 
+	it('Should return error caused by using an account with zero balance to send a transaction when fee delegation is off', async function () {
 		provider.disableDelegate();
 		try {
-			await contract.methods.set(200, 'disable delegate').send({ from: from });
+			const deployed = new web3.eth.Contract(abi, contractAddress);
+			await deployed.methods.set(200, 'disable delegate').send({ from: wallet.list[0].address });
 			assert.fail('Failed to disable delegate')
 		} catch (err: any) {
-			expect(err.message).to.eql('403 post transactions: tx rejected: insufficient energy');
+			assert.ok(err.message.includes('403 post transactions: tx rejected: insufficient energy'));
 		}
 	});
 })

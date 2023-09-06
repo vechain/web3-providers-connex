@@ -1,48 +1,28 @@
 import 'mocha'
 import { expect, assert } from 'chai'
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver'
-import { urls, soloAccounts, abi, bin } from '../settings'
-import * as thor from '../../src/index'
-import { Framework } from '@vechain/connex-framework'
-import { ethers } from 'ethers'
+import {
+	BrowserProvider,
+	ContractFactory,
+	keccak256,
+	Log
+} from 'ethers'
+import { TestObject } from '../testSetup'
+import { modifyFactory, modifyProvider } from '../../src/ethers'
 
 describe('Test the calculation of transactionIndex and logIndex', function () {
-	let driver: Driver
-	let provider: thor.Provider
-	let providerEthers: ethers.providers.JsonRpcProvider
-	let wallet: SimpleWallet
-	let connex: Connex
 	let txIds: string[]
 
 	before(async function () {
-		const net = new SimpleNet(urls.solo)
-		wallet = new SimpleWallet()
-		soloAccounts.forEach(pk => {
-			wallet.import(pk)
-		})
+		const { eip1193Providers } = this.testObject as TestObject
+		this.provider = modifyProvider(new BrowserProvider(eip1193Providers.solo))
 
 		try {
-			driver = await Driver.connect(net, wallet)
-			connex = new Framework(driver)
-			provider = new thor.Provider({
-				connex: connex,
-				net: net,
-				wallet: wallet
-			})
-			providerEthers = thor.ethers.modifyProvider(
-				new ethers.providers.Web3Provider(provider)
-			)
-
-			const txRes = await setup()
+			const txRes = await setup({ testObject: this.testObject })
 			txIds = txRes.map(res => res.txid)
-			await provider.request({ method: 'evm_mine' })
+			await eip1193Providers.solo.request({ method: 'evm_mine' })
 		} catch (err: any) {
 			assert.fail(err.message || err)
 		}
-	})
-
-	after(function () {
-		driver.close()
 	})
 
 	/**
@@ -62,14 +42,22 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 	 * 		set(4, 'clause4')	==> Emit 	"Set" from contract "Test1" 
 	 * 								 		"Set" from contract "Test"
 	 */
-	async function setup() {
-		const factory = thor.ethers.modifyFactory(
-			new ethers.ContractFactory(abi, bin, providerEthers.getSigner(wallet.list[0].address))
+	const setup = async function (thisObj: { testObject: TestObject }) {
+		const { abi, bin, wallet, eip1193Providers, drivers, connexs } = thisObj.testObject
+		const provider = modifyProvider(new BrowserProvider(eip1193Providers.solo))
+		const driver = drivers.solo
+		const connex = connexs.solo
+
+		const signer = await provider.getSigner(wallet.list[0].address)
+		const factory = modifyFactory(
+			new ContractFactory(abi, bin, signer)
 		)
 		try {
 			// deploy contract
-			const contract = await factory.deploy(...[0, 'deploy'])
-			await contract.deployTransaction.wait()
+			const base = await factory.deploy(...[0, 'deploy'])
+			await base.waitForDeployment();
+
+			const contractAddress = await base.getAddress()
 
 			// Get ABI for contract function "set"
 			const setABI = abi.find(abi => abi.name === "set" && abi.type === "function")
@@ -77,7 +65,7 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 			let txRes: Connex.Vendor.TxResponse[] = []
 			const clauses: any[] = []
 			for (let i = 0; i < 5; i++) {
-				clauses[i] = connex.thor.account(contract.address).method(setABI).asClause(i * 100, `clause ${i}`)
+				clauses[i] = connex.thor.account(contractAddress).method(setABI).asClause(i * 100, `clause ${i}`)
 			}
 
 			// Send a tx with 3 clauses with the 1st transferring VET 
@@ -110,39 +98,41 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 
 	it('Test eth_getTransactionReceipt', async function () {
 		try {
-			const rec1 = await providerEthers.getTransactionReceipt(txIds[1])
-			const rec2 = await providerEthers.getTransactionReceipt(txIds[2])
-			expect(rec1.blockHash).to.eql(rec2.blockHash)
+			const rec1 = await (this.provider as BrowserProvider).getTransactionReceipt(txIds[1])
+			const rec2 = await (this.provider as BrowserProvider).getTransactionReceipt(txIds[2])
+			expect(rec1).not.to.be.null
+			expect(rec2).not.to.be.null
+			expect(rec1?.blockHash).to.eql(rec2?.blockHash)
 
-			rec1.logs.forEach((log, i) => {
+			rec1?.logs.forEach((log, i) => {
 				const offset = 4
 				expect(log.transactionIndex).to.eql(1)
-				expect(log.logIndex).to.eql(offset + i)
+				expect(log.index).to.eql(offset + i)
 			})
 
-			rec2.logs.forEach((log, i) => {
+			rec2?.logs.forEach((log, i) => {
 				const offset = 6
 				expect(log.transactionIndex).to.eql(2)
-				expect(log.logIndex).to.eql(offset + i)
+				expect(log.index).to.eql(offset + i)
 			})
 		} catch (err: any) {
 			assert.fail(err.message || err)
 		}
 	})
 
-	it('Test eth_getLogs', async () => {
+	it('Test eth_getLogs', async function () {
 		try {
-			const setSig = ethers.utils.keccak256(Buffer.from('Set(address,uint256,string)'))
-			const receipt = await providerEthers.getTransactionReceipt(txIds[0])
+			const setSig = keccak256(Buffer.from('Set(address,uint256,string)'))
+			const receipt = await this.provider.getTransactionReceipt(txIds[0])
 
 			// No topics
-			let logs = await providerEthers.getLogs({
+			let logs: Log[] = await this.provider.getLogs({
 				fromBlock: receipt.blockNumber,
 				toBlock: receipt.blockNumber
 			})
 			expect(logs.length).to.eql(10)
 
-			logs = await providerEthers.getLogs({
+			logs = await this.provider.getLogs({
 				toBlock: receipt.blockNumber,
 				topics: [setSig]
 			})
@@ -151,14 +141,14 @@ describe('Test the calculation of transactionIndex and logIndex', function () {
 			logs.forEach(log => {
 				if ((log.transactionHash === txIds[0])) {
 					expect(log.transactionIndex).to.eql(0)
-					expect(log.logIndex).to.be.oneOf([1, 3])
+					expect(log.index).to.be.oneOf([1, 3])
 				}
 				else if (log.transactionHash === txIds[1]) {
 					expect(log.transactionIndex).to.eql(1)
-					expect(log.logIndex).to.eql(5)
+					expect(log.index).to.eql(5)
 				} else {
 					expect(log.transactionIndex).to.eql(2)
-					expect(log.logIndex).to.be.oneOf([7, 9])
+					expect(log.index).to.be.oneOf([7, 9])
 				}
 			})
 		} catch (err: any) {

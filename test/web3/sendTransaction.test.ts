@@ -2,38 +2,20 @@
 
 import 'mocha';
 import { expect, assert } from 'chai';
-import { Framework } from '@vechain/connex-framework';
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex-driver';
-import Web3 from 'web3';
-
-import { ProviderWeb3, types } from '../../src/index';
+import { TestObject } from '../testSetup';
+import { Web3 } from 'web3';
+import { ProviderWeb3 } from '../../src/index';
 import { randAddr } from '../../src/utils';
-import { urls, soloAccounts } from '../settings'
 
-describe('Testing sendTransaction', () => {
-	const net = new SimpleNet(urls.solo);
-	const wallet = new SimpleWallet();
-	soloAccounts.forEach(key => {
-		wallet.import(key);
-	});
-
-	let driver: Driver;
-	let web3: any;
-
-	before(async () => {
-		try {
-			driver = await Driver.connect(net, wallet);
-			web3 = new Web3(new ProviderWeb3({ connex: new Framework(driver) }));
-		} catch (err: any) {
-			assert.fail('Initialization failed: ' + err);
-		}
+describe('Testing function sendTransaction', function () {
+	before(async function (){
+		const { eip1193Providers } = this.testObject as TestObject;
+		this.web3 = new Web3(new ProviderWeb3(eip1193Providers.solo));
 	})
 
-	after(() => {
-		driver?.close();
-	})
+	it('Should return the same receipt as the one obtained from calling getTransactionReceipt', async function () {
+		const { wallet } = this.testObject as TestObject;
 
-	it('transfer value', async () => {
 		const txObj = {
 			from: wallet.list[0].address,
 			to: randAddr(),
@@ -42,8 +24,8 @@ describe('Testing sendTransaction', () => {
 		}
 
 		try {
-			const r1: types.RetReceipt = await web3.eth.sendTransaction(txObj);
-			const r2: types.RetReceipt = await web3.eth.getTransactionReceipt(r1.transactionHash);
+			const r1 = await this.web3.eth.sendTransaction(txObj);
+			const r2 = await this.web3.eth.getTransactionReceipt(r1.transactionHash);
 			expect(r1).to.eql(r2);
 		} catch (err: any) {
 			assert.fail(err);

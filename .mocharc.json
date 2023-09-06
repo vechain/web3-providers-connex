@@ -3,5 +3,8 @@
 	"bail": true,
 	"colors": true,
 	"exit": true,
-	"file": "test/testSetup.ts"
+	"file": [
+		"test/soloNodeSetup.ts",
+		"test/testSetup.ts"
+	]
 }
