@@ -1,6 +1,6 @@
 {
 	"name": "@vechain/web3-providers-connex",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Implementation of the JSON-RPC provider for the VeChain Thor protocol, compatible with web3.js and ethers.js.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -8,6 +8,7 @@
 		"dist"
 	],
 	"scripts": {
+		"prepack": "npm run build",
 		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
 		"test": "nyc --reporter=lcov mocha --no-timeouts test/**/*.test.ts",
 		"test-web3": "mocha --no-timeouts test/web3/*.test.ts",
