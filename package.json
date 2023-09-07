@@ -8,6 +8,7 @@
 		"dist"
 	],
 	"scripts": {
+		"prepack": "npm run build",
 		"build": "rm -rf dist/ && node_modules/.bin/tsc -d -p . ",
 		"test": "nyc --reporter=lcov mocha --no-timeouts test/**/*.test.ts",
 		"test-web3": "mocha --no-timeouts test/web3/*.test.ts",
