@@ -1,6 +1,6 @@
 {
 	"name": "@vechain/web3-providers-connex",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Implementation of the JSON-RPC provider for the VeChain Thor protocol, compatible with web3.js and ethers.js.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
