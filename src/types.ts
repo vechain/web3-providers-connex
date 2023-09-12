@@ -105,6 +105,7 @@ export interface RetBlock extends RetHeader {
 	difficulty: '0x0';
 	totalDifficulty: '0x0';
 	uncles: [];
+	baseFeePerGas: '0x0';
 }
 export interface RetHeader {
 	number: string; 			// number in hex string
