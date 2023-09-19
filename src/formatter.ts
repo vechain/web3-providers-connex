@@ -350,6 +350,7 @@ export class Formatter {
 			nonce: zeroBytes8,
 			logsBloom: zeroBytes256,
 			extraData: '0x',
+			baseFeePerGas: '0x0',
 		};
 	}
 

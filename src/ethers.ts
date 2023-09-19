@@ -16,13 +16,6 @@ import {
 	TransactionResponse
 } from "ethers";
 
-import { 
-	formatHash,
-	object,
-	allowNull,
-	formatData,
-} from "../node_modules/ethers/lib.commonjs/providers/format";
-
 export const modifyFactory = (factory: ContractFactory<Array<any>, BaseContract>) => {
 	factory.deploy = async function (...args: ContractMethodArgs<Array<any>>): Promise<BaseContract & { deploymentTransaction(): ContractTransactionResponse } & Omit<BaseContract, keyof BaseContract>> {
 		const tx = await this.getDeployTransaction(...args);
@@ -150,4 +143,63 @@ function formatTransactionResponse(value: any): TransactionResponseParams {
     }
 
     return result;
+}
+
+function isHexString(value: any, length?: number | boolean): value is `0x${ string }` {
+    if (typeof(value) !== "string" || !value.match(/^0x[0-9A-Fa-f]*$/)) {
+        return false
+    }
+
+    if (typeof(length) === "number" && value.length !== 2 + 2 * length) { return false; }
+    if (length === true && (value.length % 2) !== 0) { return false; }
+
+    return true;
+}
+
+function assertArgument(check: unknown, message: string, name: string, value: unknown): asserts check {
+    assert(check, message, "INVALID_ARGUMENT", { argument: name, value: value });
+}
+
+function formatHash(value: any): string {
+    assertArgument(isHexString(value, 32), "invalid hash", "value", value);
+    return value;
+}
+
+type FormatFunc = (value: any) => any;
+function object(format: Record<string, FormatFunc>, altNames?: Record<string, Array<string>>): FormatFunc {
+    return ((value: any) => {
+        const result: any = { };
+        for (const key in format) {
+            let srcKey = key;
+            if (altNames && key in altNames && !(srcKey in value)) {
+                for (const altKey of altNames[key]) {
+                    if (altKey in value) {
+                        srcKey = altKey;
+                        break;
+                    }
+                }
+            }
+
+            try {
+                const nv = format[key](value[srcKey]);
+                if (nv !== undefined) { result[key] = nv; }
+            } catch (error) {
+                const message = (error instanceof Error) ? error.message: "not-an-error";
+                assert(false, `invalid value for value.${ key } (${ message })`, "BAD_DATA", { value })
+            }
+        }
+        return result;
+    });
+}
+
+function allowNull(format: FormatFunc, nullValue?: any): FormatFunc {
+    return (function(value: any) {
+        if (value == null) { return nullValue; }
+        return format(value);
+    });
+}
+
+function formatData(value: string): string {
+    assertArgument(isHexString(value, true), "invalid data", "value", value);
+    return value;
 }
