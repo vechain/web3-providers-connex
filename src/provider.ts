@@ -562,8 +562,7 @@ export class Provider extends EventEmitter implements IProvider {
 	}
 
 	private _getChainId = async (_: any[]) => {
-		const bigIntValue = BigInt(this.chainId);
-		return bigIntValue;
+		return this.chainId;
 	}
 
 	private _getBlockByNumber = async (params: any[]) => {
