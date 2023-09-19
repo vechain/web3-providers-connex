@@ -47,7 +47,7 @@
 		"@istanbuljs/nyc-config-typescript": "^1.0.2",
 		"@types/chai": "^4.3.0",
 		"@types/mocha": "^10.0.1",
-		"@types/node": "^10.17.60",
+		"@types/node": "^20.6.2",
 		"@vechain/connex-driver": "^2.0.10",
 		"@vechain/connex-framework": "^2.0.8",
 		"chai": "^4.3.6",
