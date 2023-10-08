@@ -1,7 +1,8 @@
 'use strict';
 
 import { randomBytes } from 'crypto';
-import web3Utils from 'web3-utils';
+import * as web3Validator from 'web3-validator';
+import * as web3Utils from 'web3-utils';
 import { abi, Transaction } from 'thor-devkit';
 import { FilterOpts, Wallet, TxObj } from './types';
 import { Subscription } from './eip1193';
@@ -24,12 +25,19 @@ export const toSubscription = function (ret: any, id: string): Subscription {
  */
 export function parseBlockNumber(input: string): string | number | undefined | null {
 	// Return block id;
-	if (web3Utils.isHexStrict(input) && input.length == 66) {
+	if (web3Validator.isHexStrict(input) && input.length == 66) {
 		return input;
 	}
 
 	// Convert block number;
-	if (web3Utils.isHexStrict(input)) { return web3Utils.hexToNumber(input); }
+	if (web3Validator.isHexStrict(input)) { 
+		const blockNum = web3Utils.hexToNumber(input); 
+		if (typeof blockNum === 'number') {
+			return blockNum;
+		} else {
+			throw new Error('Invalid block number');
+		}
+	}
 	else if (input === 'earliest') { return 0; }
 	else if (input === 'latest') { return undefined; }
 
@@ -42,15 +50,15 @@ export function toBytes32(hex: string): string {
 
 export function hexToNumber(hex: string): number {
 	const n = web3Utils.hexToNumber(hex);
-	if(typeof n === 'number') {
+	if (typeof n === 'number') {
 		return n;
-	} 
-	
-	return parseInt(n);
+	}
+
+	throw new Error('Invalid hex number');
 }
 
 export function toHex(value: number | string): string {
-	return web3Utils.toHex(value);
+	return web3Utils.toHex(BigInt(value));
 }
 
 export function randAddr(): string {
@@ -58,7 +66,7 @@ export function randAddr(): string {
 }
 
 export function isHexStrict(hex: string) {
-	return web3Utils.isHexStrict(hex);
+	return web3Validator.isHexStrict(hex);
 }
 
 /**
