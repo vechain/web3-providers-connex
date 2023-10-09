@@ -59,7 +59,14 @@ describe('Testing function getPastLogs', function () {
 				address: contractAddress,
 			});
 			// skip event $Master(address) emitted when creating the contract
-			test(ret[1], deployer, args, this.web3);
+			const topic = this.web3.eth.abi.encodeParameter('address', deployer);
+			if (ret[0].topics[1] === topic) {
+				test(ret[0], deployer, args, this.web3);
+			} else if (ret[1].topics[1] === topic) {
+				test(ret[1], deployer, args, this.web3);
+			} else {
+				assert.fail('Log not found');
+			}
 
 			// with only topics
 			ret = await this.web3.eth.getPastLogs({
